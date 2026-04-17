@@ -1,0 +1,36 @@
+# OS and editor noise
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+tmp/
+temp/
+
+# Local backups and exports
+fitness-workbench-backup-*.json
+training-plan-*.csv
+*.bak
+
+# Future dependency/build outputs
+node_modules/
+dist/
+build/
+target/
+.vite/
+
+# Future local app/database files
+*.sqlite
+*.sqlite3
+*.db
+*.db-shm
+*.db-wal
+
+# Environment files
+.env
+.env.*

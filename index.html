@@ -1,0 +1,469 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>个人智能训练工作台</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="主导航">
+        <div class="brand">
+          <div class="brand-mark">F</div>
+          <div>
+            <strong>训练工作台</strong>
+            <span>本地个人版</span>
+          </div>
+        </div>
+
+        <nav class="nav-list">
+          <button class="nav-button active" data-view="today">今日训练</button>
+          <button class="nav-button" data-view="goals">目标设定</button>
+          <button class="nav-button" data-view="gyms">健身房</button>
+          <button class="nav-button" data-view="metrics">身体指标</button>
+          <button class="nav-button" data-view="nutrition">饮食记录</button>
+          <button class="nav-button" data-view="plan">训练计划</button>
+          <button class="nav-button" data-view="exercises">动作库</button>
+          <button class="nav-button" data-view="coach">智能教练</button>
+          <button class="nav-button" data-view="data">导入导出</button>
+        </nav>
+      </aside>
+
+      <main class="workspace">
+        <header class="app-header">
+          <div>
+            <p class="eyebrow">Optimal goal: 便利化个人使用</p>
+            <h1 id="view-title">今日训练</h1>
+            <p id="view-subtitle">选择当前健身房，查看今天可执行的训练安排和反馈入口。</p>
+          </div>
+          <div class="status-strip">
+            <span class="status-chip" id="status-gym">健身房：未选择</span>
+            <span class="status-chip" id="status-goal">目标：未设定</span>
+          </div>
+        </header>
+
+        <section class="view active" id="view-today" aria-labelledby="today-title">
+          <div class="grid two-col">
+            <section class="panel">
+              <div class="section-heading">
+                <div>
+                  <h2 id="today-title">当前场地</h2>
+                  <p>出差时先切换健身房，动作替代会按器械范围生成。</p>
+                </div>
+              </div>
+              <label class="field">
+                <span>今天在哪个健身房</span>
+                <select id="current-gym-select"></select>
+              </label>
+              <div id="current-gym-summary" class="compact-list"></div>
+            </section>
+
+            <section class="panel">
+              <div class="section-heading">
+                <div>
+                  <h2>今日建议</h2>
+                  <p>基于目标、身体指标、当前场地和最近反馈。</p>
+                </div>
+              </div>
+              <div id="today-advice" class="advice-box"></div>
+            </section>
+          </div>
+
+          <section class="panel">
+            <div class="section-heading">
+              <div>
+                <h2>今日训练</h2>
+                <p>从当前计划中选择训练日，系统会显示当前健身房可执行的动作和替代动作。</p>
+              </div>
+              <button id="today-generate-plan" class="button primary">生成/刷新计划</button>
+            </div>
+            <label class="field narrow">
+              <span>训练日</span>
+              <select id="today-plan-day-select"></select>
+            </label>
+            <div id="today-workout"></div>
+          </section>
+
+          <section class="panel">
+            <div class="section-heading">
+              <div>
+                <h2>动作级反馈</h2>
+                <p>记录单个动作的完成细节，例如半程、左右差、小臂先酸、目标肌肉没感觉。</p>
+              </div>
+            </div>
+            <form id="exercise-log-form" class="form-grid">
+              <label class="field">
+                <span>动作</span>
+                <select id="exercise-log-exercise"></select>
+              </label>
+              <label class="field">
+                <span>实际重量</span>
+                <input id="exercise-log-load" type="text" placeholder="例如：24kg / 自重" />
+              </label>
+              <label class="field">
+                <span>实际次数</span>
+                <input id="exercise-log-reps" type="text" placeholder="例如：12/11/8" />
+              </label>
+              <label class="field">
+                <span>RPE</span>
+                <input id="exercise-log-rpe" type="number" min="1" max="10" step="0.5" value="7" />
+              </label>
+              <label class="field">
+                <span>动作质量</span>
+                <select id="exercise-log-quality">
+                  <option value="good">好</option>
+                  <option value="ok" selected>一般</option>
+                  <option value="poor">差</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>动作幅度</span>
+                <select id="exercise-log-rom">
+                  <option value="full" selected>完整</option>
+                  <option value="reduced_late">后程半程</option>
+                  <option value="partial">全程半程</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>目标肌肉感觉</span>
+                <select id="exercise-log-target-feel">
+                  <option value="strong">强</option>
+                  <option value="moderate" selected>中</option>
+                  <option value="weak">弱</option>
+                  <option value="none">没感觉</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>主要限制因素</span>
+                <select id="exercise-log-limiter">
+                  <option value="target_muscle">目标肌肉</option>
+                  <option value="grip">小臂/握力</option>
+                  <option value="joint_pain">关节疼</option>
+                  <option value="core">核心不稳</option>
+                  <option value="cardio">心肺</option>
+                  <option value="fatigue">整体疲劳</option>
+                  <option value="technique" selected>技术</option>
+                  <option value="unknown">不确定</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>左右差异</span>
+                <select id="exercise-log-side">
+                  <option value="none" selected>无</option>
+                  <option value="left_weaker">左弱</option>
+                  <option value="right_weaker">右弱</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>疼痛评分</span>
+                <input id="exercise-log-pain-score" type="number" min="0" max="5" value="0" />
+              </label>
+              <label class="field">
+                <span>疼痛部位</span>
+                <input id="exercise-log-pain-area" type="text" placeholder="例如：肩前侧 / 膝 / 下背" />
+              </label>
+              <label class="field span-2">
+                <span>动作细节反馈</span>
+                <textarea id="exercise-log-feedback" rows="3" placeholder="例如：左侧最后几个半程，小臂先酸了，背没什么感觉。"></textarea>
+              </label>
+              <div class="form-actions span-2">
+                <button class="button primary" type="submit">保存动作反馈并生成建议</button>
+              </div>
+            </form>
+            <div id="exercise-log-list" style="margin-top: 16px;"></div>
+          </section>
+
+          <section class="panel">
+            <div class="section-heading">
+              <div>
+                <h2>训练反馈</h2>
+                <p>用少量字段记录完成情况，系统据此优化后续计划。</p>
+              </div>
+            </div>
+            <form id="session-form" class="form-grid">
+              <label class="field">
+                <span>完成度 %</span>
+                <input id="log-completion" type="number" min="0" max="100" value="100" />
+              </label>
+              <label class="field">
+                <span>平均 RPE</span>
+                <input id="log-rpe" type="number" min="1" max="10" step="0.5" value="7" />
+              </label>
+              <label class="field">
+                <span>疼痛评分</span>
+                <input id="log-pain-score" type="number" min="0" max="5" value="0" />
+              </label>
+              <label class="field">
+                <span>疼痛/不适部位</span>
+                <input id="log-pain-area" type="text" placeholder="例如：膝、下背、肩" />
+              </label>
+              <label class="field">
+                <span>睡眠状态 1-5</span>
+                <input id="log-sleep" type="number" min="1" max="5" value="3" />
+              </label>
+              <label class="field">
+                <span>疲劳程度 1-5</span>
+                <input id="log-fatigue" type="number" min="1" max="5" value="3" />
+              </label>
+              <label class="field span-2">
+                <span>备注</span>
+                <textarea id="log-notes" rows="3" placeholder="例如：酒店健身房人多，腿部酸痛，硬拉动作不稳"></textarea>
+              </label>
+              <div class="form-actions span-2">
+                <button class="button primary" type="submit">保存反馈并生成建议</button>
+              </div>
+            </form>
+          </section>
+        </section>
+
+        <section class="view" id="view-goals" aria-labelledby="goals-title">
+          <section class="panel">
+            <div class="section-heading">
+              <div>
+                <h2 id="goals-title">目标设定</h2>
+                <p>支持自然语言录入，系统会解析成制定计划时可用的结构化目标。</p>
+              </div>
+            </div>
+            <label class="field">
+              <span>目标描述</span>
+              <textarea id="goal-text" rows="5" placeholder="例如：我现在 78kg，想先减到 72kg，但不想掉太多力量。最近经常出差，一周可能只能练 3 次，每次 45 分钟。"></textarea>
+            </label>
+            <div class="form-actions">
+              <button id="parse-goal-btn" class="button">解析目标</button>
+              <button id="save-goal-btn" class="button primary">保存为当前目标</button>
+            </div>
+            <div id="parsed-goal-output" class="json-preview"></div>
+          </section>
+
+          <section class="panel">
+            <div class="section-heading">
+              <div>
+                <h2>已保存目标</h2>
+                <p>当前目标会参与计划生成、替代动作和每周建议。</p>
+              </div>
+            </div>
+            <div id="goals-list"></div>
+          </section>
+        </section>
+
+        <section class="view" id="view-gyms" aria-labelledby="gyms-title">
+          <section class="panel">
+            <div class="section-heading">
+              <div>
+                <h2 id="gyms-title">健身房/场地</h2>
+                <p>每个健身房维护自己的器械范围，出差时切换场地即可。</p>
+              </div>
+            </div>
+            <form id="gym-form" class="form-grid">
+              <label class="field">
+                <span>名称</span>
+                <input id="gym-name" type="text" placeholder="例如：杭州酒店健身房" />
+              </label>
+              <label class="field">
+                <span>地点/备注</span>
+                <input id="gym-location" type="text" placeholder="例如：杭州西湖区，器械较少" />
+              </label>
+              <label class="field span-2">
+                <span>器械</span>
+                <div id="equipment-checklist" class="check-grid"></div>
+              </label>
+              <div class="form-actions span-2">
+                <button class="button primary" type="submit">保存健身房</button>
+              </div>
+            </form>
+          </section>
+
+          <section class="panel">
+            <div class="section-heading">
+              <div>
+                <h2>已有健身房</h2>
+                <p>可设为当前场地，也可以删除不再使用的临时场地。</p>
+              </div>
+            </div>
+            <div id="gym-list"></div>
+          </section>
+        </section>
+
+        <section class="view" id="view-metrics" aria-labelledby="metrics-title">
+          <section class="panel">
+            <div class="section-heading">
+              <div>
+                <h2 id="metrics-title">身体指标</h2>
+                <p>不定期录入体重、体脂、骨骼肌等，计划生成会读取最近趋势。</p>
+              </div>
+            </div>
+            <form id="metric-form" class="form-grid">
+              <label class="field">
+                <span>日期</span>
+                <input id="metric-date" type="date" />
+              </label>
+              <label class="field">
+                <span>体重 kg</span>
+                <input id="metric-weight" type="number" step="0.1" />
+              </label>
+              <label class="field">
+                <span>体脂 %</span>
+                <input id="metric-bodyfat" type="number" step="0.1" />
+              </label>
+              <label class="field">
+                <span>骨骼肌 kg</span>
+                <input id="metric-muscle" type="number" step="0.1" />
+              </label>
+              <label class="field">
+                <span>腰围 cm</span>
+                <input id="metric-waist" type="number" step="0.1" />
+              </label>
+              <label class="field">
+                <span>备注</span>
+                <input id="metric-notes" type="text" placeholder="例如：出差后测量" />
+              </label>
+              <div class="form-actions span-2">
+                <button class="button primary" type="submit">保存指标</button>
+              </div>
+            </form>
+          </section>
+
+          <section class="panel">
+            <div class="section-heading">
+              <div>
+                <h2>趋势</h2>
+                <p>折线图展示体重、体脂和骨骼肌随时间变化。</p>
+              </div>
+            </div>
+            <canvas id="metric-chart" width="980" height="320" aria-label="身体指标趋势图"></canvas>
+            <div id="metric-list"></div>
+          </section>
+        </section>
+
+        <section class="view" id="view-nutrition" aria-labelledby="nutrition-title">
+          <section class="panel">
+            <div class="section-heading">
+              <div>
+                <h2 id="nutrition-title">饮食自然语言记录</h2>
+                <p>用一句话记录当天饮食，系统会估算结构、识别缺口，并按当前目标给出调整建议。</p>
+              </div>
+            </div>
+            <form id="nutrition-form" class="form-grid">
+              <label class="field">
+                <span>日期</span>
+                <input id="nutrition-date" type="date" />
+              </label>
+              <label class="field">
+                <span>置信度说明</span>
+                <input value="分量越模糊，建议越偏结构判断" disabled />
+              </label>
+              <label class="field span-2">
+                <span>饮食描述</span>
+                <textarea id="nutrition-text" rows="5" placeholder="例如：早上吃了5个鸡蛋蛋白一个地瓜一碗豆浆一点炒面，中午没吃饭吃了四个威化，晚上吃了牛肉火锅"></textarea>
+              </label>
+              <div class="form-actions span-2">
+                <button class="button primary" type="submit">保存饮食记录并生成建议</button>
+              </div>
+            </form>
+          </section>
+
+          <section class="panel">
+            <div class="section-heading">
+              <div>
+                <h2>饮食记录</h2>
+                <p>展示解析出的餐次、饮食标签、目标匹配度和建议。</p>
+              </div>
+            </div>
+            <div id="nutrition-list"></div>
+          </section>
+        </section>
+
+        <section class="view" id="view-plan" aria-labelledby="plan-title">
+          <section class="panel">
+            <div class="section-heading">
+              <div>
+                <h2 id="plan-title">训练计划</h2>
+                <p>计划按当前目标、身体指标和当前健身房器械生成，可导出给教练查看。</p>
+              </div>
+              <div class="button-row">
+                <button id="generate-plan-btn" class="button primary">生成计划</button>
+                <button id="export-plan-csv" class="button">导出计划 CSV</button>
+              </div>
+            </div>
+            <div id="plan-context" class="context-box"></div>
+            <div id="plan-table"></div>
+          </section>
+
+          <section class="panel">
+            <div class="section-heading">
+              <div>
+                <h2>导入教练表格</h2>
+                <p>第一版支持 CSV。字段建议：day, focus, exercise, sets, reps, load, rpe, rest, notes。</p>
+              </div>
+            </div>
+            <input id="import-plan-csv-input" type="file" accept=".csv,text/csv" />
+          </section>
+        </section>
+
+        <section class="view" id="view-exercises" aria-labelledby="exercises-title">
+          <section class="panel">
+            <div class="section-heading">
+              <div>
+                <h2 id="exercises-title">动作库</h2>
+                <p>动作包含目标肌群、器械依赖、替代动作和示例链接。</p>
+              </div>
+            </div>
+            <label class="field narrow">
+              <span>搜索动作</span>
+              <input id="exercise-search" type="search" placeholder="输入动作、肌群、器械" />
+            </label>
+            <div id="exercise-list"></div>
+          </section>
+        </section>
+
+        <section class="view" id="view-coach" aria-labelledby="coach-title">
+          <section class="panel">
+            <div class="section-heading">
+              <div>
+                <h2 id="coach-title">智能教练</h2>
+                <p>这里保留每次反馈生成的计划调整建议和原因。</p>
+              </div>
+            </div>
+            <div id="coach-advice"></div>
+          </section>
+
+          <section class="panel">
+            <div class="section-heading">
+              <div>
+                <h2>计划调整记录</h2>
+                <p>每次调整都记录依据，避免计划越改越乱。</p>
+              </div>
+            </div>
+            <div id="revisions-list"></div>
+          </section>
+        </section>
+
+        <section class="view" id="view-data" aria-labelledby="data-title">
+          <section class="panel">
+            <div class="section-heading">
+              <div>
+                <h2 id="data-title">数据备份</h2>
+                <p>当前版本所有数据保存在本机浏览器本地存储。建议定期导出 JSON 备份。</p>
+              </div>
+            </div>
+            <div class="button-row">
+              <button id="export-json" class="button primary">导出全部数据 JSON</button>
+              <label class="button file-button">
+                导入 JSON
+                <input id="import-json" type="file" accept=".json,application/json" />
+              </label>
+              <button id="reset-data" class="button danger">恢复初始数据</button>
+            </div>
+            <div id="data-summary" class="context-box"></div>
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <script src="./data.js"></script>
+    <script src="./planner.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>
