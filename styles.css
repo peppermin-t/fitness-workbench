@@ -353,7 +353,8 @@ textarea:focus {
 }
 
 .check-item {
-  display: flex;
+  display: grid;
+  grid-template-columns: 18px 42px minmax(0, 1fr);
   align-items: center;
   gap: 7px;
   padding: 9px;
@@ -366,6 +367,125 @@ textarea:focus {
 .check-item input {
   width: auto;
   min-height: auto;
+}
+
+.visual-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
+}
+
+.visual-card {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: white;
+}
+
+.visual-card strong {
+  line-height: 1.35;
+}
+
+.equipment-icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border: 1px solid #bcd4c5;
+  border-radius: var(--radius);
+  background: var(--accent-soft);
+  color: var(--accent-dark);
+  flex: 0 0 auto;
+  overflow: hidden;
+}
+
+.equipment-icon.large {
+  width: 56px;
+  height: 56px;
+}
+
+.equipment-icon.small {
+  width: 30px;
+  height: 30px;
+}
+
+.equipment-icon svg,
+.muscle-map svg {
+  display: block;
+}
+
+.equipment-icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.equipment-icon.large svg {
+  width: 32px;
+  height: 32px;
+}
+
+.muscle-map svg {
+  width: 100%;
+  height: auto;
+}
+
+.equipment-inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.equipment-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-soft);
+  font-size: 12px;
+}
+
+.exercise-card-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 240px;
+  gap: 18px;
+  align-items: start;
+}
+
+.exercise-visuals {
+  display: grid;
+  gap: 10px;
+}
+
+.visual-frame {
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-soft);
+}
+
+.muscle-map {
+  display: grid;
+  gap: 8px;
+}
+
+.muscle-map-labels {
+  display: flex;
+  justify-content: space-between;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.legend-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .compact-list,
@@ -557,5 +677,9 @@ canvas {
 
   .check-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .exercise-card-layout {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
