@@ -176,12 +176,20 @@
     const trend = P.metricTrend(state.metrics, "weight", 30);
     const session = state.sessions[0];
     const parts = [];
+    const linkedInsights = P.buildLinkedTodayInsights({
+      goal,
+      metrics: state.metrics,
+      sessions: state.sessions,
+      exerciseLogs: state.exerciseLogs,
+      nutritionLogs: state.nutritionLogs
+    });
     parts.push(goal ? `当前目标：${goal.parsed.primaryGoalLabel}${goal.parsed.secondaryGoalLabel ? ` + ${goal.parsed.secondaryGoalLabel}` : ""}。` : "先在“目标设定”里录入当前目标，计划会更贴合。");
     if (gym) parts.push(`当前场地：${gym.name}，可用器械 ${gym.equipment.length} 类。`);
     if (gym?.equipment.length <= 5) parts.push("器械范围较少，生成计划时会优先使用哑铃、自重、弹力带和有氧替代。");
     if (latest) parts.push(`最近身体数据：${latest.date}，体重 ${fmt(latest.weight, "kg")}，体脂 ${fmt(latest.bodyFat, "%")}，骨骼肌 ${fmt(latest.skeletalMuscle, "kg")}。`);
     if (trend && goal?.parsed.primaryGoal === "fat_loss" && trend.delta > 0.3) parts.push(`近 30 天体重上升 ${trend.delta.toFixed(1)}kg，减脂计划中建议增加有氧或检查饮食记录。`);
     if (session) parts.push(`最近训练完成度 ${session.completion}%、RPE ${session.rpe}、疼痛 ${session.painScore}/5。`);
+    parts.push(...linkedInsights);
     if (!state.plan) parts.push("还没有训练计划，可以先点击“生成/刷新计划”。");
     $("#today-advice").innerHTML = parts.map((x) => `<div>${esc(x)}</div>`).join("");
   }
@@ -371,6 +379,44 @@
   function renderCoach() {
     $("#coach-advice").innerHTML = state.advice.length ? `<div class="item-list">${state.advice.map((x) => `<article class="list-item"><div class="list-item-header"><div><h3>${esc(x.title)}</h3><p class="mini-text">${esc(x.createdAt)}</p><p style="margin-top:8px;">${esc(x.body)}</p><div class="tag-row">${(x.tags || []).map((t) => tag(t, "info")).join("")}</div></div><button class="button danger" data-action="delete-advice" data-id="${esc(x.id)}">删除</button></div></article>`).join("")}</div>` : `<p class="empty">暂无建议。完成一次训练反馈后，这里会生成优化建议。</p>`;
     $("#revisions-list").innerHTML = state.revisions.length ? `<div class="item-list">${state.revisions.map((x) => `<article class="list-item"><div class="list-item-header"><div><h3>${esc(x.summary)}</h3><p class="mini-text">${esc(x.createdAt)} · ${esc(x.status === "applied" ? "已应用" : "待确认")}</p><p style="margin-top:8px;">${esc(x.reason)}</p><div class="tag-row">${(x.tags || []).map((t) => tag(t)).join("")}</div></div><div class="item-actions">${x.status === "pending" ? `<button class="button primary" data-action="apply-revision" data-id="${esc(x.id)}">应用</button>` : tag("已应用", "success")}</div></div></article>`).join("")}</div>` : `<p class="empty">暂无计划调整记录。</p>`;
+    renderProfiles();
+  }
+
+  function renderProfiles() {
+    const exerciseEl = $("#exercise-profiles");
+    const nutritionEl = $("#nutrition-profiles");
+    if (exerciseEl) {
+      const profiles = P.buildExerciseProfiles(state.exerciseLogs || []).slice(0, 6);
+      exerciseEl.innerHTML = profiles.length ? `<div class="item-list">${profiles.map((profile) => `
+        <article class="list-item">
+          <div class="list-item-header">
+            <div>
+              <h3>${esc(profile.exerciseName)}</h3>
+              <p class="mini-text">反馈 ${profile.count} 次 · 动作质量差 ${profile.poorQualityCount} 次 · 疼痛风险 ${profile.painCount} 次</p>
+              <div class="tag-row">${profile.topTags.map(([issueTag, count]) => tag(`${issueTag} ×${count}`, "info")).join("")}</div>
+              <p class="mini-text" style="margin-top:8px;">${esc(profile.advice.join(" "))}</p>
+            </div>
+          </div>
+        </article>
+      `).join("")}</div>` : `<p class="empty">动作级反馈还不够多，继续记录后这里会形成长期画像。</p>`;
+    }
+    if (nutritionEl) {
+      const profile = P.buildNutritionProfile(state.nutritionLogs || [], currentGoal());
+      nutritionEl.innerHTML = profile.count ? `
+        <div class="item-list">
+          <article class="list-item">
+            <div class="list-item-header">
+              <div>
+                <h3>近期饮食模式</h3>
+                <p class="mini-text">已记录 ${profile.count} 天饮食。</p>
+                <div class="tag-row">${profile.topTags.map(([issueTag, count]) => tag(`${issueTag} ×${count}`, "info")).join("")}</div>
+                <p class="mini-text" style="margin-top:8px;">${esc(profile.advice.join(" "))}</p>
+              </div>
+            </div>
+          </article>
+        </div>
+      ` : `<p class="empty">饮食记录还不够多，继续记录后这里会形成长期画像。</p>`;
+    }
   }
 
   function renderDataSummary() {

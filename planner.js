@@ -264,6 +264,146 @@ window.FitnessPlanner = (() => {
     return recs;
   }
 
+  function buildExerciseProfiles(logs) {
+    const groups = new Map();
+    (logs || []).forEach((log) => {
+      const key = log.exerciseId || log.exerciseName;
+      if (!groups.has(key)) {
+        groups.set(key, {
+          exerciseId: log.exerciseId,
+          exerciseName: log.exerciseName,
+          count: 0,
+          poorQualityCount: 0,
+          painCount: 0,
+          tagCounts: {},
+          recommendations: new Map(),
+          latestAt: log.createdAt || log.date || ""
+        });
+      }
+      const profile = groups.get(key);
+      profile.count += 1;
+      if (log.quality === "poor") profile.poorQualityCount += 1;
+      if (Number(log.painScore) >= 3) profile.painCount += 1;
+      if ((log.createdAt || log.date || "") > profile.latestAt) profile.latestAt = log.createdAt || log.date || "";
+      (log.analysis?.tags || []).forEach((item) => {
+        profile.tagCounts[item.tag] = (profile.tagCounts[item.tag] || 0) + 1;
+      });
+      (log.analysis?.recommendations || []).forEach((text) => {
+        profile.recommendations.set(text, (profile.recommendations.get(text) || 0) + 1);
+      });
+    });
+
+    return Array.from(groups.values()).map((profile) => {
+      const topTags = Object.entries(profile.tagCounts).sort((a, b) => b[1] - a[1]).slice(0, 3);
+      const priority = computeExercisePriority(topTags, profile);
+      const advice = inferExerciseProfileAdvice(topTags, profile);
+      return {
+        exerciseId: profile.exerciseId,
+        exerciseName: profile.exerciseName,
+        count: profile.count,
+        poorQualityCount: profile.poorQualityCount,
+        painCount: profile.painCount,
+        latestAt: profile.latestAt,
+        topTags,
+        priority,
+        advice
+      };
+    }).sort((a, b) => b.priority - a.priority || b.count - a.count);
+  }
+
+  function computeExercisePriority(topTags, profile) {
+    let score = profile.count;
+    if (profile.painCount) score += profile.painCount * 4;
+    if (profile.poorQualityCount) score += profile.poorQualityCount * 2;
+    topTags.forEach(([tag, count]) => {
+      if (tag === "pain_risk") score += count * 4;
+      if (tag === "grip_limiting" || tag === "poor_target_muscle_feel") score += count * 2;
+      if (tag === "reduced_rom_late" || tag === "technique_breakdown") score += count * 2;
+      if (tag === "left_weaker" || tag === "right_weaker") score += count * 2;
+    });
+    return score;
+  }
+
+  function inferExerciseProfileAdvice(topTags, profile) {
+    const tags = topTags.map(([tag]) => tag);
+    const notes = [];
+    if (tags.includes("pain_risk")) notes.push("该动作多次出现疼痛或不适，优先降强度或替换为更稳版本。");
+    if (tags.includes("reduced_rom_late")) notes.push("该动作后程容易半程，下次先恢复完整幅度，再考虑加重。");
+    if (tags.includes("left_weaker") || tags.includes("right_weaker")) notes.push("该动作存在左右差异，单侧训练时以弱侧高质量完成度作为标准。");
+    if (tags.includes("grip_limiting")) notes.push("该动作常被握力/小臂限制，背部训练可优先考虑助力带或更稳定器械。");
+    if (tags.includes("poor_target_muscle_feel")) notes.push("该动作目标肌肉感觉偏弱，建议加入激活动作或顶峰停顿。");
+    if (tags.includes("technique_breakdown")) notes.push("该动作历史上代偿较多，先稳住技术，再继续堆量。");
+    if (!notes.length && profile.count >= 2) notes.push("该动作近期总体稳定，继续观察是否满足渐进超负荷条件。");
+    return notes;
+  }
+
+  function buildNutritionProfile(logs, goal) {
+    const tagCounts = {};
+    const mealCounts = {};
+    (logs || []).forEach((log) => {
+      (log.analysis?.tags || []).forEach((tag) => {
+        tagCounts[tag] = (tagCounts[tag] || 0) + 1;
+      });
+      (log.analysis?.meals || []).forEach((meal) => {
+        mealCounts[meal.meal] = (mealCounts[meal.meal] || 0) + 1;
+      });
+    });
+    const topTags = Object.entries(tagCounts).sort((a, b) => b[1] - a[1]).slice(0, 6);
+    const advice = inferNutritionProfileAdvice(topTags, goal?.parsed);
+    return {
+      count: (logs || []).length,
+      topTags,
+      mealCounts,
+      advice
+    };
+  }
+
+  function inferNutritionProfileAdvice(topTags, goal) {
+    const tags = topTags.map(([tag]) => tag);
+    const primary = goal?.primaryGoal || "general_fitness";
+    const notes = [];
+    if (tags.includes("missed_meal")) notes.push("最近多次出现漏正餐或正餐质量不足，优先建立可执行的保底简餐。");
+    if (tags.includes("processed_snack")) notes.push("加工零食出现较多，容易影响饱腹感和训练供能稳定性。");
+    if (tags.includes("low_fiber_possible")) notes.push("蔬菜/水果/纤维记录偏少，建议先固定每天 1-2 份蔬果。");
+    if (tags.includes("high_fat_possible") || tags.includes("high_sodium_possible")) notes.push("外食油脂和钠不确定性较高，火锅/炒面/烧烤类需要更留意份量。");
+    if (primary === "fat_loss") notes.push("减脂目标下，优先保证蛋白和正餐完整，再处理零食和高油外食。");
+    if (primary === "muscle_gain") notes.push("增肌目标下，需要把蛋白和碳水更均匀地分布到白天各餐。");
+    if (primary === "strength") notes.push("力量目标下，如果白天经常缺餐，训练表现和动作质量会更不稳定。");
+    if (!notes.length) notes.push("饮食记录还不够多，继续积累数据后再看长期模式。");
+    return notes;
+  }
+
+  function buildLinkedTodayInsights({ goal, metrics, sessions, exerciseLogs, nutritionLogs }) {
+    const insights = [];
+    const primary = goal?.parsed?.primaryGoal || "general_fitness";
+    const exerciseProfiles = buildExerciseProfiles(exerciseLogs || []);
+    const nutritionProfile = buildNutritionProfile(nutritionLogs || [], goal);
+    const latestSession = (sessions || [])[0];
+    const latestMetric = sortedMetrics(metrics || []).at(-1);
+    const weightTrend = metricTrend(metrics || [], "weight", 30);
+
+    if (exerciseProfiles[0]?.topTags?.some(([tag]) => tag === "grip_limiting")) {
+      insights.push("近期动作级反馈里，握力/小臂限制比较频繁。背部主训练可优先解决限制因素，而不是盲目降背部训练量。");
+    }
+    if (exerciseProfiles[0]?.topTags?.some(([tag]) => tag === "pain_risk")) {
+      insights.push("近期某些动作反复出现疼痛风险，今天训练建议优先保动作质量，不要追求强行加重。");
+    }
+    if (latestSession && (latestSession.rpe >= 8.5 || latestSession.fatigue >= 4) && nutritionProfile.topTags.some(([tag]) => tag === "missed_meal")) {
+      insights.push("最近训练疲劳偏高，同时饮食里有漏正餐模式，训练表现波动可能和白天供能不足有关。");
+    }
+    if (primary === "fat_loss" && weightTrend?.delta > 0.3 && nutritionProfile.topTags.some(([tag]) => tag === "high_fat_possible" || tag === "processed_snack")) {
+      insights.push("减脂目标下，近 30 天体重没有往目标方向走，结合饮食记录看，高油外食或零食可能是主要干扰项。");
+    }
+    if (primary === "muscle_gain" && latestMetric && nutritionProfile.topTags.some(([tag]) => tag === "missed_meal")) {
+      insights.push("增肌目标下，白天漏正餐会直接拉低总热量和蛋白完成度，优先补稳定午餐/加餐。");
+    }
+    if (primary === "strength" && nutritionProfile.topTags.some(([tag]) => tag === "missed_meal")) {
+      insights.push("力量目标下，缺碳水或正餐不稳定通常会先体现为 RPE 提高和动作质量下滑。");
+    }
+
+    return insights;
+  }
+
   function revision(uid, nowLabel, summary, reason, tags, patch) {
     return {
       id: uid("rev"),
@@ -430,5 +570,5 @@ window.FitnessPlanner = (() => {
     return Math.min(max, Math.max(min, value));
   }
 
-  return { parseGoal, generatePlan, createAdviceFromSession, analyzeExerciseFeedback, parseNutritionLog, availableSubstitutes, isAvailable, metricTrend, sortedMetrics };
+  return { parseGoal, generatePlan, createAdviceFromSession, analyzeExerciseFeedback, parseNutritionLog, buildExerciseProfiles, buildNutritionProfile, buildLinkedTodayInsights, availableSubstitutes, isAvailable, metricTrend, sortedMetrics };
 })();
