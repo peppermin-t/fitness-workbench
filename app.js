@@ -91,11 +91,15 @@
     $("#nutrition-date").value = todayIso();
     $("#nutrition-form").addEventListener("submit", saveNutritionLog);
     $("#exercise-log-form").addEventListener("submit", saveExerciseLog);
+    $("#exercise-history-filter").addEventListener("change", renderExerciseHistory);
     $("#exercise-search").addEventListener("input", renderExerciseList);
     $("#export-json").addEventListener("click", exportJson);
     $("#import-json").addEventListener("change", importJson);
     $("#reset-data").addEventListener("click", resetData);
-    $("#today-plan-day-select").addEventListener("change", renderTodayWorkout);
+    $("#today-plan-day-select").addEventListener("change", () => {
+      renderTodayWorkout();
+      renderExerciseLogSelect();
+    });
     document.addEventListener("click", handleClick);
   }
 
@@ -137,6 +141,8 @@
     renderTodayWorkout();
     renderExerciseLogSelect();
     renderExerciseLogList();
+    renderExerciseHistoryFilter();
+    renderExerciseHistory();
     renderEquipmentChecklist();
     renderGymList();
     renderParsedGoal();
@@ -239,7 +245,7 @@
         <div class="list-item-header">
           <div>
             <h3>${esc(log.exerciseName)}</h3>
-            <p class="mini-text">${esc(log.createdAt)} · 重量 ${esc(log.actualLoad || "-")} · 次数 ${esc(log.actualReps || "-")} · RPE ${esc(log.rpe)}</p>
+            <p class="mini-text">${esc(log.createdAt)} · ${esc(log.focus || "未记录训练日")} · 计划 ${esc(log.plannedSets || "-")} 组 / ${esc(log.plannedReps || "-")} · 实际 ${esc(log.actualLoad || "-")} / ${esc(log.actualReps || "-")} · RPE ${esc(log.rpe)}</p>
             <p style="margin-top:8px;">${esc(log.freeText || "无自由反馈")}</p>
             <div class="tag-row">${(log.analysis?.tags || []).map((item) => tag(item.tag, "info")).join("")}</div>
             <p class="mini-text" style="margin-top:8px;">${esc((log.analysis?.recommendations || []).join(" "))}</p>
@@ -247,6 +253,71 @@
           <button class="button danger" data-action="delete-exercise-log" data-id="${esc(log.id)}">删除</button>
         </div>
       </article>`).join("")}</div>`;
+  }
+
+  function renderExerciseHistoryFilter() {
+    const select = $("#exercise-history-filter");
+    if (!select) return;
+    const currentValue = select.value || "all";
+    const options = [];
+    const seen = new Set();
+    (state.exerciseLogs || []).forEach((log) => {
+      if (log.exerciseId && !seen.has(log.exerciseId)) {
+        seen.add(log.exerciseId);
+        options.push({ value: log.exerciseId, label: log.exerciseName || log.exerciseId });
+      }
+    });
+    select.innerHTML = [`<option value="all">全部动作</option>`, ...options.map((item) => `<option value="${esc(item.value)}">${esc(item.label)}</option>`)].join("");
+    select.value = options.some((item) => item.value === currentValue) || currentValue === "all" ? currentValue : "all";
+  }
+
+  function renderExerciseHistory() {
+    const summaryEl = $("#exercise-history-summary");
+    const listEl = $("#exercise-history-list");
+    const logs = state.exerciseLogs || [];
+    if (!summaryEl || !listEl) return;
+    if (!logs.length) {
+      summaryEl.innerHTML = "";
+      listEl.innerHTML = `<p class="empty">暂无动作反馈历史。</p>`;
+      return;
+    }
+    const filterValue = $("#exercise-history-filter")?.value || "all";
+    const filtered = filterValue === "all" ? logs.slice() : logs.filter((log) => log.exerciseId === filterValue);
+    const summary = buildExerciseHistorySummary(filtered);
+    summaryEl.innerHTML = `
+      <div class="metric-grid">
+        <div class="metric-pill"><span>反馈次数</span><strong>${summary.count}</strong></div>
+        <div class="metric-pill"><span>平均 RPE</span><strong>${summary.avgRpe}</strong></div>
+        <div class="metric-pill"><span>动作质量差</span><strong>${summary.poorCount}</strong></div>
+        <div class="metric-pill"><span>疼痛风险</span><strong>${summary.painCount}</strong></div>
+      </div>
+      <div class="context-box" style="margin-top: 14px;">
+        <div><strong>阶段 1 结论：</strong>${esc(summary.stage1Conclusion)}</div>
+        <div class="tag-row">${summary.topTags.map(([issueTag, count]) => tag(`${issueTag} ×${count}`, "info")).join("")}</div>
+      </div>
+    `;
+    listEl.innerHTML = `<div class="item-list">${filtered.map((log) => `
+      <article class="list-item">
+        <div class="list-item-header">
+          <div>
+            <h3>${esc(log.exerciseName)}</h3>
+            <p class="mini-text">${esc(log.createdAt)} · ${esc(log.focus || "未记录训练日")}</p>
+            <p class="mini-text">计划：${esc(log.plannedSets || "-")} 组 · ${esc(log.plannedReps || "-")} · ${esc(log.plannedLoad || "-")} · 计划 RPE ${esc(log.plannedRpe || "-")}</p>
+            <p class="mini-text">实际：${esc(log.actualLoad || "-")} · ${esc(log.actualReps || "-")} · RPE ${esc(log.rpe)} · 动作质量 ${qualityLabel(log.quality)} · 幅度 ${romLabel(log.rangeOfMotion)}</p>
+            <div class="tag-row">
+              ${tag(`目标感觉 ${targetFeelLabel(log.targetMuscleFeel)}`)}
+              ${tag(`限制因素 ${limiterLabel(log.limitingFactor)}`)}
+              ${tag(`左右差 ${sideIssueLabel(log.sideIssue)}`)}
+              ${tag(`疼痛 ${log.painScore}/5`, Number(log.painScore) >= 3 ? "warn" : "")}
+            </div>
+            <p style="margin-top:8px;">${esc(log.freeText || "无自由反馈")}</p>
+            <div class="tag-row">${(log.analysis?.tags || []).map((item) => tag(item.tag, "info")).join("")}</div>
+            <p class="mini-text" style="margin-top:8px;">${esc((log.analysis?.recommendations || []).join(" "))}</p>
+          </div>
+          <button class="button danger" data-action="delete-exercise-log" data-id="${esc(log.id)}">删除</button>
+        </div>
+      </article>
+    `).join("")}</div>`;
   }
 
   function renderEquipmentChecklist() {
@@ -551,12 +622,21 @@
     const exerciseId = $("#exercise-log-exercise").value;
     const exercise = getExercise(exerciseId);
     if (!exercise) return toast("请先生成计划并选择动作。");
+    const dayIndex = Number($("#today-plan-day-select").value || 0);
+    const day = state.plan?.days?.[dayIndex];
+    const plannedRow = day?.exercises?.find((row) => row.exerciseId === exerciseId);
     const log = {
       id: uid("exercise_log"),
       date: todayIso(),
       createdAt: nowLabel(),
       exerciseId,
       exerciseName: exercise.name,
+      dayIndex,
+      focus: day?.focus || "",
+      plannedSets: plannedRow?.sets || "",
+      plannedReps: plannedRow?.reps || "",
+      plannedLoad: plannedRow?.load || "",
+      plannedRpe: plannedRow?.rpe || "",
       actualLoad: $("#exercise-log-load").value.trim(),
       actualReps: $("#exercise-log-reps").value.trim(),
       rpe: clamp(Number($("#exercise-log-rpe").value || 0), 1, 10),
@@ -782,6 +862,73 @@
     const id = uid("custom_exercise");
     state.exercises.push({ id, name, pattern: "自定义", muscles: ["待补充"], equipment: [], substitutes: [], cue: "从 CSV 导入的自定义动作，请后续补充器械依赖。", risk: "尚未录入注意事项。", links: [{ label: "YouTube 搜索", url: `https://www.youtube.com/results?search_query=${encodeURIComponent(name)}` }] });
     return id;
+  }
+
+  function buildExerciseHistorySummary(logs) {
+    const count = logs.length;
+    if (!count) {
+      return {
+        count: 0,
+        avgRpe: "-",
+        poorCount: 0,
+        painCount: 0,
+        topTags: [],
+        stage1Conclusion: "还没有动作反馈数据。"
+      };
+    }
+    const avgRpe = (logs.reduce((sum, log) => sum + Number(log.rpe || 0), 0) / count).toFixed(1);
+    const poorCount = logs.filter((log) => log.quality === "poor").length;
+    const painCount = logs.filter((log) => Number(log.painScore) >= 3).length;
+    const tagCounts = {};
+    logs.forEach((log) => {
+      (log.analysis?.tags || []).forEach((item) => {
+        tagCounts[item.tag] = (tagCounts[item.tag] || 0) + 1;
+      });
+    });
+    const topTags = Object.entries(tagCounts).sort((a, b) => b[1] - a[1]).slice(0, 4);
+    const stage1Conclusion = inferStage1Conclusion(logs, topTags, poorCount, painCount);
+    return { count, avgRpe, poorCount, painCount, topTags, stage1Conclusion };
+  }
+
+  function inferStage1Conclusion(logs, topTags, poorCount, painCount) {
+    const recent = logs.slice(0, 3);
+    const tags = topTags.map(([issueTag]) => issueTag);
+    if (painCount > 0 || tags.includes("pain_risk")) return "该动作已有疼痛风险记录，阶段 1 建议先解决风险和技术，再考虑进阶。";
+    if (tags.includes("grip_limiting")) return "该动作的主要短板是握力/小臂限制，阶段 1 已经定位到限制因素，下一步应优先验证替代动作或助力带是否有效。";
+    if (tags.includes("poor_target_muscle_feel")) return "该动作的主要问题是目标肌肉感觉不稳定，阶段 1 建议先降低重量、加停顿或激活动作。";
+    if (tags.includes("left_weaker") || tags.includes("right_weaker")) return "该动作存在明显左右差异，阶段 1 应以弱侧高质量完成度为标准继续记录。";
+    if (tags.includes("reduced_rom_late") || tags.includes("technique_breakdown")) return "该动作主要问题是后程质量和技术稳定性，阶段 1 已能稳定回看并定位问题。";
+    if (poorCount === 0 && recent.every((log) => Number(log.painScore) <= 1 && Number(log.rpe) <= 8)) return "该动作近期记录较稳定，阶段 1 的动作级反馈闭环已基本跑通。";
+    return "该动作已有可回看的结构化历史，阶段 1 已完成基础闭环，继续积累数据后再进入更强联动。";
+  }
+
+  function qualityLabel(value) {
+    return { good: "好", ok: "一般", poor: "差" }[value] || value || "-";
+  }
+
+  function romLabel(value) {
+    return { full: "完整", reduced_late: "后程半程", partial: "全程半程" }[value] || value || "-";
+  }
+
+  function targetFeelLabel(value) {
+    return { strong: "强", moderate: "中", weak: "弱", none: "没感觉" }[value] || value || "-";
+  }
+
+  function limiterLabel(value) {
+    return {
+      target_muscle: "目标肌肉",
+      grip: "小臂/握力",
+      joint_pain: "关节疼",
+      core: "核心不稳",
+      cardio: "心肺",
+      fatigue: "整体疲劳",
+      technique: "技术",
+      unknown: "不确定"
+    }[value] || value || "-";
+  }
+
+  function sideIssueLabel(value) {
+    return { none: "无", left_weaker: "左弱", right_weaker: "右弱" }[value] || value || "-";
   }
 
   function currentGym() { return state.gyms.find((x) => x.id === state.currentGymId) || state.gyms[0] || null; }
