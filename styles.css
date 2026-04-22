@@ -364,6 +364,10 @@ textarea:focus {
   font-size: 13px;
 }
 
+.check-item.check-item-text {
+  grid-template-columns: 18px minmax(0, 1fr);
+}
+
 .check-item input {
   width: auto;
   min-height: auto;
@@ -449,11 +453,21 @@ textarea:focus {
   font-size: 12px;
 }
 
+.equipment-chip.equipment-chip-text {
+  display: grid;
+  gap: 2px;
+  align-items: start;
+}
+
 .exercise-card-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 240px;
   gap: 18px;
   align-items: start;
+}
+
+.exercise-card-layout.exercise-card-layout-text {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .exercise-visuals {
@@ -510,6 +524,17 @@ textarea:focus {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+}
+
+.dual-name {
+  display: grid;
+  gap: 2px;
+}
+
+.dual-name-english {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
 }
 
 .compact-list,
