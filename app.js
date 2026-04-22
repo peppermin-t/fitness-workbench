@@ -252,6 +252,7 @@
             <p style="margin-top:8px;">${esc(log.freeText || "无自由反馈")}</p>
             <div class="tag-row">${(log.analysis?.tags || []).map((item) => tag(item.tag, "info")).join("")}</div>
             <p class="mini-text" style="margin-top:8px;">${esc((log.analysis?.recommendations || []).join(" "))}</p>
+            ${log.analysis?.evidence?.length ? `<div class="context-box" style="margin-top:10px;"><div><strong>依据</strong></div>${renderEvidenceList(log.analysis.evidence.slice(0, 5))}</div>` : ""}
           </div>
           <button class="button danger" data-action="delete-exercise-log" data-id="${esc(log.id)}">删除</button>
         </div>
@@ -678,7 +679,11 @@
       createdAt: nowLabel(),
       title: `${exercise.name} 动作反馈建议`,
       body: log.analysis.recommendations.join(" "),
-      tags: log.analysis.tags.map((item) => item.tag)
+      tags: log.analysis.tags.map((item) => item.tag),
+      priority: log.analysis.priority,
+      priorityLabel: log.analysis.priorityLabel,
+      evidence: log.analysis.evidence || [],
+      recommendationItems: log.analysis.recommendationItems || []
     });
     $("#exercise-log-form").reset();
     $("#exercise-log-rpe").value = 7;
@@ -708,7 +713,11 @@
       createdAt: nowLabel(),
       title: `${log.date} 饮食建议`,
       body: analysis.recommendations.join(" "),
-      tags: ["饮食", analysis.confidence, ...(analysis.tags || []).slice(0, 4)]
+      tags: ["饮食", analysis.confidence, ...(analysis.tags || []).slice(0, 4)],
+      priority: analysis.priority,
+      priorityLabel: analysis.priorityLabel,
+      evidence: analysis.evidence || [],
+      recommendationItems: analysis.recommendationItems || []
     });
     $("#nutrition-form").reset();
     $("#nutrition-date").value = todayIso();
@@ -1237,7 +1246,7 @@
               <div class="metric-pill"><span>碳水估算</span><strong>${numUnit(log.analysis.estimates?.total?.carbs, "g")}</strong></div>
               <div class="metric-pill"><span>脂肪估算</span><strong>${numUnit(log.analysis.estimates?.total?.fat, "g")}</strong></div>
             </div>
-            <div class="tag-row">${(log.analysis.tags || []).map((item) => tag(item, "info")).join("")}</div>
+            <div class="tag-row">${tag(advicePriorityLabel(log.analysis.priority, log.analysis.priorityLabel), advicePriorityType(log.analysis.priority))}${(log.analysis.tags || []).map((item) => tag(item, "info")).join("")}</div>
             ${(log.analysis.missingInfo || []).length ? `<p class="mini-text" style="margin-top:8px;">补充信息：${esc(log.analysis.missingInfo.join(" "))}</p>` : ""}
             <div style="margin-top:10px;">
               ${(log.analysis.meals || []).map((meal) => `
@@ -1251,6 +1260,7 @@
               `).join("")}
             </div>
             <p class="mini-text" style="margin-top:10px;">${esc((log.analysis.recommendations || []).join(" "))}</p>
+            ${log.analysis.evidence?.length ? `<div class="context-box" style="margin-top:10px;"><div><strong>依据</strong></div>${renderEvidenceList(log.analysis.evidence.slice(0, 6))}</div>` : ""}
           </div>
           <button class="button danger" data-action="delete-nutrition-log" data-id="${esc(log.id)}">删除</button>
         </div>
@@ -1316,7 +1326,11 @@
       createdAt: nowLabel(),
       title: `${log.date} 饮食建议`,
       body: analysis.recommendations.join(" "),
-      tags: ["饮食", analysis.confidence, ...(analysis.tags || []).slice(0, 4)]
+      tags: ["饮食", analysis.confidence, ...(analysis.tags || []).slice(0, 4)],
+      priority: analysis.priority,
+      priorityLabel: analysis.priorityLabel,
+      evidence: analysis.evidence || [],
+      recommendationItems: analysis.recommendationItems || []
     });
     $("#nutrition-form").reset();
     $("#nutrition-date").value = todayIso();
@@ -1805,8 +1819,9 @@
             <div class="dual-name">${bilingualNameMarkup(log.exerciseName, exerciseEnglishName(log.exerciseId), true)}</div>
             <p class="mini-text">${esc(log.createdAt)} · ${esc(log.focus || "未记录训练日")} · 计划 ${esc(log.plannedSets || "-")} 组 / ${esc(log.plannedReps || "-")} · 实际 ${esc(log.actualLoad || "-")} / ${esc(log.actualReps || "-")} · RPE ${esc(log.rpe)}</p>
             <p style="margin-top:8px;">${esc(log.freeText || "无自由反馈")}</p>
-            <div class="tag-row">${(log.analysis?.tags || []).map((item) => tag(item.tag, "info")).join("")}</div>
+            <div class="tag-row">${tag(advicePriorityLabel(log.analysis?.priority, log.analysis?.priorityLabel), advicePriorityType(log.analysis?.priority))}${(log.analysis?.tags || []).map((item) => tag(item.tag, "info")).join("")}</div>
             <p class="mini-text" style="margin-top:8px;">${esc((log.analysis?.recommendations || []).join(" "))}</p>
+            ${log.analysis?.evidence?.length ? `<div class="context-box" style="margin-top:10px;"><div><strong>依据</strong></div>${renderEvidenceList(log.analysis.evidence.slice(0, 5))}</div>` : ""}
           </div>
           <button class="button danger" data-action="delete-exercise-log" data-id="${esc(log.id)}">删除</button>
         </div>
@@ -1899,7 +1914,8 @@
   }
 
   function renderCoach() {
-    $("#coach-advice").innerHTML = state.advice.length ? `<div class="item-list">${state.advice.map((x) => `<article class="list-item"><div class="list-item-header"><div><h3>${esc(x.title)}</h3><p class="mini-text">${esc(x.createdAt)} · ${esc(x.status === "applied" ? "已应用" : "已记录")}</p><p style="margin-top:8px;">${esc(x.body)}</p><div class="tag-row">${(x.tags || []).map((t) => tag(t, "info")).join("")}</div></div><button class="button danger" data-action="delete-advice" data-id="${esc(x.id)}">删除</button></div></article>`).join("")}</div>` : `<p class="empty">暂无建议。完成训练或饮食记录后，这里会生成计划和恢复建议。</p>`;
+    const sortedAdvice = state.advice.slice().sort((a, b) => adviceSortScore(b.priority) - adviceSortScore(a.priority));
+    $("#coach-advice").innerHTML = sortedAdvice.length ? `<div class="item-list">${sortedAdvice.map((x) => `<article class="list-item"><div class="list-item-header"><div><h3>${esc(x.title)}</h3><p class="mini-text">${esc(x.createdAt)} · ${esc(x.status === "applied" ? "已应用" : "已记录")}</p><div class="tag-row" style="margin-top:8px;">${tag(advicePriorityLabel(x.priority, x.priorityLabel), advicePriorityType(x.priority))}${(x.tags || []).map((t) => tag(t, "info")).join("")}</div><p style="margin-top:8px;">${esc(x.body)}</p>${x.evidence?.length ? `<div class="context-box" style="margin-top:10px;"><div><strong>依据</strong></div>${renderEvidenceList(x.evidence)}</div>` : ""}${renderRecommendationItems(x.recommendationItems)}</div><button class="button danger" data-action="delete-advice" data-id="${esc(x.id)}">删除</button></div></article>`).join("")}</div>` : `<p class="empty">暂无建议。完成训练或饮食记录后，这里会生成计划和恢复建议。</p>`;
     $("#revisions-list").innerHTML = state.revisions.length ? `<div class="item-list">${state.revisions.map((x) => `<article class="list-item"><div class="list-item-header"><div><h3>${esc(x.summary)}</h3><p class="mini-text">${esc(x.createdAt)} · ${esc(x.status === "applied" ? "已应用" : "待确认")}</p><p style="margin-top:8px;">${esc(x.reason)}</p><div class="tag-row">${(x.tags || []).map((t) => tag(t)).join("")}</div></div><div class="item-actions">${x.status === "pending" ? `<button class="button primary" data-action="apply-revision" data-id="${esc(x.id)}">应用</button>` : tag("已应用", "success")}</div></div></article>`).join("")}</div>` : `<p class="empty">暂无计划调整记录。</p>`;
     renderWeeklyReview();
     renderProfiles();
@@ -2073,6 +2089,35 @@
   function findMatchingRevision(candidate) {
     const signature = candidatePatchSignature(candidate?.patch);
     return state.revisions.find((item) => candidatePatchSignature(item.patch) === signature) || null;
+  }
+
+  function advicePriorityType(priority) {
+    return { high: "warn", medium: "info", low: "success", info: "" }[priority] || "";
+  }
+
+  function adviceSortScore(priority) {
+    return { high: 300, medium: 200, low: 100, info: 50 }[priority] || 0;
+  }
+
+  function advicePriorityLabel(priority, fallback) {
+    return fallback || { high: "高优先级", medium: "中优先级", low: "低优先级", info: "观察" }[priority] || "观察";
+  }
+
+  function renderEvidenceList(items) {
+    if (!items?.length) return "";
+    return `<ul class="plain-list" style="margin-top:10px;">${items.map((item) => `<li>${esc(item)}</li>`).join("")}</ul>`;
+  }
+
+  function renderRecommendationItems(items) {
+    if (!items?.length) return "";
+    return `<div class="compact-list" style="margin-top:10px;">${items.map((item) => `
+      <div>
+        <div class="tag-row">${tag(advicePriorityLabel(item.priority), advicePriorityType(item.priority))}${item.tags?.slice(0, 3).map((entry) => tag(entry, "info")).join("") || ""}</div>
+        <div style="margin-top:6px;"><strong>${esc(item.title || "建议")}</strong></div>
+        <div class="mini-text" style="margin-top:4px;">${esc(item.detail || "")}</div>
+        ${renderEvidenceList((item.evidence || []).slice(0, 3))}
+      </div>
+    `).join("")}</div>`;
   }
 
   function candidatePatchSignature(patch) {

@@ -116,90 +116,124 @@ window.FitnessPlanner = (() => {
     const advice = [];
     const revisions = [];
     const tags = [session.focus, session.gymName];
-    const messages = [];
+    const evidence = [
+      `完成度 ${session.completion}%`,
+      `RPE ${session.rpe}/10`,
+      `疼痛 ${session.painScore}/5${session.painArea ? `（${session.painArea}）` : ""}`,
+      `睡眠 ${session.sleep}/5`,
+      `疲劳 ${session.fatigue}/5`
+    ];
+    const items = [];
 
     if (session.painScore >= 3) {
-      messages.push(`疼痛评分 ${session.painScore}/5，后续涉及“${session.painArea || "相关部位"}”的动作建议先降强度或换成低风险替代。`);
+      items.push(recommendationItem("safety", "high", "先处理疼痛风险", `疼痛评分 ${session.painScore}/5，后续涉及“${session.painArea || "相关部位"}”的动作先降强度、降量或换成低风险替代。`, [`疼痛 ${session.painScore}/5`, session.painArea ? `部位：${session.painArea}` : "未填写具体疼痛部位"], ["疼痛反馈", "降量"]));
       revisions.push(revision(uid, nowLabel, `降低 ${day.focus} 的训练量`, `训练后疼痛评分较高（${session.painScore}/5），建议将同类训练日组数减少约 30%。`, ["疼痛反馈", "降量"], { type: "reduce_day_volume", dayIndex: session.dayIndex, factor: 0.7 }));
     }
 
     if (session.completion < 70) {
-      messages.push(`完成度只有 ${session.completion}% ，下次同类训练不建议加重量，优先缩短动作数量或降低组数。`);
+      items.push(recommendationItem("workload", "high", "先把训练做完，再谈加量", `完成度只有 ${session.completion}% ，下次同类训练不建议加重量，优先缩短动作数量或降低组数。`, [`完成度 ${session.completion}%`, `训练日：${day.focus}`], ["完成度低", "便利化"]));
       revisions.push(revision(uid, nowLabel, `简化 ${day.focus} 的训练安排`, "本次完成度低于 70%，说明当前安排对当天状态或场地不够友好，建议减少 1-2 个辅助动作。", ["完成度低", "便利化"], { type: "trim_accessory", dayIndex: session.dayIndex }));
     }
 
-    if (session.completion >= 95 && session.rpe <= 7 && session.painScore <= 1) {
-      messages.push("完成度高且 RPE 不高，可以在下次同动作中小幅加重 2.5%-5%，或每个主要动作增加 1-2 次。");
-      revisions.push(revision(uid, nowLabel, `${day.focus} 下次可小幅进阶`, `完成度 ${session.completion}% 且 RPE ${session.rpe}，疼痛反馈低，符合小幅渐进超负荷条件。`, ["渐进超负荷", "加重"], { type: "add_progression_note", dayIndex: session.dayIndex }));
+    if (session.rpe >= 9 && session.completion < 90) {
+      items.push(recommendationItem("technique", "high", "当前负荷偏顶，不适合继续加重", `RPE 已经到 ${session.rpe}/10，但完成度仍未到位，下次先维持或小幅回退负荷，优先把动作质量做稳。`, [`RPE ${session.rpe}/10`, `完成度 ${session.completion}%`], ["RPE偏高", "动作质量优先"]));
     }
 
     if (session.sleep <= 2 || session.fatigue >= 4) {
-      messages.push(`睡眠 ${session.sleep}/5、疲劳 ${session.fatigue}/5，近期建议保留训练但降低冲重量动作。`);
+      items.push(recommendationItem("recovery", "medium", "恢复状态在拖训练表现", `睡眠 ${session.sleep}/5、疲劳 ${session.fatigue}/5，近期建议保留训练连续性，但降低冲重量动作和额外训练量。`, [`睡眠 ${session.sleep}/5`, `疲劳 ${session.fatigue}/5`], ["恢复不足"]));
       tags.push("恢复不足");
     }
 
-    if (!messages.length) messages.push("本次反馈没有触发明显风险。维持当前计划，下一次继续观察完成度、RPE 和疼痛变化。");
+    if (session.completion >= 95 && session.rpe <= 7 && session.painScore <= 1 && session.sleep >= 3 && session.fatigue <= 3) {
+      items.push(recommendationItem("progression", "low", "具备小幅进阶条件", "完成度高且 RPE 不高，可以在下次同动作中小幅加重 2.5%-5%，或每个主要动作增加 1-2 次。", [`完成度 ${session.completion}%`, `RPE ${session.rpe}/10`, `疼痛 ${session.painScore}/5`], ["渐进超负荷", "加重"]));
+      revisions.push(revision(uid, nowLabel, `${day.focus} 下次可小幅进阶`, `完成度 ${session.completion}% 且 RPE ${session.rpe}，疼痛反馈低，符合小幅渐进超负荷条件。`, ["渐进超负荷", "加重"], { type: "add_progression_note", dayIndex: session.dayIndex }));
+    }
 
-    advice.push({
-      id: uid("advice"),
-      createdAt: nowLabel(),
-      title: `${day.focus} 反馈建议`,
-      body: messages.join(" "),
-      tags
-    });
+    if (!items.length) {
+      items.push(recommendationItem("info", "low", "当前训练日没有触发明显风险", "维持当前计划，下一次继续观察完成度、RPE、疼痛和恢复变化。", evidence, ["稳定观察"]));
+    }
+
+    const adviceItem = buildAdviceEntry(uid, nowLabel, `${day.focus} 反馈建议`, items, tags, evidence);
+    advice.push(adviceItem);
     return { advice, revisions };
   }
 
   function analyzeExerciseFeedback(input, exercise) {
     const text = `${input.freeText || ""} ${input.painArea || ""}`.toLowerCase();
     const tags = [];
-    const recommendations = [];
+    const recommendationItems = [];
     const addTag = (tag, evidence) => {
       if (!tags.some((item) => item.tag === tag)) tags.push({ tag, evidence });
     };
+    const addRule = (type, priority, title, detail, evidence, extraTags = []) => {
+      recommendationItems.push(recommendationItem(type, priority, title, detail, evidence, extraTags));
+    };
+    const pattern = String(exercise?.pattern || "");
+    const muscles = exercise?.muscles || [];
+    const isBackPull = /拉|背/.test(pattern) || muscles.some((item) => /背|斜方|背阔/.test(String(item)));
+    const evidenceBase = [];
+    if (input.rangeOfMotion) evidenceBase.push(`动作幅度：${input.rangeOfMotion}`);
+    if (input.sideIssue && input.sideIssue !== "none") evidenceBase.push(`左右差异：${input.sideIssue}`);
+    if (input.targetMuscleFeel) evidenceBase.push(`目标肌肉感觉：${input.targetMuscleFeel}`);
+    if (input.limitingFactor && input.limitingFactor !== "unknown") evidenceBase.push(`限制因素：${input.limitingFactor}`);
+    if (Number(input.rpe)) evidenceBase.push(`RPE ${input.rpe}/10`);
+    if (Number(input.painScore) >= 0) evidenceBase.push(`疼痛 ${input.painScore}/5`);
+    if (input.freeText) evidenceBase.push(`原始反馈：${input.freeText}`);
 
     if (input.rangeOfMotion === "reduced_late" || /半程|做不满|幅度.*小|后程/.test(text)) {
       addTag("reduced_rom_late", "出现半程或后程幅度下降");
-      recommendations.push("下次该动作不加重，优先恢复完整幅度；如果 RPE 偏高，可降重 5%-10%。");
+      addRule("technique", Number(input.rpe) >= 8.5 ? "high" : "medium", "先恢复完整幅度", "下次该动作不加重，优先恢复完整幅度；如果 RPE 偏高，可降重 5%-10%。", ["出现半程或后程幅度下降", `RPE ${input.rpe || "-"}/10`], ["动作幅度", "不加重"]);
     }
     if (input.rangeOfMotion === "partial") {
       addTag("partial_reps", "动作幅度整体不足");
-      recommendations.push("先降低重量，保证每次重复都在可控幅度内完成。");
+      addRule("technique", "high", "整体幅度不足，先降重重建", "先降低重量，保证每次重复都在可控幅度内完成。", ["动作幅度：全程半程"], ["技术重建"]);
     }
     if (input.sideIssue === "left_weaker" || /左侧|左边|左手/.test(text)) {
       addTag("left_weaker", "左侧弱或左侧动作质量下降");
-      recommendations.push("单侧动作从左侧开始，以左侧高质量完成次数决定右侧次数。");
+      addRule("stimulus", "medium", "按弱侧决定训练标准", "单侧动作从左侧开始，以左侧高质量完成次数决定右侧次数；必要时给左侧补 1 组轻重量技术组。", ["左侧弱或左侧动作质量下降"], ["左右差异", "弱侧优先"]);
     }
     if (input.sideIssue === "right_weaker" || /右侧|右边|右手/.test(text)) {
       addTag("right_weaker", "右侧弱或右侧动作质量下降");
-      recommendations.push("单侧动作从右侧开始，以右侧高质量完成次数决定左侧次数。");
+      addRule("stimulus", "medium", "按弱侧决定训练标准", "单侧动作从右侧开始，以右侧高质量完成次数决定左侧次数；必要时给右侧补 1 组轻重量技术组。", ["右侧弱或右侧动作质量下降"], ["左右差异", "弱侧优先"]);
     }
     if (input.limitingFactor === "grip" || /小臂|握不住|手先|前臂|抓不住/.test(text)) {
       addTag("grip_limiting", "小臂或握力成为限制因素");
-      recommendations.push("如果这是背部训练，主动作可使用助力带，避免握力限制背部刺激；也可补充农夫走或静态悬垂。");
+      addRule("stimulus", isBackPull ? "high" : "medium", "先解除非目标限制因素", isBackPull ? "这是背部动作时，主动作可使用助力带，避免握力限制背部刺激；优先考虑胸托划船、坐姿划船等更稳定版本。" : "如果握力先掉链子，先不要盲目加目标肌群训练量，可补充农夫走、静态悬垂或更稳定器械版本。", ["小臂或握力成为限制因素"], ["握力限制", "替代动作"]);
     }
     if (input.targetMuscleFeel === "weak" || input.targetMuscleFeel === "none" || /没感觉|没有感觉|发力.*差|背没|胸没|臀没/.test(text)) {
       addTag("poor_target_muscle_feel", "目标肌肉感觉弱");
-      recommendations.push("下次先降低重量或增加顶峰停顿，训练前做 1-2 组轻重量激活动作。");
+      addRule("stimulus", "medium", "先把目标肌肉感觉拉出来", "下次先降低重量或增加顶峰停顿，训练前做 1-2 组轻重量激活动作；如果连续两次都没感觉，优先换更稳定的动作版本。", ["目标肌肉感觉弱"], ["募集不足", "激活"]);
     }
     if (input.quality === "poor" || /借力|晃|不稳|代偿|控制不住/.test(text)) {
       addTag("technique_breakdown", "动作质量下降或出现代偿");
-      recommendations.push("先保持或降低重量，控制离心，减少借力；连续两次出现时建议换更稳定动作。");
+      addRule("technique", "high", "技术先于负荷", "先保持或降低重量，控制离心，减少借力；连续两次出现时建议换更稳定动作。", ["动作质量下降或出现代偿"], ["动作质量", "技术优先"]);
     }
     if (Number(input.painScore) >= 3 || /疼|痛|不舒服|不适/.test(text)) {
       addTag("pain_risk", "疼痛或不适反馈");
-      recommendations.push("疼痛评分较高时不建议加重；优先降量、缩小风险动作范围或替换动作。");
+      addRule("safety", "high", "疼痛优先处理", "疼痛评分较高时不建议加重；优先降量、缩小风险动作范围或替换动作。", [`疼痛 ${input.painScore}/5`, input.painArea ? `部位：${input.painArea}` : "未填写具体疼痛部位"], ["疼痛风险", "不加重"]);
     }
     if (!tags.length && Number(input.rpe) <= 7 && input.quality === "good" && Number(input.painScore) <= 1) {
       addTag("progression_ready", "完成质量好且疼痛低");
-      recommendations.push("如果下次状态相近，可以小幅加重 2.5%-5% 或增加 1-2 次。");
+      addRule("progression", "low", "具备小幅进阶条件", "如果下次状态相近，可以小幅加重 2.5%-5% 或增加 1-2 次。", [`RPE ${input.rpe}/10`, "动作质量好", `疼痛 ${input.painScore}/5`], ["渐进超负荷"]);
     }
-    if (!recommendations.length) recommendations.push("本次动作反馈未触发明显调整，继续观察完成度、RPE 和动作质量。");
+    const sortedItems = sortRecommendationItems(recommendationItems);
+    const recommendations = sortedItems.map((item) => item.detail);
+    if (!recommendations.length) {
+      sortedItems.push(recommendationItem("info", "low", "当前不需要额外调整", "本次动作反馈未触发明显调整，继续观察完成度、RPE 和动作质量。", evidenceBase, ["稳定观察"]));
+      recommendations.push("本次动作反馈未触发明显调整，继续观察完成度、RPE 和动作质量。");
+    }
 
     return {
       exerciseId: input.exerciseId,
       exerciseName: exercise?.name || input.exerciseId,
       tags,
+      priority: highestPriority(sortedItems),
+      priorityLabel: priorityLabel(highestPriority(sortedItems)),
+      evidence: uniqueStrings([
+        ...evidenceBase,
+        ...tags.map((item) => `${item.tag}：${item.evidence}`)
+      ]).slice(0, 8),
+      recommendationItems: sortedItems,
       recommendations,
       summary: buildExerciseSummary(tags, recommendations)
     };
@@ -238,7 +272,7 @@ window.FitnessPlanner = (() => {
     const dayStatus = evaluateNutritionDay({ totals, tags: Array.from(allTags), goal: goal?.parsed, target, mealDistribution });
     dayStatus.tags.forEach((tag) => allTags.add(tag));
     const confidence = nutritionConfidence(text, mealResults);
-    const recommendations = nutritionRecommendations({
+    const recommendationItems = buildNutritionRecommendationItems({
       tags: Array.from(allTags),
       goal: goal?.parsed,
       totals,
@@ -246,6 +280,14 @@ window.FitnessPlanner = (() => {
       mealDistribution,
       confidence,
       dayStatus
+    });
+    const recommendations = recommendationItems.map((item) => item.detail);
+    const evidence = buildNutritionEvidence({
+      tags: Array.from(allTags),
+      totals,
+      target,
+      confidence,
+      mealResults
     });
 
     return {
@@ -258,6 +300,10 @@ window.FitnessPlanner = (() => {
         target,
         dayStatus
       },
+      priority: highestPriority(recommendationItems),
+      priorityLabel: priorityLabel(highestPriority(recommendationItems)),
+      evidence,
+      recommendationItems,
       recommendations,
       confidence,
       missingInfo: uniqueStrings(missingInfo).filter(Boolean)
@@ -410,44 +456,56 @@ window.FitnessPlanner = (() => {
     return "medium_low";
   }
 
-  function nutritionRecommendations({ tags, goal, totals, target, confidence, dayStatus }) {
-    const recs = [];
+  function buildNutritionRecommendationItems({ tags, goal, totals, target, confidence, dayStatus }) {
+    const items = [];
     const primary = goal?.primaryGoal || "general_fitness";
     if (tags.includes("missed_meal") || tags.includes("processed_snack")) {
-      recs.push("当天存在漏正餐或零食顶替正餐，下一餐优先补一份高蛋白正餐或简餐，先把进食连续性拉稳。");
+      items.push(recommendationItem("nutrition", "high", "先修正正餐连续性", "当天存在漏正餐或零食顶替正餐，下一餐优先补一份高蛋白正餐或简餐，先把进食连续性拉稳。", ["出现漏正餐/零食顶替正餐"], ["饮食结构", "正餐优先"]));
     }
     if (tags.includes("daily_protein_gap")) {
-      recs.push(`估算蛋白约 ${Math.round(totals.protein)}g，低于当前目标建议值 ${target.protein}g。优先补鸡胸、牛肉、鱼虾、酸奶、豆制品或蛋白粉。`);
-    }
-    if (tags.includes("daily_fiber_gap") || tags.includes("low_fiber_possible")) {
-      recs.push("蔬菜/水果/纤维偏少，建议至少补 1 份蔬菜和 1 份水果，先把饱腹感和消化状态拉起来。");
-    }
-    if (tags.includes("high_fat_possible") || tags.includes("high_sodium_possible") || tags.includes("daily_energy_high")) {
-      recs.push("外食油脂或钠偏高，火锅/炒面类优先控制蘸料、肥肉和额外主食，避免把热量不确定性堆在晚餐。");
+      items.push(recommendationItem("nutrition", "high", "蛋白缺口先补齐", `估算蛋白约 ${Math.round(totals.protein)}g，低于当前目标建议值 ${target.protein}g。优先补鸡胸、牛肉、鱼虾、酸奶、豆制品或蛋白粉。`, [`蛋白 ${Math.round(totals.protein)}g`, `目标 ${target.protein}g`], ["蛋白缺口"]));
     }
     if (tags.includes("daily_energy_low") && (primary === "muscle_gain" || primary === "strength")) {
-      recs.push("全天估算热量偏低，当前目标下不够支撑训练和恢复，优先补午餐或训练前后的一份主食加蛋白。");
+      items.push(recommendationItem("nutrition", "high", "当前热量不够支撑训练", "全天估算热量偏低，当前目标下不够支撑训练和恢复，优先补午餐或训练前后的一份主食加蛋白。", [`热量 ${Math.round(totals.calories)}kcal`, `目标下限 ${target.caloriesLower}kcal`], ["热量不足", primary]));
+    }
+    if (tags.includes("daily_energy_high") && primary === "fat_loss") {
+      items.push(recommendationItem("nutrition", "high", "热量很可能超出减脂需要", "减脂目标下，当前热量估算已经偏高，优先处理外食油脂、蘸料和高糖零食，不要靠后续漏餐硬拉回来。", [`热量 ${Math.round(totals.calories)}kcal`, `目标上限 ${target.caloriesUpper}kcal`], ["减脂", "热量偏高"]));
     }
     if (tags.includes("daily_carb_low")) {
-      recs.push("当前目标更依赖稳定碳水，但当天主食偏少。训练日前后优先补米饭、面、燕麦、土豆或水果。");
+      items.push(recommendationItem("nutrition", "medium", "训练相关碳水偏低", "当前目标更依赖稳定碳水，但当天主食偏少。训练日前后优先补米饭、面、燕麦、土豆或水果。", [`碳水 ${Math.round(totals.carbs)}g`, `建议下限 ${target.carbsLower}g`], ["碳水不足"]));
     }
     if (tags.includes("protein_distribution_unbalanced")) {
-      recs.push("蛋白过于集中在单一一餐，后续尽量分到 3-4 餐，白天先补一餐而不是把量全堆到晚餐。");
+      items.push(recommendationItem("nutrition", "medium", "蛋白分布不均", "蛋白过于集中在单一一餐，后续尽量分到 3-4 餐，白天先补一餐而不是把量全堆到晚餐。", ["蛋白分布集中"], ["蛋白分配"]));
     }
-    if (primary === "fat_loss") {
-      recs.push("减脂目标下，先保证蛋白和正餐完整，再处理高糖零食和高油外食，不要只靠漏餐制造缺口。");
-    } else if (primary === "muscle_gain") {
-      recs.push("增肌目标下，重点看全天热量、蛋白和训练前后碳水是否到位，不要让午餐长期空掉。");
-    } else if (primary === "strength") {
-      recs.push("力量目标下，白天供能不足会更快反映到 RPE 和动作质量，训练日前后不建议长期低碳。");
-    } else {
-      recs.push("维持目标下，优先做到每餐有蛋白来源、一天里有蔬果和稳定主食。");
+    if (tags.includes("daily_fiber_gap") || tags.includes("low_fiber_possible")) {
+      items.push(recommendationItem("nutrition", "low", "纤维和蔬果偏少", "蔬菜/水果/纤维偏少，建议至少补 1 份蔬菜和 1 份水果，先把饱腹感和消化状态拉起来。", [`纤维 ${Math.round(totals.fiber)}g`, `建议 ${target.fiber}g`], ["纤维不足"]));
+    }
+    if (tags.includes("high_fat_possible") || tags.includes("high_sodium_possible")) {
+      items.push(recommendationItem("nutrition", primary === "fat_loss" ? "medium" : "low", "外食不确定性偏高", "外食油脂或钠偏高，火锅/炒面类优先控制蘸料、肥肉和额外主食，避免把热量不确定性堆在晚餐。", ["高油脂/高钠可能", `状态：${dayStatus.alignment}`], ["外食", "不确定性"]));
     }
     if (confidence !== "high") {
-      recs.push("这次饮食记录有分量模糊项，后续至少补“几份/几碗/多少克”，系统判断会更稳。");
+      items.push(recommendationItem("info", "low", "分量还不够清楚", "这次饮食记录有分量模糊项，后续至少补“几份/几碗/多少克”，系统判断会更稳。", [`置信度 ${confidence}`], ["记录质量"]));
     }
-    if (!recs.length) recs.push(`当天饮食估算与当前目标基本匹配，保持记录连续性即可。状态：${dayStatus.alignment}`);
-    return uniqueStrings(recs);
+    if (!items.length) {
+      items.push(recommendationItem("info", "low", "当天饮食基本匹配目标", `当天饮食估算与当前目标基本匹配，保持记录连续性即可。状态：${dayStatus.alignment}`, [`状态：${dayStatus.alignment}`], ["稳定观察"]));
+    }
+    return sortRecommendationItems(items);
+  }
+
+  function buildNutritionEvidence({ tags, totals, target, confidence, mealResults }) {
+    return uniqueStrings([
+      `热量 ${Math.round(totals.calories)}kcal / 目标 ${target.caloriesLower}-${target.caloriesUpper}kcal`,
+      `蛋白 ${Math.round(totals.protein)}g / 目标 ${target.protein}g`,
+      `碳水 ${Math.round(totals.carbs)}g / 参考下限 ${target.carbsLower}g`,
+      `纤维 ${Math.round(totals.fiber)}g / 目标 ${target.fiber}g`,
+      `置信度 ${confidence}`,
+      `餐次 ${mealResults.length} 次`,
+      ...tags.slice(0, 6).map((tag) => `标签：${tag}`)
+    ]).slice(0, 8);
+  }
+
+  function nutritionRecommendations({ tags, goal, totals, target, confidence, dayStatus }) {
+    return buildNutritionRecommendationItems({ tags, goal, totals, target, confidence, dayStatus }).map((item) => item.detail);
   }
 
   function buildExerciseProfiles(logs) {
@@ -1058,6 +1116,48 @@ window.FitnessPlanner = (() => {
       seen.add(candidate.key);
       return true;
     });
+  }
+
+  function buildAdviceEntry(uid, nowLabel, title, items, tags, evidence = []) {
+    const sorted = sortRecommendationItems(items);
+    return {
+      id: uid("advice"),
+      createdAt: nowLabel(),
+      title,
+      body: sorted.map((item) => item.detail).join(" "),
+      tags: uniqueStrings([...(tags || []), ...sorted.flatMap((item) => item.tags || [])]),
+      priority: highestPriority(sorted),
+      priorityLabel: priorityLabel(highestPriority(sorted)),
+      evidence: uniqueStrings([...(evidence || []), ...sorted.flatMap((item) => item.evidence || [])]).slice(0, 8),
+      recommendationItems: sorted
+    };
+  }
+
+  function recommendationItem(type, priority, title, detail, evidence = [], tags = []) {
+    return {
+      type,
+      priority,
+      title,
+      detail,
+      evidence: uniqueStrings(evidence),
+      tags: uniqueStrings(tags)
+    };
+  }
+
+  function sortRecommendationItems(items) {
+    return (items || []).slice().sort((a, b) => priorityScore(b.priority) - priorityScore(a.priority) || String(a.title || "").localeCompare(String(b.title || "")));
+  }
+
+  function highestPriority(items) {
+    return sortRecommendationItems(items)[0]?.priority || "low";
+  }
+
+  function priorityScore(priority) {
+    return { high: 300, medium: 200, low: 100, info: 50 }[priority] || 0;
+  }
+
+  function priorityLabel(priority) {
+    return { high: "高优先级", medium: "中优先级", low: "低优先级", info: "观察" }[priority] || "观察";
   }
 
   function round1(value) {
