@@ -34,3 +34,4 @@ target/
 # Environment files
 .env
 .env.*
+.codex/

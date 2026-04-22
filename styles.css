@@ -557,6 +557,14 @@ textarea:focus {
   line-height: 1.5;
 }
 
+.plain-list {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 6px;
+  color: var(--ink);
+}
+
 .advice-box.empty,
 .empty {
   color: var(--muted);

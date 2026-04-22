@@ -8,6 +8,7 @@
   const $$ = (s) => Array.from(document.querySelectorAll(s));
   const clone = (v) => JSON.parse(JSON.stringify(v));
   let parsedGoalDraft = null;
+  let weeklyReviewDraft = null;
   let state = loadState();
 
   const viewMeta = {
@@ -1876,6 +1877,170 @@
       </article>`).join("")}</div>`;
   }
 
+  function handleClick(event) {
+    const t = event.target.closest("[data-action]");
+    if (!t) return;
+    const action = t.dataset.action;
+    if (action === "set-current-gym") state.currentGymId = t.dataset.id;
+    if (action === "delete-gym") deleteGym(t.dataset.id);
+    if (action === "set-goal") state.currentGoalId = t.dataset.id;
+    if (action === "delete-goal") deleteGoal(t.dataset.id);
+    if (action === "delete-metric") deleteMetric(t.dataset.id);
+    if (action === "delete-exercise-log") deleteExerciseLog(t.dataset.id);
+    if (action === "delete-nutrition-log") deleteNutritionLog(t.dataset.id);
+    if (action === "delete-advice") state.advice = state.advice.filter((x) => x.id !== t.dataset.id);
+    if (action === "apply-revision") applyRevision(t.dataset.id);
+    if (action === "apply-review-candidate") applyReviewCandidate(Number(t.dataset.index));
+    if (action === "replace-exercise") replaceExercise(Number(t.dataset.day), Number(t.dataset.row), t.dataset.exerciseId);
+    if (["set-current-gym", "set-goal", "delete-advice"].includes(action)) {
+      saveState();
+      renderAll();
+    }
+  }
+
+  function renderCoach() {
+    $("#coach-advice").innerHTML = state.advice.length ? `<div class="item-list">${state.advice.map((x) => `<article class="list-item"><div class="list-item-header"><div><h3>${esc(x.title)}</h3><p class="mini-text">${esc(x.createdAt)} · ${esc(x.status === "applied" ? "已应用" : "已记录")}</p><p style="margin-top:8px;">${esc(x.body)}</p><div class="tag-row">${(x.tags || []).map((t) => tag(t, "info")).join("")}</div></div><button class="button danger" data-action="delete-advice" data-id="${esc(x.id)}">删除</button></div></article>`).join("")}</div>` : `<p class="empty">暂无建议。完成训练或饮食记录后，这里会生成计划和恢复建议。</p>`;
+    $("#revisions-list").innerHTML = state.revisions.length ? `<div class="item-list">${state.revisions.map((x) => `<article class="list-item"><div class="list-item-header"><div><h3>${esc(x.summary)}</h3><p class="mini-text">${esc(x.createdAt)} · ${esc(x.status === "applied" ? "已应用" : "待确认")}</p><p style="margin-top:8px;">${esc(x.reason)}</p><div class="tag-row">${(x.tags || []).map((t) => tag(t)).join("")}</div></div><div class="item-actions">${x.status === "pending" ? `<button class="button primary" data-action="apply-revision" data-id="${esc(x.id)}">应用</button>` : tag("已应用", "success")}</div></div></article>`).join("")}</div>` : `<p class="empty">暂无计划调整记录。</p>`;
+    renderWeeklyReview();
+    renderProfiles();
+  }
+
+  function renderWeeklyReview() {
+    const summaryEl = $("#weekly-review-summary");
+    const candidatesEl = $("#weekly-review-candidates");
+    if (!summaryEl || !candidatesEl) return;
+
+    weeklyReviewDraft = P.buildWeeklyReview({
+      goal: currentGoal(),
+      metrics: state.metrics || [],
+      sessions: state.sessions || [],
+      exerciseLogs: state.exerciseLogs || [],
+      nutritionLogs: state.nutritionLogs || [],
+      plan: state.plan
+    });
+
+    const stats = weeklyReviewDraft.stats || {};
+    summaryEl.innerHTML = `
+      <div class="metric-grid">
+        <div class="metric-pill"><span>训练次数</span><strong>${stats.sessionCount || 0}</strong></div>
+        <div class="metric-pill"><span>平均完成度</span><strong>${Number.isFinite(stats.avgCompletion) ? `${stats.avgCompletion}%` : "-"}</strong></div>
+        <div class="metric-pill"><span>平均 RPE</span><strong>${Number.isFinite(stats.avgRpe) ? stats.avgRpe : "-"}</strong></div>
+        <div class="metric-pill"><span>平均疲劳</span><strong>${Number.isFinite(stats.avgFatigue) ? `${stats.avgFatigue}/5` : "-"}</strong></div>
+        <div class="metric-pill"><span>蛋白缺口天数</span><strong>${stats.lowProteinDays || 0}</strong></div>
+        <div class="metric-pill"><span>漏正餐天数</span><strong>${stats.missedMealDays || 0}</strong></div>
+        <div class="metric-pill"><span>近 30 天体重</span><strong>${deltaLabel(stats.weightDelta30, "kg")}</strong></div>
+      </div>
+      <div class="context-box" style="margin-top:14px;">
+        <div><strong>本周重点</strong></div>
+        <ul class="plain-list">${(weeklyReviewDraft.highlights || []).map((item) => `<li>${esc(item)}</li>`).join("") || "<li>最近 7 天的数据还不够，先继续记录。</li>"}</ul>
+      </div>
+      <div class="context-box" style="margin-top:14px;">
+        <div><strong>下周优先动作</strong></div>
+        <ul class="plain-list">${(weeklyReviewDraft.nextActions || []).map((item) => `<li>${esc(item)}</li>`).join("") || "<li>当前没有额外的优先处理项。</li>"}</ul>
+      </div>
+    `;
+
+    const candidates = weeklyReviewDraft.candidates || [];
+    if (!candidates.length) {
+      candidatesEl.innerHTML = `<p class="empty">当前还没有足够明确的周级计划调整候选。继续积累训练、饮食和身体指标后，这里会给出更稳的修改建议。</p>`;
+      return;
+    }
+
+    candidatesEl.innerHTML = `
+      <div class="section-heading" style="margin-bottom: 12px;">
+        <div>
+          <h3>调整候选</h3>
+          <p>这些建议还不会静默改计划，需要你确认后才会写入。</p>
+        </div>
+      </div>
+      <div class="item-list">${candidates.map((candidate, index) => {
+        const matched = findMatchingRevision(candidate);
+        return `
+          <article class="list-item">
+            <div class="list-item-header">
+              <div>
+                <h3>${esc(candidate.summary)}</h3>
+                <p style="margin-top:8px;">${esc(candidate.reason)}</p>
+                <div class="tag-row">${(candidate.tags || []).map((item) => tag(item)).join("")}</div>
+              </div>
+              <div class="item-actions">
+                ${matched?.status === "applied"
+                  ? tag("已应用", "success")
+                  : matched?.status === "pending"
+                    ? `<button class="button primary" data-action="apply-revision" data-id="${esc(matched.id)}">应用待确认项</button>`
+                    : `<button class="button primary" data-action="apply-review-candidate" data-index="${index}">应用到计划</button>`}
+              </div>
+            </div>
+          </article>
+        `;
+      }).join("")}</div>
+    `;
+  }
+
+  function applyReviewCandidate(index) {
+    const candidate = weeklyReviewDraft?.candidates?.[index];
+    if (!candidate) return;
+    const matched = findMatchingRevision(candidate);
+    if (matched?.status === "applied") return toast("这个周复盘候选已经应用过了。");
+    if (matched?.status === "pending") return applyRevision(matched.id);
+
+    const revision = {
+      id: uid("rev"),
+      createdAt: nowLabel(),
+      status: "pending",
+      summary: candidate.summary,
+      reason: candidate.reason,
+      tags: candidate.tags || [],
+      patch: clone(candidate.patch)
+    };
+    state.revisions.unshift(revision);
+    applyRevision(revision.id);
+  }
+
+  function applyRevision(id) {
+    const rev = state.revisions.find((x) => x.id === id);
+    const day = state.plan?.days?.[rev?.patch?.dayIndex];
+    if (!rev || !day) return;
+
+    if (rev.patch.type === "reduce_day_volume") {
+      day.exercises.forEach((r) => {
+        if (Number(r.sets) > 1) r.sets = Math.max(2, Math.round(Number(r.sets) * rev.patch.factor));
+        r.notes = appendNote(r.notes, "已根据疼痛反馈降量。");
+      });
+    }
+
+    if (rev.patch.type === "trim_accessory" && day.exercises.length > 4) {
+      day.exercises = day.exercises.slice(0, Math.max(4, day.exercises.length - 2));
+      day.intent = `${day.intent} 已根据完成度反馈简化。`;
+    }
+
+    if (rev.patch.type === "add_progression_note") {
+      day.exercises.slice(0, 3).forEach((r) => {
+        r.notes = appendNote(r.notes, "下次可尝试加重 2.5%-5% 或增加 1-2 次。");
+      });
+    }
+
+    if (rev.patch.type === "increase_cardio_time") {
+      const minutes = Number(rev.patch.minutes || 10);
+      let targetRow = day.exercises.find((row) => /分钟|min/i.test(String(row.reps || "")));
+      if (!targetRow) {
+        targetRow = day.exercises.find((row) => /有氧/.test(String(getExercise(row.exerciseId)?.pattern || "")));
+      }
+      if (targetRow) {
+        targetRow.reps = bumpDurationText(String(targetRow.reps || ""), minutes);
+        targetRow.notes = appendNote(targetRow.notes, `已根据周复盘增加有氧 ${minutes} 分钟。`);
+      } else {
+        day.intent = appendNote(day.intent, `已根据周复盘增加有氧 ${minutes} 分钟。`);
+      }
+    }
+
+    rev.status = "applied";
+    rev.appliedAt = nowLabel();
+    saveState();
+    renderAll();
+    toast("计划调整已应用。");
+  }
+
   function qualityLabel(value) {
     return { good: "好", ok: "一般", poor: "差" }[value] || value || "-";
   }
@@ -1903,6 +2068,36 @@
 
   function sideIssueLabel(value) {
     return { none: "无", left_weaker: "左弱", right_weaker: "右弱" }[value] || value || "-";
+  }
+
+  function findMatchingRevision(candidate) {
+    const signature = candidatePatchSignature(candidate?.patch);
+    return state.revisions.find((item) => candidatePatchSignature(item.patch) === signature) || null;
+  }
+
+  function candidatePatchSignature(patch) {
+    if (!patch) return "";
+    return JSON.stringify({
+      type: patch.type || "",
+      dayIndex: Number.isFinite(Number(patch.dayIndex)) ? Number(patch.dayIndex) : null,
+      rowIndex: Number.isFinite(Number(patch.rowIndex)) ? Number(patch.rowIndex) : null,
+      exerciseId: patch.exerciseId || null,
+      minutes: Number.isFinite(Number(patch.minutes)) ? Number(patch.minutes) : null,
+      factor: Number.isFinite(Number(patch.factor)) ? Number(patch.factor) : null
+    });
+  }
+
+  function bumpDurationText(text, minutes) {
+    const source = String(text || "");
+    const rangeMatch = source.match(/(\d+)\s*-\s*(\d+)\s*(分钟|min)/i);
+    if (rangeMatch) {
+      const nextMin = Number(rangeMatch[1]) + minutes;
+      const nextMax = Number(rangeMatch[2]) + minutes;
+      return `${nextMin}-${nextMax} ${rangeMatch[3]}`;
+    }
+    const singleMatch = source.match(/(\d+)\s*(分钟|min)/i);
+    if (singleMatch) return `${Number(singleMatch[1]) + minutes} ${singleMatch[2]}`;
+    return `${source || "有氧"} +${minutes} 分钟`;
   }
 
   function currentGym() { return state.gyms.find((x) => x.id === state.currentGymId) || state.gyms[0] || null; }
