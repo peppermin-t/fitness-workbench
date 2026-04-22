@@ -130,6 +130,7 @@
     $("#view-title").textContent = meta[0];
     $("#view-subtitle").textContent = meta[1];
     if (view === "metrics") drawMetricChart();
+    if (view === "nutrition") drawNutritionChart();
   }
 
   function renderAll() {
@@ -1192,6 +1193,191 @@
     return "该动作已有可回看的结构化历史，阶段 1 已完成基础闭环，继续积累数据后再进入更强联动。";
   }
 
+  function renderNutritionList() {
+    const summaryEl = $("#nutrition-summary");
+    const listEl = $("#nutrition-list");
+    if (!listEl) return;
+    const logs = (state.nutritionLogs || []).slice();
+    const profile = P.buildNutritionProfile(logs, currentGoal());
+    if (summaryEl) {
+      if (!logs.length) {
+        summaryEl.innerHTML = "";
+      } else {
+        summaryEl.innerHTML = `
+          <div class="metric-grid">
+            <div class="metric-pill"><span>近期待均热量</span><strong>${numUnit(profile.averages?.calories, "kcal")}</strong></div>
+            <div class="metric-pill"><span>近期待均蛋白</span><strong>${numUnit(profile.averages?.protein, "g")}</strong></div>
+            <div class="metric-pill"><span>蛋白缺口天数</span><strong>${profile.lowProteinDays || 0}/${profile.count || 0}</strong></div>
+            <div class="metric-pill"><span>漏餐天数</span><strong>${profile.missedMealDays || 0}/${profile.count || 0}</strong></div>
+          </div>
+          <div class="context-box" style="margin-top:14px;">
+            <div class="tag-row">${(profile.topTags || []).map(([issueTag, count]) => tag(`${issueTag} ×${count}`, "info")).join("")}</div>
+            <div>${esc((profile.advice || []).join(" "))}</div>
+          </div>
+        `;
+      }
+    }
+    if (!logs.length) {
+      listEl.innerHTML = `<p class="empty">暂无饮食记录。输入自然语言饮食描述后，这里会显示解析结果、估算和趋势。</p>`;
+      drawNutritionChart();
+      return;
+    }
+    const mealLabel = { breakfast: "早餐", lunch: "午餐", dinner: "晚餐", snack: "加餐", all_day: "全天" };
+    const recentLogs = logs.slice(0, 12);
+    listEl.innerHTML = `<div class="item-list">${recentLogs.map((log) => `
+      <article class="list-item">
+        <div class="list-item-header">
+          <div>
+            <h3>${esc(log.date)} 饮食记录</h3>
+            <p class="mini-text">置信度：${esc(log.analysis.confidence)} · ${esc(log.rawText)}</p>
+            <div class="metric-grid" style="margin-top:10px;">
+              <div class="metric-pill"><span>热量估算</span><strong>${numUnit(log.analysis.estimates?.total?.calories, "kcal")}</strong></div>
+              <div class="metric-pill"><span>蛋白估算</span><strong>${numUnit(log.analysis.estimates?.total?.protein, "g")}</strong></div>
+              <div class="metric-pill"><span>碳水估算</span><strong>${numUnit(log.analysis.estimates?.total?.carbs, "g")}</strong></div>
+              <div class="metric-pill"><span>脂肪估算</span><strong>${numUnit(log.analysis.estimates?.total?.fat, "g")}</strong></div>
+            </div>
+            <div class="tag-row">${(log.analysis.tags || []).map((item) => tag(item, "info")).join("")}</div>
+            ${(log.analysis.missingInfo || []).length ? `<p class="mini-text" style="margin-top:8px;">补充信息：${esc(log.analysis.missingInfo.join(" "))}</p>` : ""}
+            <div style="margin-top:10px;">
+              ${(log.analysis.meals || []).map((meal) => `
+                <div class="compact-list" style="margin-top:8px;">
+                  <strong>${esc(mealLabel[meal.meal] || meal.meal)}</strong>
+                  <div>${esc(meal.text)}</div>
+                  ${(meal.items || []).length ? `<div class="mini-text">食物项：${esc(meal.items.map((item) => `${item.label}${item.quantity ? ` ${item.quantity}${item.unit}` : ""}`).join("、"))}</div>` : ""}
+                  <div class="mini-text">估算：${numUnit(meal.estimates?.calories, "kcal")} · 蛋白 ${numUnit(meal.estimates?.protein, "g")} · 碳水 ${numUnit(meal.estimates?.carbs, "g")} · 脂肪 ${numUnit(meal.estimates?.fat, "g")}</div>
+                  <div class="tag-row">${(meal.tags || []).map((item) => tag(item)).join("")}</div>
+                </div>
+              `).join("")}
+            </div>
+            <p class="mini-text" style="margin-top:10px;">${esc((log.analysis.recommendations || []).join(" "))}</p>
+          </div>
+          <button class="button danger" data-action="delete-nutrition-log" data-id="${esc(log.id)}">删除</button>
+        </div>
+      </article>`).join("")}</div>`;
+    drawNutritionChart();
+  }
+
+  function renderProfiles() {
+    const exerciseEl = $("#exercise-profiles");
+    const nutritionEl = $("#nutrition-profiles");
+    if (exerciseEl) {
+      const profiles = P.buildExerciseProfiles(state.exerciseLogs || []).slice(0, 6);
+      exerciseEl.innerHTML = profiles.length ? `<div class="item-list">${profiles.map((profile) => `
+        <article class="list-item">
+          <div class="list-item-header">
+            <div>
+              <h3>${esc(profile.exerciseName)}</h3>
+              <p class="mini-text">反馈 ${profile.count} 次 · 动作质量差 ${profile.poorQualityCount} 次 · 疼痛风险 ${profile.painCount} 次</p>
+              <div class="tag-row">${profile.topTags.map(([issueTag, count]) => tag(`${issueTag} ×${count}`, "info")).join("")}</div>
+              <p class="mini-text" style="margin-top:8px;">${esc(profile.advice.join(" "))}</p>
+            </div>
+          </div>
+        </article>
+      `).join("")}</div>` : `<p class="empty">动作级反馈还不够多，继续记录后这里会形成长期画像。</p>`;
+    }
+    if (nutritionEl) {
+      const profile = P.buildNutritionProfile(state.nutritionLogs || [], currentGoal());
+      nutritionEl.innerHTML = profile.count ? `
+        <div class="item-list">
+          <article class="list-item">
+            <div class="list-item-header">
+              <div>
+                <h3>近期饮食模式</h3>
+                <p class="mini-text">已记录 ${profile.count} 天饮食 · 近期待均蛋白 ${numUnit(profile.averages?.protein, "g")} · 近期待均热量 ${numUnit(profile.averages?.calories, "kcal")}</p>
+                <div class="tag-row">${profile.topTags.map(([issueTag, count]) => tag(`${issueTag} ×${count}`, "info")).join("")}</div>
+                <p class="mini-text" style="margin-top:8px;">${esc(profile.advice.join(" "))}</p>
+                ${profile.trend ? `<p class="mini-text" style="margin-top:8px;">最近 4 次相比前 4 次：蛋白 ${deltaLabel(profile.trend.proteinDelta, "g")} · 热量 ${deltaLabel(profile.trend.caloriesDelta, "kcal")} · 纤维 ${deltaLabel(profile.trend.fiberDelta, "g")}</p>` : ""}
+              </div>
+            </div>
+          </article>
+        </div>
+      ` : `<p class="empty">饮食记录还不够多，继续记录后这里会形成长期画像。</p>`;
+    }
+  }
+
+  function saveNutritionLog(event) {
+    event.preventDefault();
+    const rawText = $("#nutrition-text").value.trim();
+    if (!rawText) return toast("请先输入饮食描述。");
+    const analysis = P.parseNutritionLog(rawText, currentGoal(), latestMetric());
+    const log = {
+      id: uid("nutrition"),
+      date: $("#nutrition-date").value || todayIso(),
+      createdAt: nowLabel(),
+      rawText,
+      goalId: currentGoal()?.id || null,
+      analysis
+    };
+    state.nutritionLogs = state.nutritionLogs || [];
+    state.nutritionLogs.unshift(log);
+    state.advice.unshift({
+      id: uid("advice"),
+      createdAt: nowLabel(),
+      title: `${log.date} 饮食建议`,
+      body: analysis.recommendations.join(" "),
+      tags: ["饮食", analysis.confidence, ...(analysis.tags || []).slice(0, 4)]
+    });
+    $("#nutrition-form").reset();
+    $("#nutrition-date").value = todayIso();
+    saveState();
+    renderAll();
+    switchView("nutrition");
+    toast("饮食记录已保存，并生成了饮食建议。");
+  }
+
+  function drawNutritionChart() {
+    const canvas = $("#nutrition-chart");
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    const w = canvas.width;
+    const h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(0, 0, w, h);
+    ctx.strokeStyle = "#d8ded6";
+    for (let i = 0; i < 5; i += 1) {
+      const y = 38 + i * 50;
+      ctx.beginPath();
+      ctx.moveTo(48, y);
+      ctx.lineTo(w - 22, y);
+      ctx.stroke();
+    }
+    const data = P.buildNutritionTrend(state.nutritionLogs || []);
+    ctx.fillStyle = "#66736b";
+    ctx.font = "14px sans-serif";
+    if (data.length < 2) {
+      ctx.fillText("至少记录两天饮食后显示热量和蛋白趋势。", 48, 150);
+      return;
+    }
+    drawNutritionSeries(ctx, data, "calories", "#b85c27", "热量 kcal", 52);
+    drawNutritionSeries(ctx, data, "protein", "#2f7d57", "蛋白 g", 160);
+  }
+
+  function drawNutritionSeries(ctx, data, field, color, label, legendX) {
+    const points = data.filter((x) => typeof x[field] === "number");
+    if (points.length < 2) return;
+    const values = points.map((x) => x[field]);
+    const min = Math.min(...values);
+    const range = Math.max(...values) - min || 1;
+    const left = 58;
+    const right = ctx.canvas.width - 32;
+    const top = 42;
+    const bottom = ctx.canvas.height - 48;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    points.forEach((point, index) => {
+      const x = left + (index / (points.length - 1)) * (right - left);
+      const y = bottom - ((point[field] - min) / range) * (bottom - top);
+      if (index === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+    ctx.fillStyle = color;
+    ctx.font = "13px sans-serif";
+    ctx.fillText(label, legendX, 22);
+  }
+
   function qualityLabel(value) {
     return { good: "好", ok: "一般", poor: "差" }[value] || value || "-";
   }
@@ -1229,7 +1415,13 @@
   function tag(text, type = "") { return `<span class="tag ${type}">${esc(text)}</span>`; }
   function num(v) { return v === "" || v == null ? null : Number(v); }
   function fmt(v, unit) { return typeof v === "number" ? `${v}${unit}` : "-"; }
+  function numUnit(v, unit) {
+    return typeof v === "number" && Number.isFinite(v) ? `${Math.round(v)}${unit}` : "-";
+  }
   function trendLabel(t, unit) { return t ? `${t.delta > 0 ? "+" : ""}${t.delta.toFixed(1)}${unit}` : "-"; }
+  function deltaLabel(v, unit) {
+    return typeof v === "number" && Number.isFinite(v) ? `${v > 0 ? "+" : ""}${Math.round(v)}${unit}` : "-";
+  }
   function appendNote(a, b) { return a ? `${a} ${b}` : b; }
   function clamp(v, min, max) { return Number.isFinite(v) ? Math.min(max, Math.max(min, v)) : min; }
   function todayIso() { return new Date().toISOString().slice(0, 10); }
