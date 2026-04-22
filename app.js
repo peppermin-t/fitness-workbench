@@ -1378,6 +1378,238 @@
     ctx.fillText(label, legendX, 22);
   }
 
+  function renderExerciseList() {
+    const q = ($("#exercise-search").value || "").trim().toLowerCase();
+    const gym = currentGym();
+    const items = state.exercises.filter((x) => !q || [x.name, x.pattern, x.muscles.join(" "), x.equipment.map(equipmentLabel).join(" ")].join(" ").toLowerCase().includes(q));
+    $("#exercise-list").innerHTML = items.length ? `<div class="item-list">${items.map((x) => {
+      const available = P.isAvailable(x, gym);
+      const subs = P.availableSubstitutes(x, gym, state.exercises).slice(0, 5);
+      return `<article class="list-item"><div class="exercise-card-layout"><div><h3>${esc(x.name)}</h3><p class="mini-text">${esc(x.cue)}</p><p class="mini-text">注意：${esc(x.risk)}</p><div class="tag-row">${tag(available ? "当前场地可做" : "当前场地缺器械", available ? "success" : "warn")}${tag(x.pattern)}${x.muscles.map((m) => tag(m)).join("")}</div><div class="equipment-inline" style="margin-top:10px;">${x.equipment.map((id) => `<span class="equipment-chip">${equipmentIconMarkup(id)}<span>${esc(equipmentLabel(id))}</span></span>`).join("")}</div><div class="link-list" style="margin-top:10px;">${x.links.map((l) => `<a href="${esc(l.url)}" target="_blank" rel="noreferrer">${esc(l.label)}</a>`).join("")}</div><p class="mini-text" style="margin-top:10px;">当前场地替代：${subs.map((s) => s.name).join("、") || "暂无"}</p></div><div class="exercise-visuals"><div class="visual-frame">${exercisePreviewMarkup(x)}</div></div></div></article>`;
+    }).join("")}</div>` : `<p class="empty">没有匹配的动作。</p>`;
+  }
+
+  function exercisePreviewMarkup(exercise) {
+    const media = resolveExerciseMedia(exercise);
+    if (!media) return `<div class="muscle-map">${muscleMapMarkup(exercise)}</div>`;
+    return `
+      <div class="exercise-media-card">
+        <img
+          class="exercise-media-image"
+          src="${esc(commonsImageUrl(media.file, media.width || 640))}"
+          alt="${esc(media.title)}"
+          loading="lazy"
+          decoding="async"
+          referrerpolicy="no-referrer"
+        />
+        <div class="exercise-media-meta">
+          <div class="tag-row">${tag("Wikimedia Commons", "info")}${tag(media.license || "See file page")}</div>
+          <strong>${esc(media.title)}</strong>
+          <p class="mini-text">${esc(media.description || "开放许可素材预览")}</p>
+          <p class="mini-text">图：${esc(media.author || "Wikimedia Commons contributors")}</p>
+          <div class="legend-row">${(exercise?.muscles || []).slice(0, 4).map((muscle) => tag(muscle, "info")).join("")}</div>
+          <div class="link-list">
+            <a href="${esc(commonsFilePageUrl(media.file))}" target="_blank" rel="noreferrer">来源与许可</a>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  function resolveExerciseMedia(exercise) {
+    if (!exercise?.id) return null;
+    const mediaCatalog = {
+      squat: {
+        file: "Squat.png",
+        title: "深蹲示例",
+        description: "通用深蹲动作预览",
+        author: "Rexwar",
+        license: "Public domain"
+      },
+      legPress: {
+        file: "Leg press.jpg",
+        title: "腿举示例",
+        description: "腿举机动作预览",
+        author: "Eugene R. Zelenko",
+        license: "CC BY-SA 4.0"
+      },
+      deadlift: {
+        file: "Deadlift.JPG",
+        title: "硬拉示例",
+        description: "通用硬拉动作预览",
+        author: "Hipnotic88",
+        license: "CC0 1.0"
+      },
+      romanianDeadlift: {
+        file: "Romanian-deadlift-1.png",
+        title: "罗马尼亚硬拉示例",
+        description: "髋铰链和腘绳链条动作预览",
+        author: "Everkinetic",
+        license: "CC BY 4.0"
+      },
+      gluteBridge: {
+        file: "Glute-bridge.png",
+        title: "臀桥示例",
+        description: "臀推 / 臀桥动作预览",
+        author: "Everkinetic",
+        license: "CC BY 4.0"
+      },
+      benchPress: {
+        file: "Bench_press.png",
+        title: "卧推动作预览",
+        description: "胸推类动作预览",
+        author: "Paul Rogers",
+        license: "Public domain"
+      },
+      pushUp: {
+        file: "Civilian_push-up.jpg",
+        title: "俯卧撑示例",
+        description: "自重推类动作预览",
+        author: "Herzi Pinki",
+        license: "CC BY-SA 4.0"
+      },
+      shoulderPress: {
+        file: "Female_Dumbbell_Shoulder_Press.png",
+        title: "肩推动作预览",
+        description: "垂直推和侧平举类动作预览",
+        author: "Um3wawy64m4",
+        license: "CC BY 4.0"
+      },
+      latPulldown: {
+        file: "Amer-Lat-Pulldown.jpg",
+        title: "高位下拉示例",
+        description: "垂直拉动作预览",
+        author: "A. McCarron",
+        license: "CC BY-SA 3.0"
+      },
+      pullUp: {
+        file: "TEB_Pull-ups.png",
+        title: "引体向上示例",
+        description: "引体向上 / 辅助引体动作预览",
+        author: "TEB Medien",
+        license: "CC BY-SA 4.0"
+      },
+      seatedRow: {
+        file: "Cable-seated-rows-1.png",
+        title: "坐姿划船示例",
+        description: "水平拉动作预览",
+        author: "Everkinetic",
+        license: "CC BY 4.0"
+      },
+      bicepsCurl: {
+        file: "TEB_Bicep_Curls.png",
+        title: "弯举示例",
+        description: "二头弯举动作预览",
+        author: "DiMer16",
+        license: "CC BY-SA 4.0"
+      },
+      tricepsPushdown: {
+        file: "Triceps-pushdown-1.gif",
+        title: "下压示例",
+        description: "三头下压 / 伸展动作预览",
+        author: "Everkinetic",
+        license: "CC BY 4.0"
+      },
+      plank: {
+        file: "Plank.jpg",
+        title: "平板支撑示例",
+        description: "核心稳定动作预览",
+        author: "Pets Adviser",
+        license: "CC BY-SA 4.0"
+      },
+      treadmill: {
+        file: "Young man running on treadmill during sports training in a gym.jpg",
+        title: "跑步机训练示例",
+        description: "通用有氧动作预览",
+        author: "Nenad Stojkovic",
+        license: "CC BY 2.0"
+      },
+      bike: {
+        file: "Hicc - exercise bike.jpg",
+        title: "动感单车训练示例",
+        description: "自行车有氧动作预览",
+        author: "Mrs Lee",
+        license: "CC BY-SA 4.0"
+      },
+      rower: {
+        file: "Rowing machine.jpg",
+        title: "划船机训练示例",
+        description: "划船机有氧动作预览",
+        author: "rrafson",
+        license: "CC BY-SA 3.0"
+      }
+    };
+
+    const mediaKeyMap = {
+      barbell_squat: "squat",
+      goblet_squat: "squat",
+      smith_squat: "squat",
+      bulgarian_split_squat: "squat",
+      hack_squat_machine: "squat",
+      leg_press: "legPress",
+      barbell_deadlift: "deadlift",
+      trap_bar_deadlift: "deadlift",
+      dumbbell_rdl: "romanianDeadlift",
+      kettlebell_swing: "romanianDeadlift",
+      back_extension: "romanianDeadlift",
+      hip_thrust: "gluteBridge",
+      glute_bridge: "gluteBridge",
+      glute_drive_machine: "gluteBridge",
+      hip_abduction_machine: "gluteBridge",
+      hip_adduction_machine: "gluteBridge",
+      bench_press: "benchPress",
+      dumbbell_bench_press: "benchPress",
+      machine_chest_press: "benchPress",
+      chest_press_machine: "benchPress",
+      incline_dumbbell_press: "benchPress",
+      push_up: "pushUp",
+      dip: "pushUp",
+      dumbbell_shoulder_press: "shoulderPress",
+      barbell_overhead_press: "shoulderPress",
+      machine_shoulder_press: "shoulderPress",
+      landmine_press: "shoulderPress",
+      lateral_raise: "shoulderPress",
+      cable_lateral_raise: "shoulderPress",
+      lat_pulldown: "latPulldown",
+      band_pulldown: "latPulldown",
+      pull_up: "pullUp",
+      assisted_pullup_machine: "pullUp",
+      seated_cable_row: "seatedRow",
+      seated_row_machine: "seatedRow",
+      chest_supported_row: "seatedRow",
+      face_pull: "seatedRow",
+      rear_delt_fly: "seatedRow",
+      one_arm_dumbbell_row: "seatedRow",
+      band_row: "seatedRow",
+      dumbbell_curl: "bicepsCurl",
+      cable_curl: "bicepsCurl",
+      preacher_curl: "bicepsCurl",
+      triceps_pushdown: "tricepsPushdown",
+      overhead_triceps_extension: "tricepsPushdown",
+      plank: "plank",
+      dead_bug: "plank",
+      ab_crunch_machine: "plank",
+      leg_extension_machine: "legPress",
+      seated_leg_curl: "romanianDeadlift",
+      standing_calf_raise: "legPress",
+      treadmill_incline_walk: "treadmill",
+      elliptical_easy: "treadmill",
+      stair_climber_easy: "treadmill",
+      bike_easy: "bike",
+      sled_push: "treadmill",
+      rower_easy: "rower"
+    };
+
+    return mediaCatalog[mediaKeyMap[exercise.id]] || null;
+  }
+
+  function commonsImageUrl(file, width = 640) {
+    return `https://commons.wikimedia.org/wiki/Special:Redirect/file/${encodeURIComponent(file)}?width=${width}`;
+  }
+
+  function commonsFilePageUrl(file) {
+    return `https://commons.wikimedia.org/wiki/File:${encodeURIComponent(file).replace(/%20/g, "_")}`;
+  }
+
   function qualityLabel(value) {
     return { good: "好", ok: "一般", poor: "差" }[value] || value || "-";
   }

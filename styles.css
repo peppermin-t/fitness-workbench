@@ -473,6 +473,30 @@ textarea:focus {
   gap: 8px;
 }
 
+.exercise-media-card {
+  display: grid;
+  gap: 10px;
+}
+
+.exercise-media-image {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  display: block;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #eef3ef;
+}
+
+.exercise-media-meta {
+  display: grid;
+  gap: 8px;
+}
+
+.exercise-media-meta strong {
+  line-height: 1.35;
+}
+
 .muscle-map-labels {
   display: flex;
   justify-content: space-between;
