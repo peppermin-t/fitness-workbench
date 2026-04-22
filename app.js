@@ -100,6 +100,7 @@
     $("#today-plan-day-select").addEventListener("change", () => {
       renderTodayWorkout();
       renderExerciseLogSelect();
+      renderTrainingReminders();
     });
     document.addEventListener("click", handleClick);
   }
@@ -140,6 +141,7 @@
     renderCurrentGymSummary();
     renderTodayAdvice();
     renderTodayPlanSelect();
+    renderTrainingReminders();
     renderTodayWorkout();
     renderExerciseLogSelect();
     renderExerciseLogList();
@@ -152,6 +154,7 @@
     renderGoalsList();
     renderMetrics();
     renderNutritionList();
+    renderNutritionReminders();
     renderPlan();
     renderExerciseList();
     renderCoach();
@@ -184,23 +187,53 @@
     const latest = latestMetric();
     const trend = P.metricTrend(state.metrics, "weight", 30);
     const session = state.sessions[0];
-    const parts = [];
-    const linkedInsights = P.buildLinkedTodayInsights({
+    const summary = [];
+    const linkedSignals = P.buildIntegratedSignals({
       goal,
       metrics: state.metrics,
       sessions: state.sessions,
       exerciseLogs: state.exerciseLogs,
       nutritionLogs: state.nutritionLogs
     });
-    parts.push(goal ? `当前目标：${goal.parsed.primaryGoalLabel}${goal.parsed.secondaryGoalLabel ? ` + ${goal.parsed.secondaryGoalLabel}` : ""}。` : "先在“目标设定”里录入当前目标，计划会更贴合。");
-    if (gym) parts.push(`当前场地：${gym.name}，可用器械 ${gym.equipment.length} 类。`);
-    if (gym?.equipment.length <= 5) parts.push("器械范围较少，生成计划时会优先使用哑铃、自重、弹力带和有氧替代。");
-    if (latest) parts.push(`最近身体数据：${latest.date}，体重 ${fmt(latest.weight, "kg")}，体脂 ${fmt(latest.bodyFat, "%")}，骨骼肌 ${fmt(latest.skeletalMuscle, "kg")}。`);
-    if (trend && goal?.parsed.primaryGoal === "fat_loss" && trend.delta > 0.3) parts.push(`近 30 天体重上升 ${trend.delta.toFixed(1)}kg，减脂计划中建议增加有氧或检查饮食记录。`);
-    if (session) parts.push(`最近训练完成度 ${session.completion}%、RPE ${session.rpe}、疼痛 ${session.painScore}/5。`);
-    parts.push(...linkedInsights);
-    if (!state.plan) parts.push("还没有训练计划，可以先点击“生成/刷新计划”。");
-    $("#today-advice").innerHTML = parts.map((x) => `<div>${esc(x)}</div>`).join("");
+    summary.push(goal ? `当前目标：${goal.parsed.primaryGoalLabel}${goal.parsed.secondaryGoalLabel ? ` + ${goal.parsed.secondaryGoalLabel}` : ""}。` : "先在“目标设定”里录入当前目标，计划会更贴合。");
+    if (gym) summary.push(`当前场地：${gym.name}，可用器械 ${gym.equipment.length} 类。`);
+    if (gym?.equipment.length <= 5) summary.push("器械范围较少，生成计划时会优先使用哑铃、自重、弹力带和有氧替代。");
+    if (latest) summary.push(`最近身体数据：${latest.date}，体重 ${fmt(latest.weight, "kg")}，体脂 ${fmt(latest.bodyFat, "%")}，骨骼肌 ${fmt(latest.skeletalMuscle, "kg")}。`);
+    if (trend && goal?.parsed.primaryGoal === "fat_loss" && trend.delta > 0.3) summary.push(`近 30 天体重上升 ${trend.delta.toFixed(1)}kg，减脂计划中建议增加有氧或检查饮食记录。`);
+    if (session) summary.push(`最近训练完成度 ${session.completion}%、RPE ${session.rpe}、疼痛 ${session.painScore}/5。`);
+    if (!state.plan) summary.push("还没有训练计划，可以先点击“生成/刷新计划”。");
+    $("#today-advice").innerHTML = `
+      <div class="context-box">
+        <div><strong>今日概况</strong></div>
+        ${renderEvidenceList(summary)}
+      </div>
+      ${linkedSignals.length ? `<div class="context-box" style="margin-top:14px;"><div><strong>联动信号</strong></div>${renderRecommendationItems(linkedSignals)}</div>` : ""}
+    `;
+  }
+
+  function renderTrainingReminders() {
+    const el = $("#training-reminders");
+    if (!el) return;
+    if (!state.plan?.days?.length) {
+      el.innerHTML = `<div class="context-box"><div><strong>训练前提醒</strong></div><div class="mini-text">生成计划后，这里会结合长期画像和联动判断给出训练前提醒。</div></div>`;
+      return;
+    }
+    const dayIndex = Number($("#today-plan-day-select")?.value || 0);
+    const day = state.plan.days[dayIndex] || state.plan.days[0];
+    const reminders = P.buildTrainingReminders({
+      goal: currentGoal(),
+      metrics: state.metrics || [],
+      sessions: state.sessions || [],
+      exerciseLogs: state.exerciseLogs || [],
+      nutritionLogs: state.nutritionLogs || [],
+      day
+    });
+    el.innerHTML = `
+      <div class="context-box">
+        <div><strong>训练前提醒</strong></div>
+        ${reminders.length ? renderRecommendationItems(reminders.slice(0, 4)) : `<div class="mini-text" style="margin-top:8px;">当前没有额外的训练前提醒，按计划执行并继续记录即可。</div>`}
+      </div>
+    `;
   }
 
   function renderTodayPlanSelect() {
@@ -2118,6 +2151,24 @@
         ${renderEvidenceList((item.evidence || []).slice(0, 3))}
       </div>
     `).join("")}</div>`;
+  }
+
+  function renderNutritionReminders() {
+    const el = $("#nutrition-reminders");
+    if (!el) return;
+    const reminders = P.buildNutritionReminders({
+      goal: currentGoal(),
+      metrics: state.metrics || [],
+      sessions: state.sessions || [],
+      exerciseLogs: state.exerciseLogs || [],
+      nutritionLogs: state.nutritionLogs || []
+    });
+    el.innerHTML = `
+      <div class="context-box">
+        <div><strong>饮食前提醒</strong></div>
+        ${reminders.length ? renderRecommendationItems(reminders.slice(0, 4)) : `<div class="mini-text" style="margin-top:8px;">当前没有额外的饮食前提醒，按正常方式记录即可。</div>`}
+      </div>
+    `;
   }
 
   function candidatePatchSignature(patch) {

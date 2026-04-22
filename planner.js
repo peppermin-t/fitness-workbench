@@ -580,6 +580,7 @@ window.FitnessPlanner = (() => {
   function buildNutritionProfile(logs, goal) {
     const tagCounts = {};
     const mealCounts = {};
+    const missedMealByMeal = { breakfast: 0, lunch: 0, dinner: 0, snack: 0, all_day: 0 };
     const totals = [];
     let lowProteinDays = 0;
     let missedMealDays = 0;
@@ -590,6 +591,9 @@ window.FitnessPlanner = (() => {
       });
       (log.analysis?.meals || []).forEach((meal) => {
         mealCounts[meal.meal] = (mealCounts[meal.meal] || 0) + 1;
+        if ((meal.tags || []).includes("missed_meal")) {
+          missedMealByMeal[meal.meal] = (missedMealByMeal[meal.meal] || 0) + 1;
+        }
       });
       if ((log.analysis?.tags || []).includes("daily_protein_gap")) lowProteinDays += 1;
       if ((log.analysis?.tags || []).includes("missed_meal")) missedMealDays += 1;
@@ -611,6 +615,7 @@ window.FitnessPlanner = (() => {
       count: (logs || []).length,
       topTags,
       mealCounts,
+      missedMealByMeal,
       advice,
       averages,
       trend,
@@ -651,38 +656,118 @@ window.FitnessPlanner = (() => {
       .slice(-10);
   }
 
-  function buildLinkedTodayInsights({ goal, metrics, sessions, exerciseLogs, nutritionLogs }) {
-    const insights = [];
+  function buildIntegratedSignals({ goal, metrics, sessions, exerciseLogs, nutritionLogs }) {
     const primary = goal?.parsed?.primaryGoal || "general_fitness";
-    const exerciseProfiles = buildExerciseProfiles(exerciseLogs || []);
     const nutritionProfile = buildNutritionProfile(nutritionLogs || [], goal);
-    const latestSession = (sessions || [])[0];
+    const exerciseProfiles = buildExerciseProfiles(exerciseLogs || []);
     const latestMetric = sortedMetrics(metrics || []).at(-1);
-    const weightTrend = metricTrend(metrics || [], "weight", 30);
+    const latestSession = sortedSessions(sessions || []).at(-1);
+    const weightTrend21 = metricTrend(metrics || [], "weight", 21);
+    const sessionTrend = compareSessionWindows(sessions || [], 14);
+    const items = [];
 
-    if (exerciseProfiles[0]?.topTags?.some(([tag]) => tag === "grip_limiting")) {
-      insights.push("近期动作级反馈里，握力/小臂限制比较频繁。背部主训练可优先解决限制因素，而不是盲目降背部训练量。");
+    if (exerciseProfiles.some((profile) => profile.topTags.some(([tag]) => tag === "pain_risk"))) {
+      items.push(recommendationItem("safety", "high", "近期有动作疼痛风险在反复出现", "今天训练先保动作质量，不要在已有疼痛风险的动作上继续追求加重。", [
+        `高优先画像数量 ${exerciseProfiles.filter((profile) => profile.topTags.some(([tag]) => tag === "pain_risk")).length}`,
+        "动作画像里存在 pain_risk"
+      ], ["动作画像", "疼痛风险"]));
     }
-    if (exerciseProfiles[0]?.topTags?.some(([tag]) => tag === "pain_risk")) {
-      insights.push("近期某些动作反复出现疼痛风险，今天训练建议优先保动作质量，不要强行加重。");
+
+    if (primary === "fat_loss" && weightTrend21 && Math.abs(weightTrend21.delta) <= 0.4) {
+      const likelyCauses = [];
+      if (nutritionProfile.topTags.some(([tag]) => tag === "high_fat_possible" || tag === "processed_snack")) likelyCauses.push("高油外食或零食频率较高");
+      if (nutritionProfile.missedMealDays >= 2) likelyCauses.push("正餐连续性差");
+      if (nutritionProfile.uncertainDays >= 2) likelyCauses.push("饮食分量记录偏模糊");
+      items.push(recommendationItem("nutrition", "high", "体重 2-3 周基本不动，先查饮食干扰项", `减脂目标下近 21 天体重变化只有 ${signed(round1(weightTrend21.delta), "kg")}，${likelyCauses.length ? `更像是 ${likelyCauses.join("、")} 在干扰。` : "优先检查饮食记录和有氧执行是否稳定。"} `, [
+        `近 21 天体重变化 ${signed(round1(weightTrend21.delta), "kg")}`,
+        `漏正餐 ${nutritionProfile.missedMealDays} 天`,
+        `记录置信度不足 ${nutritionProfile.uncertainDays} 天`
+      ], ["联动判断", "体重平台"]));
     }
-    if (latestSession && (latestSession.rpe >= 8.5 || latestSession.fatigue >= 4) && nutritionProfile.topTags.some(([tag]) => tag === "missed_meal")) {
-      insights.push("最近训练疲劳偏高，同时饮食里有漏正餐模式，训练表现波动可能和白天供能不足有关。");
+
+    if ((sessionTrend.recentAvgRpe >= 8 || latestSession?.rpe >= 8.5) && (nutritionProfile.missedMealByMeal?.lunch || 0) >= 2) {
+      items.push(recommendationItem("nutrition", "high", "午餐缺失很可能在拖训练供能", "近期 RPE 偏高，同时午餐缺失重复出现，训练表现波动更像是白天供能不足，而不是单纯训练量不够。", [
+        `近期平均 RPE ${round1(sessionTrend.recentAvgRpe)}`,
+        `午餐缺失 ${nutritionProfile.missedMealByMeal.lunch || 0} 次`
+      ], ["联动判断", "供能不足", "午餐缺失"]));
     }
+
+    if (primary === "fat_loss" && sessionTrend.hasDecline && (nutritionProfile.lowProteinDays >= 2 || sessionTrend.recentAvgFatigue >= 4)) {
+      items.push(recommendationItem("recovery", "high", "减脂期力量表现在下滑，先保蛋白和恢复", "最近训练完成度下降、RPE 上升，减脂目标下这通常意味着恢复和蛋白支撑不够，先稳住蛋白、睡眠和训练量。", [
+        `完成度 ${round1(sessionTrend.previousAvgCompletion)}% -> ${round1(sessionTrend.recentAvgCompletion)}%`,
+        `RPE ${round1(sessionTrend.previousAvgRpe)} -> ${round1(sessionTrend.recentAvgRpe)}`,
+        `蛋白缺口 ${nutritionProfile.lowProteinDays} 天`,
+        `近期疲劳 ${round1(sessionTrend.recentAvgFatigue)}/5`
+      ], ["联动判断", "减脂", "力量下滑"]));
+    }
+
     if (nutritionProfile.lowProteinDays >= 2) {
-      insights.push("最近饮食记录里出现了连续蛋白缺口天数，今天如果安排主训练日，先把白天蛋白和主食补齐。");
-    }
-    if (primary === "fat_loss" && weightTrend?.delta > 0.3 && nutritionProfile.topTags.some(([tag]) => tag === "high_fat_possible" || tag === "processed_snack")) {
-      insights.push("减脂目标下，近 30 天体重没有往目标方向走，结合饮食记录看，高油外食或零食可能是主要干扰项。");
-    }
-    if (primary === "muscle_gain" && latestMetric && nutritionProfile.topTags.some(([tag]) => tag === "missed_meal")) {
-      insights.push("增肌目标下，白天漏正餐会直接拉低总热量和蛋白完成度，优先补稳定午餐/加餐。");
-    }
-    if (primary === "strength" && nutritionProfile.topTags.some(([tag]) => tag === "missed_meal")) {
-      insights.push("力量目标下，缺碳水或正餐不稳定通常会先体现在 RPE 提高和动作质量下滑。");
+      items.push(recommendationItem("nutrition", "medium", "近期蛋白缺口反复出现", "今天如果安排主训练日，先把白天蛋白和主食补齐，再看是否需要冲训练量。", [
+        `蛋白缺口 ${nutritionProfile.lowProteinDays}/${nutritionProfile.count || 0} 天`,
+        `近期待均蛋白 ${round1(nutritionProfile.averages.protein)}g`
+      ], ["饮食画像", "蛋白缺口"]));
     }
 
-    return insights;
+    if (latestMetric && primary === "muscle_gain" && weightTrend21 && Math.abs(weightTrend21.delta) < 0.3 && nutritionProfile.lowProteinDays >= 2) {
+      items.push(recommendationItem("nutrition", "medium", "增肌期体重没动，先补热量和蛋白", "体重趋势几乎不动，同时蛋白缺口较多，先把白天正餐和蛋白补稳，再决定是否继续加训练量。", [
+        `近 21 天体重变化 ${signed(round1(weightTrend21.delta), "kg")}`,
+        `蛋白缺口 ${nutritionProfile.lowProteinDays} 天`
+      ], ["增肌", "热量/蛋白"]));
+    }
+
+    return sortRecommendationItems(items);
+  }
+
+  function buildTrainingReminders({ goal, metrics, sessions, exerciseLogs, nutritionLogs, day }) {
+    const profiles = new Map(buildExerciseProfiles(exerciseLogs || []).map((profile) => [profile.exerciseId, profile]));
+    const integrated = buildIntegratedSignals({ goal, metrics, sessions, exerciseLogs, nutritionLogs });
+    const reminders = [];
+
+    (day?.exercises || []).forEach((row) => {
+      const profile = profiles.get(row.exerciseId);
+      if (!profile) return;
+      const tags = profile.topTags.map(([tag]) => tag);
+      if (tags.includes("pain_risk")) {
+        reminders.push(recommendationItem("training", "high", `${profile.exerciseName} 先按低风险版本做`, "这个动作长期有疼痛风险记录，今天先保幅度和稳定性，不要冲重量。", [`历史风险 ${profile.painCount} 次`, `最近标签 ${profile.topTags.map(([tag]) => tag).join(" / ")}`], ["训练前提醒", profile.exerciseName]));
+      }
+      if (tags.includes("grip_limiting")) {
+        reminders.push(recommendationItem("training", "medium", `${profile.exerciseName} 先解决握力限制`, "如果今天继续做这个动作，先考虑助力带或更稳定版本，避免小臂先掉链子。", [`反馈次数 ${profile.count}`, "历史上反复出现 grip_limiting"], ["训练前提醒", "握力限制"]));
+      }
+      if (tags.includes("reduced_rom_late") || tags.includes("technique_breakdown")) {
+        reminders.push(recommendationItem("training", "medium", `${profile.exerciseName} 先保动作质量`, "今天这类动作先用完整幅度和可控离心做标准，不要一开始就冲负荷。", [`动作质量差 ${profile.poorQualityCount} 次`], ["训练前提醒", "动作质量"]));
+      }
+    });
+
+    integrated.filter((item) => item.priority === "high").slice(0, 2).forEach((item) => {
+      reminders.push(recommendationItem("training", item.priority, item.title, item.detail, item.evidence, ["训练前提醒", ...(item.tags || [])]));
+    });
+
+    return dedupeReminderItems(sortRecommendationItems(reminders));
+  }
+
+  function buildNutritionReminders({ goal, metrics, sessions, exerciseLogs, nutritionLogs }) {
+    const profile = buildNutritionProfile(nutritionLogs || [], goal);
+    const integrated = buildIntegratedSignals({ goal, metrics, sessions, exerciseLogs, nutritionLogs });
+    const reminders = [];
+
+    if (profile.lowProteinDays >= 2) {
+      reminders.push(recommendationItem("nutrition", "high", "今天先把白天蛋白补齐", "最近蛋白缺口反复出现，今天至少保证午餐或加餐里有一份高蛋白来源。", [`蛋白缺口 ${profile.lowProteinDays}/${profile.count || 0} 天`], ["饮食前提醒", "蛋白缺口"]));
+    }
+    if ((profile.missedMealByMeal?.lunch || 0) >= 2) {
+      reminders.push(recommendationItem("nutrition", "high", "今天不要再空午餐", "你最近最容易缺的是午餐，这会直接影响训练供能和晚餐控制。今天优先把午餐补上。", [`午餐缺失 ${profile.missedMealByMeal.lunch} 次`], ["饮食前提醒", "午餐优先"]));
+    }
+    if (profile.uncertainDays >= Math.max(2, Math.ceil((profile.count || 0) / 2))) {
+      reminders.push(recommendationItem("nutrition", "low", "今天记录尽量补分量", "饮食趋势已经有了，但分量还偏模糊。今天尽量补“几份/几碗/多少克”。", [`记录不确定 ${profile.uncertainDays}/${profile.count || 0} 天`], ["饮食前提醒", "记录质量"]));
+    }
+    integrated.filter((item) => item.type === "nutrition" || item.type === "recovery").slice(0, 2).forEach((item) => {
+      reminders.push(recommendationItem("nutrition", item.priority, item.title, item.detail, item.evidence, ["饮食前提醒", ...(item.tags || [])]));
+    });
+
+    return dedupeReminderItems(sortRecommendationItems(reminders));
+  }
+
+  function buildLinkedTodayInsights({ goal, metrics, sessions, exerciseLogs, nutritionLogs }) {
+    return buildIntegratedSignals({ goal, metrics, sessions, exerciseLogs, nutritionLogs }).map((item) => item.detail);
   }
 
   function buildWeeklyReview({ goal, metrics, sessions, exerciseLogs, nutritionLogs, plan }) {
@@ -691,6 +776,7 @@ window.FitnessPlanner = (() => {
     const recentNutritionLogs = withinDays(nutritionLogs || [], 7);
     const nutritionProfile = buildNutritionProfile(recentNutritionLogs, goal);
     const exerciseProfiles = buildExerciseProfiles(recentExerciseLogs);
+    const integratedSignals = buildIntegratedSignals({ goal, metrics, sessions, exerciseLogs, nutritionLogs });
     const latestMetric = sortedMetrics(metrics || []).at(-1);
     const weightTrend30 = metricTrend(metrics || [], "weight", 30);
     const completionAvg = averageOf(recentSessions, "completion");
@@ -801,6 +887,11 @@ window.FitnessPlanner = (() => {
     if (primary === "strength" && nutritionProfile.missedMealDays >= 1) {
       nextActions.push("力量目标下，先确保训练日前后有稳定碳水和正餐，不然 RPE 和动作质量会先波动。");
     }
+
+    integratedSignals.slice(0, 3).forEach((item) => {
+      if (item.priority === "high") highlights.push(item.detail);
+      else nextActions.push(item.detail);
+    });
 
     return {
       periodDays: 7,
@@ -1118,6 +1209,66 @@ window.FitnessPlanner = (() => {
     });
   }
 
+  function sortedSessions(sessions) {
+    return (sessions || []).slice().sort((a, b) => String(a.date || "").localeCompare(String(b.date || "")));
+  }
+
+  function compareSessionWindows(sessions, daysPerWindow) {
+    const sorted = sortedSessions(sessions);
+    if (!sorted.length) {
+      return {
+        recentAvgCompletion: 0,
+        previousAvgCompletion: 0,
+        recentAvgRpe: 0,
+        previousAvgRpe: 0,
+        recentAvgFatigue: 0,
+        previousAvgFatigue: 0,
+        hasDecline: false
+      };
+    }
+    const latest = new Date(sorted.at(-1).date);
+    const recentCutoff = new Date(latest);
+    recentCutoff.setDate(recentCutoff.getDate() - daysPerWindow);
+    const previousCutoff = new Date(recentCutoff);
+    previousCutoff.setDate(previousCutoff.getDate() - daysPerWindow);
+    const recent = sorted.filter((item) => {
+      const date = new Date(item.date);
+      return date > recentCutoff && date <= latest;
+    });
+    const previous = sorted.filter((item) => {
+      const date = new Date(item.date);
+      return date > previousCutoff && date <= recentCutoff;
+    });
+    const recentAvgCompletion = averageOf(recent, "completion");
+    const previousAvgCompletion = averageOf(previous, "completion");
+    const recentAvgRpe = averageOf(recent, "rpe");
+    const previousAvgRpe = averageOf(previous, "rpe");
+    const recentAvgFatigue = averageOf(recent, "fatigue");
+    const previousAvgFatigue = averageOf(previous, "fatigue");
+    const hasDecline = previous.length >= 1 && recent.length >= 1
+      && recentAvgCompletion <= previousAvgCompletion - 8
+      && recentAvgRpe >= previousAvgRpe + 0.6;
+    return {
+      recentAvgCompletion: round1(recentAvgCompletion),
+      previousAvgCompletion: round1(previousAvgCompletion),
+      recentAvgRpe: round1(recentAvgRpe),
+      previousAvgRpe: round1(previousAvgRpe),
+      recentAvgFatigue: round1(recentAvgFatigue),
+      previousAvgFatigue: round1(previousAvgFatigue),
+      hasDecline
+    };
+  }
+
+  function dedupeReminderItems(items) {
+    const seen = new Set();
+    return (items || []).filter((item) => {
+      const key = `${item.title}|${item.detail}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }
+
   function buildAdviceEntry(uid, nowLabel, title, items, tags, evidence = []) {
     const sorted = sortRecommendationItems(items);
     return {
@@ -1182,6 +1333,9 @@ window.FitnessPlanner = (() => {
     buildExerciseProfiles,
     buildNutritionProfile,
     buildNutritionTrend,
+    buildIntegratedSignals,
+    buildTrainingReminders,
+    buildNutritionReminders,
     buildLinkedTodayInsights,
     buildWeeklyReview,
     availableSubstitutes,
