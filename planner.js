@@ -925,11 +925,11 @@ window.FitnessPlanner = (() => {
   function buildPlanDay(type, config, gym, goal, exercises) {
     const templates = {
       upper: ["上肢力量", "保留主要推拉动作，适合器械受限时快速完成。", [
-        ["水平推", ["bench_press", "dumbbell_bench_press", "incline_dumbbell_press", "chest_press_machine", "machine_chest_press", "push_up"]],
-        ["水平拉", ["chest_supported_row", "seated_cable_row", "seated_row_machine", "one_arm_dumbbell_row", "band_row"]],
+        ["水平推", ["bench_press", "incline_barbell_press", "dumbbell_bench_press", "incline_dumbbell_press", "incline_press_machine", "chest_press_machine", "machine_chest_press", "push_up"]],
+        ["水平拉", ["chest_supported_row", "high_row_machine", "t_bar_row", "seated_cable_row", "seated_row_machine", "one_arm_dumbbell_row", "band_row"]],
         ["垂直推", ["dumbbell_shoulder_press", "machine_shoulder_press", "landmine_press", "barbell_overhead_press", "lateral_raise"]],
         ["垂直拉", ["lat_pulldown", "assisted_pullup_machine", "pull_up", "band_pulldown"]],
-        ["肘屈", ["dumbbell_curl", "cable_curl", "preacher_curl"]],
+        ["肘屈", ["ez_bar_curl", "incline_dumbbell_curl", "bicep_curl_machine", "dumbbell_curl", "cable_curl", "preacher_curl", "reverse_ez_bar_curl"]],
         ["肘伸", ["triceps_pushdown", "overhead_triceps_extension", "dip"]]
       ]],
       lower: ["下肢力量", "以蹲、髋铰链和单腿动作为主，按疼痛反馈调整负荷。", [
@@ -942,22 +942,22 @@ window.FitnessPlanner = (() => {
       full: ["全身训练", "出差或每周训练次数少时优先保证全身刺激。", [
         ["蹲", ["goblet_squat", "hack_squat_machine", "barbell_squat", "leg_press"]],
         ["髋铰链", ["dumbbell_rdl", "trap_bar_deadlift", "barbell_deadlift", "glute_bridge"]],
-        ["水平推", ["dumbbell_bench_press", "incline_dumbbell_press", "bench_press", "push_up", "chest_press_machine"]],
-        ["水平拉", ["chest_supported_row", "one_arm_dumbbell_row", "seated_cable_row", "seated_row_machine", "band_row"]],
+        ["水平推", ["dumbbell_bench_press", "incline_dumbbell_press", "incline_barbell_press", "incline_press_machine", "bench_press", "push_up", "chest_press_machine"]],
+        ["水平拉", ["chest_supported_row", "high_row_machine", "t_bar_row", "one_arm_dumbbell_row", "seated_cable_row", "seated_row_machine", "band_row"]],
         ["核心抗伸展", ["plank", "dead_bug"]],
         ["有氧", ["treadmill_incline_walk", "bike_easy", "elliptical_easy", "rower_easy"]]
       ]],
       push: ["推类/胸肩三头", "增肌或力量周期中的上肢推类重点日。", [
-        ["水平推", ["bench_press", "incline_dumbbell_press", "dumbbell_bench_press", "chest_press_machine", "machine_chest_press", "push_up"]],
+        ["水平推", ["bench_press", "incline_barbell_press", "incline_dumbbell_press", "incline_press_machine", "dumbbell_bench_press", "chest_press_machine", "machine_chest_press", "push_up"]],
         ["垂直推", ["dumbbell_shoulder_press", "machine_shoulder_press", "landmine_press", "barbell_overhead_press"]],
         ["肩外展", ["lateral_raise", "cable_lateral_raise"]],
         ["肘伸", ["triceps_pushdown", "overhead_triceps_extension", "dip"]]
       ]],
       pull: ["拉类/背二头", "背部和手臂拉类训练，兼顾肩胛控制。", [
         ["垂直拉", ["lat_pulldown", "assisted_pullup_machine", "pull_up", "band_pulldown"]],
-        ["水平拉", ["chest_supported_row", "seated_row_machine", "seated_cable_row", "one_arm_dumbbell_row", "band_row", "face_pull"]],
+        ["水平拉", ["chest_supported_row", "high_row_machine", "t_bar_row", "seated_row_machine", "seated_cable_row", "one_arm_dumbbell_row", "band_row", "face_pull"]],
         ["髋铰链", ["dumbbell_rdl", "trap_bar_deadlift", "barbell_deadlift", "glute_bridge"]],
-        ["肘屈", ["dumbbell_curl", "cable_curl", "preacher_curl"]],
+        ["肘屈", ["ez_bar_curl", "incline_dumbbell_curl", "bicep_curl_machine", "dumbbell_curl", "cable_curl", "preacher_curl", "reverse_ez_bar_curl"]],
         ["核心抗伸展", ["plank", "dead_bug"]]
       ]],
       conditioning: ["恢复/有氧", "减脂期或疲劳较高时保留训练连续性。", [

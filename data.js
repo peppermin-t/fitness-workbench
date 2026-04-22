@@ -19,7 +19,12 @@ window.FitnessData = (() => {
     ["calf_raise", "提踵机"],
     ["pec_deck", "夹胸机"],
     ["chest_press_machine", "推胸机"],
+    ["incline_press_machine", "上斜推胸机"],
     ["shoulder_press_machine", "肩推机"],
+    ["ez_bar", "EZ 杠"],
+    ["bicep_curl_machine", "二头弯举机"],
+    ["high_row_machine", "高位划船机"],
+    ["t_bar_row_station", "T 杠划船机"],
     ["pullup_bar", "引体向上杆"],
     ["dip_station", "双杠"],
     ["assisted_pullup", "辅助引体/双杠机"],
@@ -98,8 +103,14 @@ window.FitnessData = (() => {
     exercise("chest_press_machine", "推胸机", "水平推", ["胸", "肱三头肌"], ["chest_press_machine"], ["dumbbell_bench_press", "bench_press", "push_up"], "推起时肩胛保持稳定，肘部路径自然。", "重量过大时容易耸肩和肩前顶。", [
       link("YouTube 搜索", "https://www.youtube.com/results?search_query=chest+press+machine+form")
     ]),
+    exercise("incline_press_machine", "上斜推胸机", "水平推", ["上胸", "肩前束", "肱三头肌"], ["incline_press_machine"], ["incline_dumbbell_press", "incline_barbell_press", "chest_press_machine"], "把手起始位置与上胸接近，座椅高度保证肩胛能稳定贴靠。", "角度过高时更容易变成肩前束主导。", [
+      link("YouTube 搜索", "https://www.youtube.com/results?search_query=incline+press+machine+form")
+    ]),
     exercise("incline_dumbbell_press", "上斜哑铃卧推", "水平推", ["上胸", "肩前束", "肱三头肌"], ["dumbbell", "bench"], ["dumbbell_bench_press", "chest_press_machine"], "上斜角度不要过高，肩胛保持稳定。", "肩前侧不适时降低角度。", [
       link("YouTube 搜索", "https://www.youtube.com/results?search_query=incline+dumbbell+press+form")
+    ]),
+    exercise("incline_barbell_press", "上斜杠铃卧推", "水平推", ["上胸", "肩前束", "肱三头肌"], ["barbell", "bench"], ["incline_dumbbell_press", "incline_press_machine", "bench_press"], "杠铃路径落在上胸附近，保持肩胛下沉后收。", "若肩前侧不适，优先改哑铃或上斜器械推胸。", [
+      link("YouTube 搜索", "https://www.youtube.com/results?search_query=incline+barbell+press+form")
     ]),
     exercise("dumbbell_shoulder_press", "哑铃肩推", "垂直推", ["肩", "肱三头肌"], ["dumbbell", "bench"], ["barbell_overhead_press", "lateral_raise"], "坐姿时背部贴稳，避免耸肩。", "肩不适时改小重量高次数。", [
       link("ExRx", "https://exrx.net/WeightExercises/DeltoidAnterior/DBShoulderPress")
@@ -137,8 +148,14 @@ window.FitnessData = (() => {
     exercise("seated_row_machine", "坐姿划船机", "水平拉", ["背", "肱二头肌"], ["seated_row_machine"], ["seated_cable_row", "one_arm_dumbbell_row"], "胸口贴稳支撑，优先感受肩胛后缩。", "适合动作稳定性不够时使用。", [
       link("YouTube 搜索", "https://www.youtube.com/results?search_query=seated+row+machine+form")
     ]),
+    exercise("high_row_machine", "高位划船机", "水平拉", ["背", "后束", "肱二头肌"], ["high_row_machine"], ["seated_row_machine", "chest_supported_row", "lat_pulldown"], "肘部沿斜向下后方发力，胸口保持贴稳。", "不要用耸肩或后仰把高位划船做成借力下拉。", [
+      link("YouTube 搜索", "https://www.youtube.com/results?search_query=high+row+machine+form")
+    ]),
     exercise("chest_supported_row", "胸托划船", "水平拉", ["背", "后束", "肱二头肌"], ["dumbbell", "bench"], ["one_arm_dumbbell_row", "seated_row_machine", "seated_cable_row"], "胸口贴稳凳面，减少下背和借力。", "背部训练时如果小臂总先累，可优先选这个。", [
       link("YouTube 搜索", "https://www.youtube.com/results?search_query=chest+supported+row+form")
+    ]),
+    exercise("t_bar_row", "T 杠划船", "水平拉", ["背", "后束", "肱二头肌"], ["t_bar_row_station"], ["chest_supported_row", "seated_row_machine", "one_arm_dumbbell_row"], "保持胸椎延展，肘部朝髋部和肋部之间的路径拉。", "下背容易代偿时优先用胸托版本。", [
+      link("YouTube 搜索", "https://www.youtube.com/results?search_query=t+bar+row+form")
     ]),
     exercise("face_pull", "绳索面拉", "水平拉", ["后束", "上背", "肩胛"], ["cable"], ["rear_delt_fly"], "拉向眉眼高度，肘部外展，肩胛后缩。", "重量不宜过大，优先动作路径。", [
       link("YouTube 搜索", "https://www.youtube.com/results?search_query=face+pull+form")
@@ -155,11 +172,23 @@ window.FitnessData = (() => {
     exercise("dumbbell_curl", "哑铃弯举", "肘屈", ["肱二头肌"], ["dumbbell"], ["cable_curl"], "上臂保持稳定，顶峰收缩。", "不要借助摆动完成。", [
       link("ExRx", "https://exrx.net/WeightExercises/Biceps/DBCurl")
     ]),
+    exercise("incline_dumbbell_curl", "上斜哑铃弯举", "肘屈", ["肱二头肌"], ["dumbbell", "bench"], ["dumbbell_curl", "preacher_curl", "cable_curl"], "上臂自然垂在躯干后方，避免肘部前跑。", "拉伸位负荷更大，重量不要贪。", [
+      link("YouTube 搜索", "https://www.youtube.com/results?search_query=incline+dumbbell+curl+form")
+    ]),
     exercise("cable_curl", "绳索弯举", "肘屈", ["肱二头肌"], ["cable"], ["dumbbell_curl", "preacher_curl"], "保持持续张力，肘部尽量固定。", "重量不宜过大，否则容易耸肩借力。", [
       link("YouTube 搜索", "https://www.youtube.com/results?search_query=cable+biceps+curl+form")
     ]),
     exercise("preacher_curl", "牧师凳弯举", "肘屈", ["肱二头肌"], ["preacher_bench", "dumbbell"], ["dumbbell_curl"], "上臂贴稳垫面，避免肩部代偿。", "底部不要完全卸力。", [
       link("YouTube 搜索", "https://www.youtube.com/results?search_query=preacher+curl+form")
+    ]),
+    exercise("ez_bar_curl", "EZ 杠弯举", "肘屈", ["肱二头肌"], ["ez_bar"], ["dumbbell_curl", "preacher_curl", "cable_curl"], "手腕保持自然角度，避免上臂前送。", "重量过大时容易变成借力反复摆动。", [
+      link("YouTube 搜索", "https://www.youtube.com/results?search_query=ez+bar+curl+form")
+    ]),
+    exercise("reverse_ez_bar_curl", "反手 EZ 杠弯举", "肘屈", ["肱桡肌", "肱二头肌", "前臂"], ["ez_bar"], ["ez_bar_curl", "dumbbell_curl"], "手背朝上，保持手腕稳定，控制离心。", "前臂压力更大，先保证动作路径和握距舒适。", [
+      link("YouTube 搜索", "https://www.youtube.com/results?search_query=reverse+ez+bar+curl+form")
+    ]),
+    exercise("bicep_curl_machine", "二头弯举机", "肘屈", ["肱二头肌"], ["bicep_curl_machine"], ["preacher_curl", "ez_bar_curl", "cable_curl"], "上臂固定后再完成弯举，顶峰停顿更容易感受二头发力。", "不要为了重量牺牲顶峰收缩和完整离心。", [
+      link("YouTube 搜索", "https://www.youtube.com/results?search_query=bicep+curl+machine+form")
     ]),
     exercise("triceps_pushdown", "绳索下压", "肘伸", ["肱三头肌"], ["cable"], ["overhead_triceps_extension"], "肘部固定在身体两侧，向下伸肘。", "不要用肩部下压代偿。", [
       link("ExRx", "https://exrx.net/WeightExercises/Triceps/CBPushdown")
