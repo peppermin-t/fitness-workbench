@@ -1,0 +1,425 @@
+{
+  "schemaVersion": 1,
+  "currentGymId": "gym_hotel_smoke",
+  "currentGoalId": "goal_smoke_fat_loss",
+  "gyms": [
+    {
+      "id": "gym_full_smoke",
+      "name": "样例完整健身房",
+      "location": "器械较完整，用于重构前 smoke 验收",
+      "equipment": [
+        "barbell",
+        "dumbbell",
+        "bench",
+        "squat_rack",
+        "smith",
+        "cable",
+        "lat_pulldown",
+        "seated_row_machine",
+        "leg_press",
+        "leg_extension",
+        "leg_curl",
+        "pec_deck",
+        "chest_press_machine",
+        "shoulder_press_machine",
+        "ez_bar",
+        "bicep_curl_machine",
+        "high_row_machine",
+        "t_bar_row_station",
+        "pullup_bar",
+        "mat",
+        "treadmill",
+        "bike",
+        "rower"
+      ]
+    },
+    {
+      "id": "gym_hotel_smoke",
+      "name": "样例酒店健身房",
+      "location": "出差场地：哑铃、凳、龙门架、垫子、跑步机、单车、弹力带",
+      "equipment": ["dumbbell", "bench", "cable", "mat", "treadmill", "bike", "bands"]
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal_smoke_fat_loss",
+      "createdAt": "2026/6/29 21:00",
+      "rawText": "我现在 78kg，想先减脂到 72kg，但不想掉太多力量。最近经常出差，一周练 3 次，每次 45 分钟。",
+      "parsed": {
+        "rawText": "我现在 78kg，想先减脂到 72kg，但不想掉太多力量。最近经常出差，一周练 3 次，每次 45 分钟。",
+        "primaryGoal": "fat_loss",
+        "primaryGoalLabel": "减脂",
+        "secondaryGoal": "strength_maintenance",
+        "secondaryGoalLabel": "保持力量",
+        "targetWeight": 72,
+        "trainingDaysPerWeek": 3,
+        "sessionDurationMinutes": 45,
+        "frequentTravel": true,
+        "conveniencePriority": false,
+        "constraints": ["frequent_travel"],
+        "notes": []
+      }
+    }
+  ],
+  "metrics": [
+    {
+      "id": "metric_smoke_1",
+      "date": "2026-06-01",
+      "weight": 78,
+      "bodyFat": 20,
+      "skeletalMuscle": 34,
+      "waist": 86,
+      "notes": "样例基线：月初"
+    },
+    {
+      "id": "metric_smoke_2",
+      "date": "2026-06-29",
+      "weight": 77.2,
+      "bodyFat": 19.5,
+      "skeletalMuscle": 34.1,
+      "waist": 85,
+      "notes": "样例基线：重构前"
+    }
+  ],
+  "plan": {
+    "id": "plan_smoke",
+    "generatedAt": "2026/6/29 21:00",
+    "context": {
+      "goalLabel": "减脂 + 保持力量",
+      "gymName": "样例酒店健身房",
+      "equipment": ["dumbbell", "bench", "cable", "mat", "treadmill", "bike", "bands"],
+      "metricSummary": "2026-06-29：体重 77.2kg，体脂 19.5%，骨骼肌 34.1kg",
+      "notes": ["出差优先：每次训练控制在可执行范围"]
+    },
+    "days": [
+      {
+        "type": "upper",
+        "focus": "上肢力量",
+        "intent": "保留主要推拉动作，适合器械受限时快速完成。",
+        "exercises": [
+          {
+            "exerciseId": "dumbbell_bench_press",
+            "sets": 3,
+            "reps": "10-15",
+            "load": "按 RPE 调整",
+            "rpe": "6-8",
+            "rest": "60-90 秒",
+            "notes": "出差模式：优先可执行和低录入成本。"
+          },
+          {
+            "exerciseId": "seated_cable_row",
+            "sets": 3,
+            "reps": "10-15",
+            "load": "按 RPE 调整",
+            "rpe": "6-8",
+            "rest": "60-90 秒",
+            "notes": "优先稳定发力，避免小臂先疲劳。"
+          },
+          {
+            "exerciseId": "lateral_raise",
+            "sets": 3,
+            "reps": "10-15",
+            "load": "按 RPE 调整",
+            "rpe": "6-8",
+            "rest": "60-90 秒",
+            "notes": "控制离心。"
+          }
+        ]
+      },
+      {
+        "type": "lower",
+        "focus": "下肢力量",
+        "intent": "以蹲、髋铰链和单腿动作为主，按疼痛反馈调整负荷。",
+        "exercises": [
+          {
+            "exerciseId": "goblet_squat",
+            "sets": 3,
+            "reps": "10-15",
+            "load": "按 RPE 调整",
+            "rpe": "6-8",
+            "rest": "60-90 秒",
+            "notes": "当前酒店场地无深蹲架，使用杯式深蹲。"
+          },
+          {
+            "exerciseId": "dumbbell_rdl",
+            "sets": 3,
+            "reps": "10-15",
+            "load": "按 RPE 调整",
+            "rpe": "6-8",
+            "rest": "60-90 秒",
+            "notes": "髋主导，保持背部稳定。"
+          },
+          {
+            "exerciseId": "plank",
+            "sets": 3,
+            "reps": "30-45 秒",
+            "load": "自重",
+            "rpe": "6-8",
+            "rest": "60 秒",
+            "notes": "核心稳定。"
+          }
+        ]
+      },
+      {
+        "type": "conditioning",
+        "focus": "恢复/有氧",
+        "intent": "减脂期或疲劳较高时保留训练连续性。",
+        "exercises": [
+          {
+            "exerciseId": "treadmill_incline_walk",
+            "sets": 1,
+            "reps": "20-30 分钟",
+            "load": "中低强度",
+            "rpe": "5-6",
+            "rest": "-",
+            "notes": "保持可持续强度。"
+          },
+          {
+            "exerciseId": "dead_bug",
+            "sets": 3,
+            "reps": "8-12",
+            "load": "自重",
+            "rpe": "6-8",
+            "rest": "60 秒",
+            "notes": "慢速控制。"
+          }
+        ]
+      }
+    ]
+  },
+  "sessions": [
+    {
+      "id": "session_smoke_1",
+      "date": "2026-06-27",
+      "createdAt": "2026/6/27 20:30",
+      "gymId": "gym_hotel_smoke",
+      "gymName": "样例酒店健身房",
+      "planId": "plan_smoke",
+      "dayIndex": 0,
+      "focus": "上肢力量",
+      "completion": 65,
+      "rpe": 9,
+      "painScore": 2,
+      "painArea": "肩前侧",
+      "sleep": 2,
+      "fatigue": 4,
+      "notes": "出差后状态一般，上肢训练完成度偏低。"
+    }
+  ],
+  "exerciseLogs": [
+    {
+      "id": "exercise_log_smoke_1",
+      "date": "2026-06-27",
+      "createdAt": "2026/6/27 20:35",
+      "exerciseId": "seated_cable_row",
+      "exerciseName": "坐姿绳索划船",
+      "dayIndex": 0,
+      "focus": "上肢力量",
+      "plannedSets": 3,
+      "plannedReps": "10-15",
+      "plannedLoad": "按 RPE 调整",
+      "plannedRpe": "6-8",
+      "actualLoad": "35kg",
+      "actualReps": "12/10/8",
+      "rpe": 9,
+      "quality": "ok",
+      "rangeOfMotion": "reduced_late",
+      "targetMuscleFeel": "weak",
+      "limitingFactor": "grip",
+      "sideIssue": "left_weaker",
+      "painScore": 0,
+      "painArea": "",
+      "freeText": "左侧最后几个半程，小臂先酸了，背没什么感觉",
+      "analysis": {
+        "exerciseId": "seated_cable_row",
+        "exerciseName": "坐姿绳索划船",
+        "tags": [
+          { "tag": "reduced_rom_late", "evidence": "出现半程或后程幅度下降" },
+          { "tag": "left_weaker", "evidence": "左侧弱或左侧动作质量下降" },
+          { "tag": "grip_limiting", "evidence": "小臂或握力成为限制因素" },
+          { "tag": "poor_target_muscle_feel", "evidence": "目标肌肉感觉弱" }
+        ],
+        "priority": "high",
+        "priorityLabel": "高优先级",
+        "evidence": ["动作幅度：reduced_late", "左右差异：left_weaker", "限制因素：grip", "原始反馈：左侧最后几个半程，小臂先酸了，背没什么感觉"],
+        "recommendationItems": [
+          {
+            "type": "technique",
+            "priority": "high",
+            "title": "先恢复完整幅度",
+            "detail": "下次该动作不加重，优先恢复完整幅度。",
+            "evidence": ["出现半程或后程幅度下降"],
+            "tags": ["动作幅度", "不加重"]
+          }
+        ],
+        "recommendations": ["下次该动作不加重，优先恢复完整幅度；背部动作可考虑助力带或更稳定版本。"],
+        "summary": "识别到 reduced_rom_late, left_weaker, grip_limiting, poor_target_muscle_feel"
+      }
+    },
+    {
+      "id": "exercise_log_smoke_2",
+      "date": "2026-06-27",
+      "createdAt": "2026/6/27 20:38",
+      "exerciseId": "dumbbell_bench_press",
+      "exerciseName": "哑铃卧推",
+      "dayIndex": 0,
+      "focus": "上肢力量",
+      "plannedSets": 3,
+      "plannedReps": "10-15",
+      "plannedLoad": "按 RPE 调整",
+      "plannedRpe": "6-8",
+      "actualLoad": "22kg",
+      "actualReps": "10/9/8",
+      "rpe": 8,
+      "quality": "ok",
+      "rangeOfMotion": "full",
+      "targetMuscleFeel": "moderate",
+      "limitingFactor": "joint_pain",
+      "sideIssue": "none",
+      "painScore": 3,
+      "painArea": "肩前侧",
+      "freeText": "卧推肩前侧不舒服，疼痛 3/5",
+      "analysis": {
+        "exerciseId": "dumbbell_bench_press",
+        "exerciseName": "哑铃卧推",
+        "tags": [
+          { "tag": "pain_risk", "evidence": "疼痛或不适反馈" }
+        ],
+        "priority": "high",
+        "priorityLabel": "高优先级",
+        "evidence": ["疼痛 3/5", "部位：肩前侧", "原始反馈：卧推肩前侧不舒服，疼痛 3/5"],
+        "recommendationItems": [
+          {
+            "type": "safety",
+            "priority": "high",
+            "title": "疼痛优先处理",
+            "detail": "疼痛评分较高时不建议加重；优先降量、缩小风险动作范围或替换动作。",
+            "evidence": ["疼痛 3/5", "部位：肩前侧"],
+            "tags": ["疼痛风险", "不加重"]
+          }
+        ],
+        "recommendations": ["疼痛评分较高时不建议加重；优先降量、缩小风险动作范围或替换动作。"],
+        "summary": "识别到 pain_risk"
+      }
+    }
+  ],
+  "nutritionLogs": [
+    {
+      "id": "nutrition_smoke_1",
+      "date": "2026-06-26",
+      "createdAt": "2026/6/26 21:00",
+      "rawText": "早上吃了5个蛋白一个地瓜一碗豆浆，中午没吃饭吃了四个威化，晚上吃了牛肉火锅。",
+      "goalId": "goal_smoke_fat_loss",
+      "analysis": {
+        "rawText": "早上吃了5个蛋白一个地瓜一碗豆浆，中午没吃饭吃了四个威化，晚上吃了牛肉火锅。",
+        "meals": [
+          {
+            "meal": "breakfast",
+            "text": "早上吃了5个蛋白一个地瓜一碗豆浆",
+            "items": [
+              { "id": "egg_white", "label": "鸡蛋蛋白", "quantity": 5, "unit": "个", "uncertain": false, "estimate": { "calories": 85, "protein": 18, "carbs": 1, "fat": 0, "fiber": 0 }, "tags": ["high_protein"] },
+              { "id": "sweet_potato", "label": "地瓜", "quantity": 1, "unit": "个", "uncertain": false, "estimate": { "calories": 130, "protein": 2, "carbs": 30, "fat": 0.2, "fiber": 4 }, "tags": ["carb_present", "fiber_present"] },
+              { "id": "soy_milk", "label": "豆浆", "quantity": 1, "unit": "碗", "uncertain": false, "estimate": { "calories": 110, "protein": 7, "carbs": 9, "fat": 4, "fiber": 1 }, "tags": ["protein_present"] }
+            ],
+            "tags": ["high_protein", "carb_present", "fiber_present"],
+            "estimates": { "calories": 325, "protein": 27, "carbs": 40, "fat": 4.2, "fiber": 5 }
+          },
+          {
+            "meal": "lunch",
+            "text": "中午没吃饭吃了四个威化",
+            "items": [
+              { "id": "wafer", "label": "威化", "quantity": 4, "unit": "个", "uncertain": true, "estimate": { "calories": 140, "protein": 1.6, "carbs": 18, "fat": 7.2, "fiber": 0.4 }, "tags": ["processed_snack", "high_sugar_possible"] }
+            ],
+            "tags": ["missed_meal", "processed_snack", "high_sugar_possible", "low_protein"],
+            "estimates": { "calories": 140, "protein": 1.6, "carbs": 18, "fat": 7.2, "fiber": 0.4 }
+          },
+          {
+            "meal": "dinner",
+            "text": "晚上吃了牛肉火锅",
+            "items": [
+              { "id": "beef_hotpot", "label": "牛肉火锅", "quantity": 1, "unit": "份", "uncertain": true, "estimate": { "calories": 680, "protein": 42, "carbs": 22, "fat": 40, "fiber": 3 }, "tags": ["high_protein", "high_fat_possible", "high_sodium_possible", "portion_uncertain"] }
+            ],
+            "tags": ["high_protein", "high_fat_possible", "high_sodium_possible", "portion_uncertain"],
+            "estimates": { "calories": 680, "protein": 42, "carbs": 22, "fat": 40, "fiber": 3 }
+          }
+        ],
+        "items": [],
+        "tags": ["high_protein", "missed_meal", "processed_snack", "high_sugar_possible", "high_fat_possible", "high_sodium_possible", "portion_uncertain", "daily_protein_gap"],
+        "estimates": {
+          "total": { "calories": 1145, "protein": 70.6, "carbs": 80, "fat": 51.4, "fiber": 8.4 },
+          "target": { "caloriesLower": 1800, "caloriesUpper": 2300, "protein": 130, "carbsLower": 140, "fiber": 25 },
+          "dayStatus": { "alignment": "needs_attention", "tags": ["daily_protein_gap"] }
+        },
+        "priority": "high",
+        "priorityLabel": "高优先级",
+        "evidence": ["蛋白 71g", "漏正餐", "外食不确定性"],
+        "recommendationItems": [
+          {
+            "type": "nutrition",
+            "priority": "high",
+            "title": "先修正正餐连续性",
+            "detail": "当天存在漏正餐或零食顶替正餐，下一餐优先补一份高蛋白正餐或简餐。",
+            "evidence": ["午餐缺失", "威化替代正餐"],
+            "tags": ["饮食结构", "正餐优先"]
+          }
+        ],
+        "recommendations": ["当天存在漏正餐或零食顶替正餐，下一餐优先补一份高蛋白正餐或简餐。"],
+        "confidence": "medium",
+        "missingInfo": ["火锅分量和蘸料不确定"]
+      }
+    }
+  ],
+  "feedback": [
+    {
+      "id": "session_smoke_1",
+      "date": "2026-06-27",
+      "createdAt": "2026/6/27 20:30",
+      "gymId": "gym_hotel_smoke",
+      "gymName": "样例酒店健身房",
+      "planId": "plan_smoke",
+      "dayIndex": 0,
+      "focus": "上肢力量",
+      "completion": 65,
+      "rpe": 9,
+      "painScore": 2,
+      "painArea": "肩前侧",
+      "sleep": 2,
+      "fatigue": 4,
+      "notes": "出差后状态一般，上肢训练完成度偏低。",
+      "type": "post_workout"
+    }
+  ],
+  "advice": [
+    {
+      "id": "advice_smoke_1",
+      "createdAt": "2026/6/27 20:40",
+      "title": "样例训练与饮食建议",
+      "body": "上肢训练完成度偏低且动作反馈出现握力限制和肩前侧疼痛，下一次先保动作质量，不建议直接加重；饮食上先修正午餐缺失。",
+      "tags": ["样例基线", "疼痛风险", "握力限制", "正餐优先"],
+      "priority": "high",
+      "priorityLabel": "高优先级",
+      "evidence": ["完成度 65%", "疼痛 3/5", "午餐缺失"],
+      "recommendationItems": [
+        {
+          "type": "safety",
+          "priority": "high",
+          "title": "先保动作质量",
+          "detail": "下一次上肢训练先降低风险动作强度，观察肩前侧反馈。",
+          "evidence": ["肩前侧疼痛"],
+          "tags": ["不加重"]
+        }
+      ]
+    }
+  ],
+  "revisions": [
+    {
+      "id": "rev_smoke_1",
+      "createdAt": "2026/6/27 20:45",
+      "status": "pending",
+      "summary": "下周简化上肢力量安排",
+      "reason": "样例训练完成度偏低且动作反馈出现疼痛风险，建议减少 1 个辅助动作，先保证主动作质量。",
+      "tags": ["样例基线", "完成度低", "疼痛风险"],
+      "patch": { "type": "trim_accessory", "dayIndex": 0 }
+    }
+  ]
+}

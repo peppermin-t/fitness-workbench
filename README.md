@@ -2,13 +2,31 @@
 
 这是一个本地电脑端训练与饮食工作台，用来替代教练用 Excel 管理训练计划的方式，并逐步补上动作级反馈、饮食自然语言记录、身体指标跟踪和计划优化建议。
 
-完整产品目标、边界、阶段设计和验收标准见 [docs/PRODUCT_SPEC.md](docs/PRODUCT_SPEC.md)。
+当前仍是本地优先静态 Web 工作台。本阶段不引入 React / Vue / Tauri / SQLite / FastAPI，不破坏 `index.html` 双击运行；重构前先冻结功能和验收路径。
 
 ## 运行方式
 
 直接双击打开 `index.html` 即可使用。
 
 当前版本是零依赖静态应用，数据保存在浏览器本地存储中。建议定期在“导入导出”页导出 JSON 备份。
+
+## 文档导航
+
+- [docs/PRODUCT_VISION.md](docs/PRODUCT_VISION.md)：产品愿景、个人定制定位和长期方向。
+- [docs/CURRENT_FEATURES.md](docs/CURRENT_FEATURES.md)：当前代码实际已有功能。
+- [docs/V0_2_SCOPE.md](docs/V0_2_SCOPE.md)：当前阶段 v0.2 的功能边界。
+- [docs/DATA_MODEL_DRAFT.md](docs/DATA_MODEL_DRAFT.md)：当前和建议的数据模型。
+- [docs/REDUNDANCY_AND_BOUNDARY_REVIEW.md](docs/REDUNDANCY_AND_BOUNDARY_REVIEW.md)：当前冗余、边界混乱和风险。
+- [docs/REFACTOR_PLAN.md](docs/REFACTOR_PLAN.md)：后续重构路线。
+- [docs/SMOKE_CHECKLIST.md](docs/SMOKE_CHECKLIST.md)：重构前后必须跑通的人工验收清单。
+- [docs/RULE_TEST_CASES.md](docs/RULE_TEST_CASES.md)：拆分规则逻辑前固定的核心输入输出样例。
+- [docs/DECISIONS.md](docs/DECISIONS.md)：关键架构和产品决策记录。
+- [docs/SAMPLE_DATA_GUIDE.md](docs/SAMPLE_DATA_GUIDE.md)：重构前样例备份数据准备说明。
+
+规则保护层：
+
+- 可直接用浏览器打开 [tests/rules-smoke.html](tests/rules-smoke.html)，运行 11 个无依赖规则 smoke 测试。
+- 可在“导入导出”页导入 [docs/sample-data/manual-smoke-baseline.json](docs/sample-data/manual-smoke-baseline.json)，作为重构前人工验收基线。
 
 ## 当前状态
 
@@ -41,9 +59,4 @@
 
 ## 下一步
 
-优先继续推进：
-
-1. AI 结构化解析接入
-2. `.xlsx` 直接导入和 SQLite 持久化
-3. Tauri 桌面打包
-4. 更完整的食物库和动作库编辑能力
+Phase 2 核心规则拆分已收口。下一步先做一次人工 smoke checklist 和可回退 git 基线确认，然后进入 Phase 3：补齐 `WorkoutSession`、`SetLog`、数据迁移和最小规则测试等 v0.2 数据底座。

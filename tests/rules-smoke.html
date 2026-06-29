@@ -1,0 +1,540 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>规则 Smoke 测试</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f7f8f5;
+        --surface: #ffffff;
+        --ink: #1f2a24;
+        --muted: #66736b;
+        --line: #d8ded6;
+        --ok: #1f7a4d;
+        --bad: #b33b3b;
+      }
+
+      body {
+        margin: 0;
+        padding: 28px;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+      }
+
+      main {
+        max-width: 1120px;
+        margin: 0 auto;
+        display: grid;
+        gap: 18px;
+      }
+
+      h1,
+      h2,
+      p {
+        margin: 0;
+      }
+
+      .summary,
+      .case {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface);
+        padding: 16px;
+      }
+
+      .summary-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 12px;
+      }
+
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        min-height: 30px;
+        padding: 4px 10px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #f0f4ef;
+        font-weight: 700;
+      }
+
+      .pass {
+        color: var(--ok);
+      }
+
+      .fail {
+        color: var(--bad);
+      }
+
+      .case {
+        display: grid;
+        gap: 8px;
+      }
+
+      .case-header {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        align-items: baseline;
+      }
+
+      pre {
+        margin: 0;
+        white-space: pre-wrap;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #f4f6f3;
+        padding: 10px;
+        color: var(--muted);
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section class="summary">
+        <h1>规则 Smoke 测试</h1>
+        <p>无依赖浏览器测试，加载 <code>data.js</code>、<code>src/core/rules/*</code> 和 <code>planner.js</code>，不影响应用数据。</p>
+        <div class="summary-grid">
+          <span class="pill">总用例数：<span id="total">0</span></span>
+          <span class="pill pass">通过：<span id="passed">0</span></span>
+          <span class="pill fail">失败：<span id="failed">0</span></span>
+        </div>
+      </section>
+      <section id="results"></section>
+    </main>
+
+    <script src="../data.js"></script>
+    <script src="../src/core/rules/goal-parser.js"></script>
+    <script src="../src/core/rules/metric-analyzer.js"></script>
+    <script src="../src/core/rules/advice-engine.js"></script>
+    <script src="../src/core/rules/plan-generator.js"></script>
+    <script src="../src/core/rules/exercise-feedback-analyzer.js"></script>
+    <script src="../src/core/rules/nutrition-parser.js"></script>
+    <script src="../src/core/rules/integrated-signals.js"></script>
+    <script src="../src/core/rules/weekly-review.js"></script>
+    <script src="../planner.js"></script>
+    <script>
+      (() => {
+        "use strict";
+
+        const D = window.FitnessData;
+        const P = window.FitnessPlanner;
+        const resultsEl = document.querySelector("#results");
+
+        function assert(condition, message) {
+          if (!condition) throw new Error(message);
+        }
+
+        function hasText(value, pattern) {
+          return pattern.test(String(value || ""));
+        }
+
+        function tagNames(analysis) {
+          return (analysis?.tags || []).map((item) => typeof item === "string" ? item : item.tag).filter(Boolean);
+        }
+
+        function allRecommendationText(result) {
+          return [
+            ...(result?.recommendations || []),
+            ...(result?.recommendationItems || []).map((item) => `${item.title || ""} ${item.detail || ""}`)
+          ].join(" ");
+        }
+
+        function clone(value) {
+          return JSON.parse(JSON.stringify(value));
+        }
+
+        function uid(prefix) {
+          return `${prefix}_smoke`;
+        }
+
+        function nowLabel() {
+          return "2026/6/29 21:00";
+        }
+
+        function isoDaysAgo(days) {
+          const date = new Date();
+          date.setDate(date.getDate() - days);
+          return date.toISOString().slice(0, 10);
+        }
+
+        const fullGym = {
+          id: "gym_full",
+          name: "完整健身房",
+          equipment: D.equipment.map((item) => item.id)
+        };
+
+        const hotelGym = {
+          id: "gym_hotel",
+          name: "酒店健身房",
+          equipment: ["dumbbell", "bench", "cable", "mat", "treadmill", "bike", "bands"]
+        };
+
+        const cases = [
+          {
+            name: "parseGoal_fat_loss_strength_maintenance_travel",
+            run() {
+              const parsed = P.parseGoal("我现在 78kg，想减脂到 72kg，不想掉力量，一周练 3 次，每次 45 分钟，最近经常出差");
+              assert(parsed.primaryGoal === "fat_loss", "主目标不是 fat_loss");
+              assert(parsed.secondaryGoal === "strength_maintenance" || parsed.secondaryGoal === null, "次目标输出不是当前已知形态");
+              assert(parsed.targetWeight === 72, "目标体重不是 72");
+              assert(parsed.trainingDaysPerWeek === 3, "每周训练次数不是 3");
+              assert(parsed.sessionDurationMinutes === 45, "单次训练时长不是 45");
+              assert(parsed.frequentTravel === true, "未识别出差");
+              assert((parsed.constraints || []).includes("frequent_travel"), "constraints 未包含 frequent_travel");
+              return {
+                parsed,
+                currentImplementationNote: parsed.secondaryGoal === null
+                  ? "当前 parseGoal 尚未把“不想掉力量”识别为 strength_maintenance；长期期望见 docs/RULE_TEST_CASES.md。"
+                  : "当前实现已识别 strength_maintenance。"
+              };
+            }
+          },
+          {
+            name: "generatePlan_muscle_gain_full_gym_four_days",
+            run() {
+              const plan = P.generatePlan({
+                gym: fullGym,
+                goal: {
+                  id: "goal_gain",
+                  parsed: {
+                    primaryGoal: "muscle_gain",
+                    primaryGoalLabel: "增肌",
+                    secondaryGoal: null,
+                    secondaryGoalLabel: null,
+                    trainingDaysPerWeek: 4,
+                    sessionDurationMinutes: 60,
+                    frequentTravel: false,
+                    constraints: []
+                  }
+                },
+                metrics: [],
+                exercises: D.exercises,
+                nowLabel,
+                uid
+              });
+              assert(plan && Array.isArray(plan.days), "未生成计划");
+              assert(plan.days.length === 4, "训练日数量不是 4");
+              const types = plan.days.map((day) => day.type);
+              ["push", "pull", "lower", "upper"].forEach((type) => assert(types.includes(type), `缺少 ${type} 训练日`));
+              plan.days.forEach((day) => assert((day.exercises || []).length > 0, `${day.focus} 没有动作`));
+              assert(hasText(plan.context?.goalLabel, /增肌/), "context.goalLabel 未体现增肌");
+              return { types, context: plan.context };
+            }
+          },
+          {
+            name: "generatePlan_travel_hotel_gym_available_substitutes",
+            run() {
+              const plan = P.generatePlan({
+                gym: hotelGym,
+                goal: {
+                  id: "goal_travel",
+                  parsed: {
+                    primaryGoal: "fat_loss",
+                    primaryGoalLabel: "减脂",
+                    secondaryGoal: "strength_maintenance",
+                    secondaryGoalLabel: "保持力量",
+                    trainingDaysPerWeek: 3,
+                    sessionDurationMinutes: 45,
+                    frequentTravel: true,
+                    constraints: ["frequent_travel"]
+                  }
+                },
+                metrics: [],
+                exercises: D.exercises,
+                nowLabel,
+                uid
+              });
+              assert(plan.days.length === 3, "训练日数量不是 3");
+              const rows = plan.days.flatMap((day) => day.exercises || []);
+              assert(rows.length > 0, "计划没有动作");
+              const unavailable = rows.filter((row) => {
+                const exercise = D.exercises.find((item) => item.id === row.exerciseId);
+                return exercise && !P.isAvailable(exercise, hotelGym);
+              });
+              assert(unavailable.length === 0, `存在酒店场地不可用动作：${unavailable.map((row) => row.exerciseId).join(", ")}`);
+              const notesText = [
+                ...(plan.context?.notes || []),
+                ...rows.map((row) => row.notes || "")
+              ].join(" ");
+              assert(/出差|器械|场地|替代|可执行/.test(notesText), "上下文或动作备注未体现出差 / 器械受限");
+              return { days: plan.days.map((day) => day.focus), notes: notesText };
+            }
+          },
+          {
+            name: "analyzeExerciseFeedback_left_reduced_rom_grip_poor_back_feel",
+            run() {
+              const exercise = D.exercises.find((item) => item.id === "lat_pulldown") || {
+                id: "lat_pulldown",
+                name: "高位下拉",
+                pattern: "垂直拉",
+                muscles: ["背阔肌", "肱二头肌"]
+              };
+              const result = P.analyzeExerciseFeedback({
+                exerciseId: exercise.id,
+                freeText: "左侧最后几个半程，小臂先酸了，背没什么感觉",
+                rangeOfMotion: "reduced_late",
+                sideIssue: "left_weaker",
+                limitingFactor: "grip",
+                targetMuscleFeel: "weak",
+                quality: "ok",
+                rpe: 9,
+                painScore: 0,
+                painArea: ""
+              }, exercise);
+              const tags = tagNames(result);
+              assert(tags.includes("left_weaker"), "未识别左侧弱");
+              assert(tags.includes("reduced_rom_late"), "未识别后程半程");
+              assert(tags.includes("grip_limiting"), "未识别握力限制");
+              assert(tags.includes("poor_target_muscle_feel"), "未识别目标肌肉感觉弱");
+              const text = allRecommendationText(result);
+              assert(/完整幅度|不加重|降重/.test(text), "建议未体现完整幅度 / 不加重");
+              assert(/弱侧|左侧/.test(text), "建议未体现弱侧优先");
+              assert(/助力带|稳定|划船/.test(text), "建议未体现助力带 / 稳定版本");
+              return { tags, recommendations: result.recommendations };
+            }
+          },
+          {
+            name: "analyzeExerciseFeedback_bench_shoulder_pain",
+            run() {
+              const exercise = D.exercises.find((item) => item.id === "bench_press") || {
+                id: "bench_press",
+                name: "杠铃卧推",
+                pattern: "水平推",
+                muscles: ["胸", "肱三头肌"]
+              };
+              const result = P.analyzeExerciseFeedback({
+                exerciseId: exercise.id,
+                freeText: "卧推肩前侧不舒服，疼痛 3/5",
+                rangeOfMotion: "full",
+                sideIssue: "none",
+                limitingFactor: "joint_pain",
+                targetMuscleFeel: "moderate",
+                quality: "ok",
+                rpe: 8,
+                painScore: 3,
+                painArea: "肩前侧"
+              }, exercise);
+              const tags = tagNames(result);
+              assert(tags.includes("pain_risk"), "未识别疼痛风险");
+              assert(["high", "medium"].includes(result.priority), "优先级低于风险反馈预期");
+              assert(/不建议加重|降量|替换|缩小/.test(allRecommendationText(result)), "建议未体现不加重 / 降量 / 替代");
+              assert((result.evidence || []).some((item) => /疼痛|肩前侧|3/.test(String(item))), "evidence 未包含疼痛评分或部位");
+              return { tags, priority: result.priority, evidence: result.evidence };
+            }
+          },
+          {
+            name: "parseNutritionLog_common_day_with_missed_lunch_and_hotpot",
+            run() {
+              const result = P.parseNutritionLog("早上吃了5个鸡蛋蛋白一个地瓜一碗豆浆一点炒面，中午没吃饭吃了四个威化，晚上吃了牛肉火锅", {
+                parsed: { primaryGoal: "fat_loss" }
+              });
+              const mealNames = (result.meals || []).map((meal) => meal.meal);
+              ["breakfast", "lunch", "dinner"].forEach((meal) => assert(mealNames.includes(meal), `未识别 ${meal}`));
+              const labels = (result.items || []).map((item) => item.label).join(" ");
+              ["蛋白", "地瓜", "豆浆", "威化"].forEach((item) => assert(labels.includes(item), `未识别 ${item}`));
+              assert(/火锅/.test(labels), "未识别火锅");
+              const tagText = (result.tags || []).join(" ");
+              const recommendationText = allRecommendationText(result);
+              assert(/missed_meal|processed_snack|正餐|零食/.test(`${tagText} ${recommendationText}`), "未体现漏正餐 / 零食替代");
+              const total = result.estimates?.total || {};
+              ["calories", "protein", "carbs", "fat", "fiber"].forEach((key) => assert(typeof total[key] === "number", `缺少 ${key} 估算`));
+              assert(Boolean(result.confidence), "缺少置信度");
+              assert((result.recommendations || []).length > 0, "缺少饮食建议");
+              return { meals: mealNames, labels, tags: result.tags, total, confidence: result.confidence };
+            }
+          },
+          {
+            name: "metricTrend_weight_delta_with_two_or_more_entries",
+            run() {
+              const metrics = [
+                { id: "metric_1", date: "2026-06-01", weight: 78.0, bodyFat: 20.0, skeletalMuscle: 34.0, waist: 86 },
+                { id: "metric_2", date: "2026-06-15", weight: 77.2, bodyFat: 19.5, skeletalMuscle: 34.1, waist: 85 },
+                { id: "metric_3", date: "2026-06-29", weight: 76.8, bodyFat: 19.1, skeletalMuscle: 34.0, waist: 84.5 }
+              ];
+              const trend21 = P.metricTrend(metrics, "weight", 21);
+              const trend30 = P.metricTrend(metrics, "weight", 30);
+              assert(trend21 && typeof trend21.delta === "number", "近 21 天趋势缺少 delta");
+              assert(trend30 && typeof trend30.delta === "number", "近 30 天趋势缺少 delta");
+              assert(P.metricTrend([], "weight", 21) === null, "空数组应返回 null");
+              return { trend21, trend30 };
+            }
+          },
+          {
+            name: "buildWeeklyReview_integrated_training_nutrition_metrics",
+            run() {
+              const plan = {
+                days: [
+                  { focus: "上肢力量", exercises: [{ exerciseId: "bench_press", reps: "8-12", sets: 3, notes: "" }] },
+                  { focus: "下肢力量", exercises: [{ exerciseId: "leg_press", reps: "10-15", sets: 3, notes: "" }] }
+                ]
+              };
+              const before = JSON.stringify(plan);
+              const review = P.buildWeeklyReview({
+                goal: { parsed: { primaryGoal: "fat_loss", secondaryGoal: "strength_maintenance", trainingDaysPerWeek: 3 } },
+                metrics: [
+                  { id: "metric_1", date: isoDaysAgo(28), weight: 78.0 },
+                  { id: "metric_2", date: isoDaysAgo(0), weight: 78.1 }
+                ],
+                sessions: [
+                  { id: "session_1", date: isoDaysAgo(5), completion: 95, rpe: 7, painScore: 0, fatigue: 3, dayIndex: 0, focus: "上肢力量" },
+                  { id: "session_2", date: isoDaysAgo(2), completion: 65, rpe: 9, painScore: 2, fatigue: 4, dayIndex: 1, focus: "下肢力量" }
+                ],
+                exerciseLogs: [
+                  { id: "log_1", date: isoDaysAgo(2), exerciseId: "lat_pulldown", exerciseName: "高位下拉", rpe: 9, painScore: 0, quality: "ok", analysis: { tags: [{ tag: "grip_limiting" }] } }
+                ],
+                nutritionLogs: [
+                  { id: "nutrition_1", date: isoDaysAgo(3), analysis: { tags: ["missed_meal", "daily_protein_gap"], confidence: "medium", estimates: { total: { protein: 80, calories: 1600, carbs: 160, fat: 45, fiber: 8 } }, meals: [] } }
+                ],
+                plan
+              });
+              assert(review && typeof review === "object", "未返回周复盘对象");
+              assert(review.stats?.sessionCount >= 2, "训练次数统计不正确");
+              assert(Number.isFinite(review.stats?.avgCompletion) || Number.isFinite(review.stats?.avgRpe), "缺少平均完成度或 RPE");
+              assert([...(review.highlights || []), ...(review.nextActions || [])].join(" ").length > 0, "缺少饮食问题或下周建议");
+              assert(JSON.stringify(plan) === before, "buildWeeklyReview 不应直接修改传入 plan");
+              return { stats: review.stats, candidates: review.candidates, highlights: review.highlights, nextActions: review.nextActions };
+            }
+          },
+          {
+            name: "buildIntegratedSignals_fat_loss_plateau_low_protein_lunch_missed",
+            run() {
+              const signals = P.buildIntegratedSignals({
+                goal: { parsed: { primaryGoal: "fat_loss", secondaryGoal: "strength_maintenance" } },
+                metrics: [
+                  { id: "metric_1", date: isoDaysAgo(21), weight: 78.0 },
+                  { id: "metric_2", date: isoDaysAgo(0), weight: 78.1 }
+                ],
+                sessions: [
+                  { id: "session_old", date: isoDaysAgo(20), completion: 92, rpe: 7, fatigue: 2 },
+                  { id: "session_recent_1", date: isoDaysAgo(5), completion: 72, rpe: 8.5, fatigue: 4 },
+                  { id: "session_recent_2", date: isoDaysAgo(2), completion: 68, rpe: 9, fatigue: 4 }
+                ],
+                exerciseLogs: [
+                  { id: "log_1", date: isoDaysAgo(2), exerciseId: "bench_press", exerciseName: "卧推", rpe: 8, painScore: 3, analysis: { tags: [{ tag: "pain_risk" }] } }
+                ],
+                nutritionLogs: [
+                  { id: "nutrition_1", date: isoDaysAgo(4), analysis: { tags: ["missed_meal", "daily_protein_gap", "processed_snack"], estimates: { total: { protein: 75, calories: 1600, carbs: 180, fat: 50, fiber: 8 } }, meals: [{ meal: "lunch", tags: ["missed_meal"] }] } },
+                  { id: "nutrition_2", date: isoDaysAgo(2), analysis: { tags: ["daily_protein_gap", "high_fat_possible"], estimates: { total: { protein: 82, calories: 1750, carbs: 160, fat: 70, fiber: 10 } }, meals: [{ meal: "lunch", tags: ["missed_meal"] }] } }
+                ]
+              });
+              assert(Array.isArray(signals), "联动建议未返回数组");
+              assert(signals.length > 0, "联动建议为空");
+              const text = signals.map((item) => `${item.type} ${item.priority} ${item.title} ${item.detail} ${(item.tags || []).join(" ")}`).join(" ");
+              assert(/nutrition|recovery|safety|饮食|恢复|疼痛/.test(text), "联动建议未覆盖训练 / 饮食 / 风险语义");
+              assert(/体重|平台|午餐|蛋白|疼痛/.test(text), "联动建议缺少关键证据语义");
+              return { count: signals.length, titles: signals.map((item) => item.title), priorities: signals.map((item) => item.priority) };
+            }
+          },
+          {
+            name: "buildTrainingReminders_profile_and_integrated_signals",
+            run() {
+              const reminders = P.buildTrainingReminders({
+                goal: { parsed: { primaryGoal: "fat_loss" } },
+                metrics: [
+                  { id: "metric_1", date: isoDaysAgo(21), weight: 78.0 },
+                  { id: "metric_2", date: isoDaysAgo(0), weight: 78.0 }
+                ],
+                sessions: [
+                  { id: "session_1", date: isoDaysAgo(3), completion: 70, rpe: 9, fatigue: 4 }
+                ],
+                exerciseLogs: [
+                  { id: "log_1", date: isoDaysAgo(4), exerciseId: "lat_pulldown", exerciseName: "高位下拉", rpe: 9, painScore: 0, analysis: { tags: [{ tag: "grip_limiting" }, { tag: "reduced_rom_late" }] } },
+                  { id: "log_2", date: isoDaysAgo(2), exerciseId: "bench_press", exerciseName: "卧推", rpe: 8, painScore: 3, analysis: { tags: [{ tag: "pain_risk" }] } }
+                ],
+                nutritionLogs: [
+                  { id: "nutrition_1", date: isoDaysAgo(2), analysis: { tags: ["daily_protein_gap", "missed_meal"], estimates: { total: { protein: 70, calories: 1500, carbs: 150, fat: 45, fiber: 7 } }, meals: [{ meal: "lunch", tags: ["missed_meal"] }] } }
+                ],
+                day: {
+                  exercises: [
+                    { exerciseId: "lat_pulldown" },
+                    { exerciseId: "bench_press" }
+                  ]
+                }
+              });
+              assert(Array.isArray(reminders), "训练前提醒未返回数组");
+              assert(reminders.length > 0, "训练前提醒为空");
+              const text = reminders.map((item) => `${item.title} ${item.detail} ${(item.tags || []).join(" ")}`).join(" ");
+              assert(/高位下拉|卧推|握力|疼痛|低风险|动作质量/.test(text), "训练前提醒未体现动作画像风险");
+              assert(reminders.every((item) => item.type === "training"), "训练前提醒 type 应为 training");
+              return { count: reminders.length, titles: reminders.map((item) => item.title) };
+            }
+          },
+          {
+            name: "buildNutritionReminders_low_protein_lunch_missed",
+            run() {
+              const reminders = P.buildNutritionReminders({
+                goal: { parsed: { primaryGoal: "fat_loss" } },
+                metrics: [
+                  { id: "metric_1", date: isoDaysAgo(21), weight: 78.0 },
+                  { id: "metric_2", date: isoDaysAgo(0), weight: 78.1 }
+                ],
+                sessions: [
+                  { id: "session_1", date: isoDaysAgo(3), completion: 68, rpe: 9, fatigue: 4 }
+                ],
+                exerciseLogs: [],
+                nutritionLogs: [
+                  { id: "nutrition_1", date: isoDaysAgo(4), analysis: { tags: ["daily_protein_gap", "missed_meal", "portion_uncertain"], estimates: { total: { protein: 75, calories: 1550, carbs: 160, fat: 50, fiber: 8 } }, meals: [{ meal: "lunch", tags: ["missed_meal"] }] } },
+                  { id: "nutrition_2", date: isoDaysAgo(2), analysis: { tags: ["daily_protein_gap", "missed_meal", "portion_uncertain"], estimates: { total: { protein: 82, calories: 1650, carbs: 170, fat: 55, fiber: 9 } }, meals: [{ meal: "lunch", tags: ["missed_meal"] }] } }
+                ]
+              });
+              assert(Array.isArray(reminders), "饮食前提醒未返回数组");
+              assert(reminders.length > 0, "饮食前提醒为空");
+              const text = reminders.map((item) => `${item.title} ${item.detail} ${(item.tags || []).join(" ")}`).join(" ");
+              assert(/蛋白|午餐|正餐|饮食前提醒/.test(text), "饮食前提醒未体现蛋白或午餐问题");
+              assert(reminders.every((item) => item.type === "nutrition"), "饮食前提醒 type 应为 nutrition");
+              return { count: reminders.length, titles: reminders.map((item) => item.title) };
+            }
+          }
+        ];
+
+        function runCase(testCase) {
+          try {
+            const details = testCase.run();
+            return { name: testCase.name, ok: true, details };
+          } catch (error) {
+            return { name: testCase.name, ok: false, error: error.message || String(error) };
+          }
+        }
+
+        function render(results) {
+          const passed = results.filter((item) => item.ok).length;
+          const failed = results.length - passed;
+          document.querySelector("#total").textContent = String(results.length);
+          document.querySelector("#passed").textContent = String(passed);
+          document.querySelector("#failed").textContent = String(failed);
+
+          resultsEl.innerHTML = results.map((item) => `
+            <article class="case">
+              <div class="case-header">
+                <h2>${item.name}</h2>
+                <strong class="${item.ok ? "pass" : "fail"}">${item.ok ? "PASS" : "FAIL"}</strong>
+              </div>
+              <pre>${escapeHtml(item.ok ? JSON.stringify(item.details, null, 2) : item.error)}</pre>
+            </article>
+          `).join("");
+        }
+
+        function escapeHtml(value) {
+          return String(value ?? "")
+            .replaceAll("&", "&amp;")
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;")
+            .replaceAll('"', "&quot;")
+            .replaceAll("'", "&#039;");
+        }
+
+        const results = cases.map(runCase);
+        console.table(results.map((item) => ({ name: item.name, status: item.ok ? "PASS" : "FAIL", error: item.error || "" })));
+        console.log("rules-smoke details", results);
+        render(results);
+      })();
+    </script>
+  </body>
+</html>
