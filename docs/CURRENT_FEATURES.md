@@ -13,6 +13,7 @@
 - 从当前训练计划中选择训练日并展示当天动作。
 - 支持从今日页触发生成 / 刷新训练计划。
 - 提供动作级反馈入口和训练整体反馈入口。
+- 动作反馈保存时会创建或复用当天训练日的 `WorkoutSession`，并写入 `ExerciseLog.sessionId`。
 
 ### 主要代码位置
 
@@ -48,8 +49,8 @@
 
 ### 当前缺口
 
-- “今日训练”仍是计划查看 + 反馈入口，没有明确的 `WorkoutSession` 执行状态，例如开始、进行中、已完成、跳过。
-- 动作反馈是动作级单条记录，不是每组级 `SetLog`。
+- `WorkoutSession` 已有 `in_progress` / `completed` 第一版状态，但还没有完整开始、暂停、跳过和计时流程。
+- 动作反馈已支持可选每组级 `SetLog`，但仍保留快速文本录入，历史旧数据可能没有 `sets`。
 - 今日训练日选择依赖 `dayIndex`，没有真实日期和训练 session 的稳定绑定。
 - 今日建议来自多个规则函数，但缺少可测试的规则用例。
 
@@ -248,7 +249,7 @@
 
 ### 当前缺口
 
-- `WorkoutSession` 仍是一次整体反馈，不包含动作执行明细。
+- `WorkoutSession` 已有第一版状态和 `exerciseLogIds`，动作日志通过 `sessionId` 关联，但还没有完整执行状态机。
 - `feedback` 与 `sessions` 存在概念重叠，`feedback` 更像旧数据或兼容字段。
 - 没有 session 状态机，也没有训练开始时间、结束时间、耗时。
 
@@ -268,8 +269,9 @@
 - `index.html`：`exercise-log-form`、动作历史筛选区域。
 - `app.js`：`saveExerciseLog`、`renderExerciseLogSelect`、`renderExerciseLogList`、`renderExerciseHistoryFilter`、`renderExerciseHistory`、`buildExerciseHistorySummary`。
 - `src/core/rules/exercise-feedback-analyzer.js`：动作反馈分析、动作长期画像、动作反馈建议。
+- `src/core/rules/training-stats.js`：训练容量、有效组数和简单 PR 判断。
 - `src/core/rules/integrated-signals.js`：训练前提醒会读取动作长期画像。
-- `planner.js`：兼容导出 `window.FitnessPlanner.analyzeExerciseFeedback`、`window.FitnessPlanner.buildExerciseProfiles`、`window.FitnessPlanner.buildTrainingReminders`。
+- `planner.js`：兼容导出 `window.FitnessPlanner.analyzeExerciseFeedback`、`window.FitnessPlanner.buildExerciseProfiles`、`window.FitnessPlanner.buildTrainingReminders`、`window.FitnessPlanner.calculateVolumeLoad` 等 API。
 
 ### 依赖的数据状态
 
@@ -287,10 +289,10 @@
 
 ### 当前缺口
 
-- 没有每组级 `SetLog`，实际重量和次数只是文本。
-- 没有标准化实际负重单位、每组 reps、失败组、是否完成目标组等结构化字段。
-- 训练容量、有效组数、PR 判断缺少底层数据。
-- 动作级日志与整体 session 没有稳定 session ID 关联。
+- 已支持可选 `sets`，并在可解析时写入 `loadKg`、`reps`、`rpe`、`completed`、`note`。
+- 已计算基础 `volumeLoad`、`hardSets` 和 `simplePr`，但规则仍是第一版。
+- 旧动作日志可能没有 `sets` 和 `sessionId`，当前 `schemaVersion: 2` 迁移会补齐默认值。
+- 还没有失败组、热身组、目标组完成度等更细字段。
 
 ## 8. 身体指标
 
@@ -514,7 +516,9 @@
 
 ### 当前缺口
 
-- `schemaVersion: 1` 已存在，但没有迁移函数。
+- `schemaVersion` 当前为 `2`，已有第一版 v1 到 v2 迁移函数。
+- `src/app/storage/state-migrations.js`：状态迁移、默认字段补齐、导入规范化。
+- JSON 导入会先解析和迁移，成功后才覆盖 localStorage；坏 JSON 不应覆盖旧数据。
 - JSON 导入没有 schema 校验。
 - CSV 导入解析简单，不支持复杂逗号、换行、引号边界。
 - 没有自动备份或备份恢复前预检。

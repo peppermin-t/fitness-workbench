@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "currentGymId": "gym_hotel_smoke",
   "currentGoalId": "goal_smoke_fat_loss",
   "gyms": [
@@ -192,6 +192,9 @@
       "id": "session_smoke_1",
       "date": "2026-06-27",
       "createdAt": "2026/6/27 20:30",
+      "startedAt": "2026/6/27 19:45",
+      "completedAt": "2026/6/27 20:30",
+      "status": "completed",
       "gymId": "gym_hotel_smoke",
       "gymName": "样例酒店健身房",
       "planId": "plan_smoke",
@@ -203,7 +206,8 @@
       "painArea": "肩前侧",
       "sleep": 2,
       "fatigue": 4,
-      "notes": "出差后状态一般，上肢训练完成度偏低。"
+      "notes": "出差后状态一般，上肢训练完成度偏低。",
+      "exerciseLogIds": ["exercise_log_smoke_1", "exercise_log_smoke_2"]
     }
   ],
   "exerciseLogs": [
@@ -211,6 +215,7 @@
       "id": "exercise_log_smoke_1",
       "date": "2026-06-27",
       "createdAt": "2026/6/27 20:35",
+      "sessionId": "session_smoke_1",
       "exerciseId": "seated_cable_row",
       "exerciseName": "坐姿绳索划船",
       "dayIndex": 0,
@@ -230,6 +235,19 @@
       "painScore": 0,
       "painArea": "",
       "freeText": "左侧最后几个半程，小臂先酸了，背没什么感觉",
+      "sets": [
+        { "id": "set_smoke_1_1", "setIndex": 1, "loadKg": 35, "reps": 12, "rpe": 8, "completed": true, "note": "35kg x 12 @8" },
+        { "id": "set_smoke_1_2", "setIndex": 2, "loadKg": 35, "reps": 10, "rpe": 9, "completed": true, "note": "35kg x 10 @9" },
+        { "id": "set_smoke_1_3", "setIndex": 3, "loadKg": 35, "reps": 8, "rpe": 9, "completed": true, "note": "35kg x 8 @9" }
+      ],
+      "volumeLoad": 1050,
+      "hardSets": 3,
+      "simplePr": {
+        "isPr": false,
+        "records": [],
+        "summary": { "volumeLoad": 1050, "hardSets": 3, "maxLoadKg": 35, "maxReps": 12, "setCount": 3 },
+        "previousBest": { "volumeLoad": 0, "maxLoadKg": 0, "maxReps": 0 }
+      },
       "analysis": {
         "exerciseId": "seated_cable_row",
         "exerciseName": "坐姿绳索划船",
@@ -260,6 +278,7 @@
       "id": "exercise_log_smoke_2",
       "date": "2026-06-27",
       "createdAt": "2026/6/27 20:38",
+      "sessionId": "session_smoke_1",
       "exerciseId": "dumbbell_bench_press",
       "exerciseName": "哑铃卧推",
       "dayIndex": 0,
@@ -279,6 +298,19 @@
       "painScore": 3,
       "painArea": "肩前侧",
       "freeText": "卧推肩前侧不舒服，疼痛 3/5",
+      "sets": [
+        { "id": "set_smoke_2_1", "setIndex": 1, "loadKg": 22, "reps": 10, "rpe": 8, "completed": true, "note": "22kg x 10 @8" },
+        { "id": "set_smoke_2_2", "setIndex": 2, "loadKg": 22, "reps": 9, "rpe": 8, "completed": true, "note": "22kg x 9 @8" },
+        { "id": "set_smoke_2_3", "setIndex": 3, "loadKg": 22, "reps": 8, "rpe": 8.5, "completed": true, "note": "22kg x 8 @8.5" }
+      ],
+      "volumeLoad": 594,
+      "hardSets": 3,
+      "simplePr": {
+        "isPr": false,
+        "records": [],
+        "summary": { "volumeLoad": 594, "hardSets": 3, "maxLoadKg": 22, "maxReps": 10, "setCount": 3 },
+        "previousBest": { "volumeLoad": 0, "maxLoadKg": 0, "maxReps": 0 }
+      },
       "analysis": {
         "exerciseId": "dumbbell_bench_press",
         "exerciseName": "哑铃卧推",
@@ -374,6 +406,9 @@
       "id": "session_smoke_1",
       "date": "2026-06-27",
       "createdAt": "2026/6/27 20:30",
+      "startedAt": "2026/6/27 19:45",
+      "completedAt": "2026/6/27 20:30",
+      "status": "completed",
       "gymId": "gym_hotel_smoke",
       "gymName": "样例酒店健身房",
       "planId": "plan_smoke",
@@ -386,6 +421,7 @@
       "sleep": 2,
       "fatigue": 4,
       "notes": "出差后状态一般，上肢训练完成度偏低。",
+      "exerciseLogIds": ["exercise_log_smoke_1", "exercise_log_smoke_2"],
       "type": "post_workout"
     }
   ],

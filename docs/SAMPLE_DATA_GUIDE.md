@@ -14,7 +14,7 @@
 docs/sample-data/manual-smoke-baseline.json
 ```
 
-使用方式：打开 `index.html`，进入“导入导出”页，选择“导入 JSON”，导入该文件。导入后应用会刷新并从浏览器 localStorage 读取样例数据。当前真实 localStorage key 是 `fitness-coach-workbench-v1`，不要为了样例数据修改运行中的存储 key。
+使用方式：打开 `index.html`，进入“导入导出”页，选择“导入 JSON”，导入该文件。导入后应用会刷新并从浏览器 localStorage 读取样例数据。当前真实 localStorage key 是 `fitness-coach-workbench-v1`，当前样例使用 `schemaVersion: 2`，不要为了样例数据修改运行中的存储 key。
 
 ## 最小数据要求
 
@@ -120,7 +120,14 @@ docs/sample-data/manual-smoke-baseline.json
 - `painScore`
 - `painArea`
 - `freeText`
+- `sessionId`
+- `sets`
+- `volumeLoad`
+- `hardSets`
+- `simplePr`
 - `analysis`
+
+至少 1 条动作级反馈应包含 `sets`、`volumeLoad`、`hardSets` 和 `simplePr`，用于验证 Phase 3 的每组记录和基础训练容量统计。
 
 ### 饮食记录
 
@@ -174,5 +181,6 @@ docs/sample-data/manual-smoke-baseline.json
 
 - 每次 schemaVersion 升级后，都要验证旧样例能迁移。
 - 如果字段新增，应优先通过迁移补默认值，而不是手动重写所有样例。
+- 当前 `docs/sample-data/manual-smoke-baseline.json` 已升级到 `schemaVersion: 2`；如需验证旧数据迁移，可参考 `tests/rules-smoke.html` 中的 `stateMigration_v1_to_v2_preserves_data_and_defaults`。
 - 样例数据不应包含隐私信息。
 - 样例数据应尽量覆盖真实业务链路，而不是只满足字段存在。

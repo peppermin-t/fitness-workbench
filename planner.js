@@ -4,6 +4,11 @@ window.FitnessPlanner = (() => {
   const parseGoal = window.FitnessCore.GoalParser.parseGoal;
   const { sortedMetrics, metricTrend } = window.FitnessCore.MetricAnalyzer;
   const {
+    calculateVolumeLoad,
+    calculateHardSets,
+    detectSimplePr
+  } = window.FitnessCore.TrainingStats;
+  const {
     generatePlan,
     isAvailable,
     availableSubstitutes
@@ -101,6 +106,9 @@ function createAdviceFromSession({ session, day, nowLabel, uid }) {
     availableSubstitutes,
     isAvailable,
     metricTrend,
-    sortedMetrics
+    sortedMetrics,
+    calculateVolumeLoad,
+    calculateHardSets,
+    detectSimplePr
   };
 })();

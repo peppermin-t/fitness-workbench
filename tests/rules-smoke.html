@@ -112,6 +112,7 @@
     <script src="../data.js"></script>
     <script src="../src/core/rules/goal-parser.js"></script>
     <script src="../src/core/rules/metric-analyzer.js"></script>
+    <script src="../src/core/rules/training-stats.js"></script>
     <script src="../src/core/rules/advice-engine.js"></script>
     <script src="../src/core/rules/plan-generator.js"></script>
     <script src="../src/core/rules/exercise-feedback-analyzer.js"></script>
@@ -119,6 +120,7 @@
     <script src="../src/core/rules/integrated-signals.js"></script>
     <script src="../src/core/rules/weekly-review.js"></script>
     <script src="../planner.js"></script>
+    <script src="../src/app/storage/state-migrations.js"></script>
     <script>
       (() => {
         "use strict";
@@ -364,6 +366,98 @@
               assert(trend30 && typeof trend30.delta === "number", "近 30 天趋势缺少 delta");
               assert(P.metricTrend([], "weight", 21) === null, "空数组应返回 null");
               return { trend21, trend30 };
+            }
+          },
+          {
+            name: "trainingStats_volume_hard_sets_simple_pr",
+            run() {
+              const previous = [
+                {
+                  id: "log_prev",
+                  exerciseId: "bench_press",
+                  sets: [
+                    { loadKg: 60, reps: 8, rpe: 8 },
+                    { loadKg: 60, reps: 8, rpe: 8 }
+                  ]
+                }
+              ];
+              const current = {
+                id: "log_current",
+                exerciseId: "bench_press",
+                sets: [
+                  { loadKg: 65, reps: 8, rpe: 8 },
+                  { loadKg: 65, reps: 8, rpe: 8.5 },
+                  { loadKg: 60, reps: 10, rpe: 9 }
+                ]
+              };
+              const volume = P.calculateVolumeLoad(current.sets);
+              const hardSets = P.calculateHardSets(current.sets);
+              const pr = P.detectSimplePr(current, previous);
+              assert(volume === 1640, "容量计算不正确");
+              assert(hardSets === 3, "有效组数计算不正确");
+              assert(pr?.isPr === true, "未识别简单 PR");
+              assert((pr.records || []).some((record) => record.type === "volume_load"), "未识别容量 PR");
+              assert((pr.records || []).some((record) => record.type === "max_load"), "未识别重量 PR");
+              return { volume, hardSets, pr };
+            }
+          },
+          {
+            name: "stateMigration_v1_to_v2_preserves_data_and_defaults",
+            run() {
+              const migrated = window.FitnessCore.StateMigrations.migrateState({
+                schemaVersion: 1,
+                currentGymId: "gym_legacy",
+                gyms: [{ id: "gym_legacy", name: "Legacy Gym", equipment: ["dumbbell"] }],
+                exercises: [],
+                goals: [{ id: "goal_legacy", parsed: { primaryGoal: "fat_loss" } }],
+                metrics: [{ id: "metric_legacy", date: "2026-06-01", weight: 78 }],
+                plan: {
+                  id: "plan_legacy",
+                  days: [
+                    {
+                      focus: "Legacy Day",
+                      exercises: [{ exerciseId: "bench_press", sets: 3, reps: "8-12" }]
+                    }
+                  ]
+                },
+                sessions: [{ id: "session_legacy", date: "2026-06-20", completion: 80, rpe: 8 }],
+                exerciseLogs: [{ id: "log_legacy", date: "2026-06-20", exerciseId: "bench_press", actualLoad: "60kg", actualReps: "8/8" }],
+                nutritionLogs: [{ id: "nutrition_legacy", text: "lunch" }],
+                feedback: [{ id: "feedback_legacy" }],
+                advice: [{ id: "advice_legacy", title: "Legacy Advice" }],
+                revisions: [{ id: "revision_legacy", title: "Legacy Revision" }]
+              }, {
+                schemaVersion: 2,
+                currentGymId: "gym_default",
+                gyms: [{ id: "gym_default", name: "Default Gym", equipment: [] }],
+                exercises: [],
+                goals: [],
+                metrics: [],
+                plan: null,
+                sessions: [],
+                exerciseLogs: [],
+                nutritionLogs: [],
+                feedback: [],
+                advice: [],
+                revisions: []
+              });
+              assert(migrated.schemaVersion === 2, "schemaVersion should migrate to 2");
+              assert(migrated.gyms.length === 1 && migrated.goals.length === 1 && migrated.metrics.length === 1, "core arrays should be preserved");
+              assert(migrated.sessions[0].status === "completed", "legacy session should default to completed");
+              assert(Array.isArray(migrated.sessions[0].exerciseLogIds), "session exerciseLogIds should exist");
+              assert(migrated.exerciseLogs[0].sessionId === null, "legacy exercise log should default sessionId to null");
+              assert(Array.isArray(migrated.exerciseLogs[0].sets), "legacy exercise log should get sets array");
+              assert(typeof migrated.exerciseLogs[0].volumeLoad === "number", "exercise log should get volumeLoad");
+              assert(migrated.plan.days[0].id, "plan day should get stable id");
+              assert(migrated.plan.days[0].exercises[0].id, "planned exercise should get stable id");
+              assert(migrated.advice[0].status === "active", "advice should default to active");
+              assert(migrated.revisions[0].status === "pending", "revision should default to pending");
+              return {
+                schemaVersion: migrated.schemaVersion,
+                sessionStatus: migrated.sessions[0].status,
+                planDayId: migrated.plan.days[0].id,
+                plannedExerciseId: migrated.plan.days[0].exercises[0].id
+              };
             }
           },
           {

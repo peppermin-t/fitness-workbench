@@ -325,7 +325,97 @@
 - 身体指标：至少两条数据时趋势图能显示。
 - 身体指标：近期指标能参与首页建议。
 
-## 8. 周复盘：训练、饮食、身体指标联动
+## 8. 训练容量统计：容量、有效组和简单 PR
+
+### 用例名称
+
+`trainingStats_volume_hard_sets_simple_pr`
+
+### 关联函数
+
+- `calculateVolumeLoad`
+- `calculateHardSets`
+- `detectSimplePr`
+
+### 输入数据
+
+```js
+{
+  previous: [
+    {
+      exerciseId: "bench_press",
+      sets: [
+        { loadKg: 60, reps: 8, rpe: 8 },
+        { loadKg: 60, reps: 8, rpe: 8 }
+      ]
+    }
+  ],
+  current: {
+    exerciseId: "bench_press",
+    sets: [
+      { loadKg: 65, reps: 8, rpe: 8 },
+      { loadKg: 65, reps: 8, rpe: 8.5 },
+      { loadKg: 60, reps: 10, rpe: 9 }
+    ]
+  }
+}
+```
+
+### 期望输出要点
+
+- `calculateVolumeLoad` 返回 `1640`。
+- `calculateHardSets` 返回 `3`。
+- `detectSimplePr` 识别至少一个简单 PR。
+- 当前第一版至少识别容量 PR 和最大重量 PR。
+
+### 关联 smoke checklist 项
+
+- 动作级反馈：能保存动作级反馈。
+- 智能教练：能展示动作长期画像。
+- 周复盘：后续可基于容量和有效组生成更稳定建议。
+
+## 9. 状态迁移：v1 到 v2 默认字段补齐
+
+### 用例名称
+
+`stateMigration_v1_to_v2_preserves_data_and_defaults`
+
+### 关联函数
+
+- `window.FitnessCore.StateMigrations.migrateState`
+
+### 输入数据
+
+使用 `schemaVersion: 1` 的旧状态对象，包含：
+
+- 1 个旧 `WorkoutSession`，没有 `status` 和 `exerciseLogIds`。
+- 1 条旧 `ExerciseLog`，没有 `sessionId`、`sets`、`volumeLoad`、`hardSets`、`simplePr`。
+- 1 份旧 `TrainingPlan`，训练日和计划动作没有稳定 `id`。
+- 1 条旧 `Advice`，没有 `status`。
+- 1 条旧 `Revision`，没有 `status`。
+
+### 当前实现输出
+
+- `schemaVersion` 升级到 `2`。
+- 旧 session 默认 `status: "completed"`。
+- session 补 `exerciseLogIds: []`。
+- 旧动作日志补 `sessionId: null` 和 `sets: []`。
+- 动作日志补 `volumeLoad`、`hardSets`、`simplePr`。
+- 计划日和计划动作补稳定 `id`。
+- advice 默认 `status: "active"`。
+- revision 默认 `status: "pending"`。
+
+### 长期期望输出
+
+- 后续每次 schema 变更都应新增迁移用例。
+- 导入失败不能覆盖旧 localStorage。
+- 迁移失败不能静默丢数据。
+
+### 关联 smoke checklist 项
+
+- 导入导出 / 数据备份：能导入 JSON，导入后页面能正常渲染。
+
+## 10. 周复盘：训练、饮食、身体指标联动
 
 ### 用例名称
 
@@ -388,7 +478,7 @@
 - 智能教练：周复盘能展示训练次数、平均完成度、平均 RPE、平均疲劳、蛋白缺口天数、漏正餐天数或体重变化。
 - 智能教练：周复盘候选不会静默修改计划，必须点击后才应用。
 
-## 9. 联动建议与提前提醒
+## 11. 联动建议与提前提醒
 
 ### 用例名称
 
@@ -473,13 +563,15 @@
 
 ## 当前无依赖 smoke 脚本覆盖
 
-当前 [../tests/rules-smoke.html](../tests/rules-smoke.html) 覆盖 11 个用例：
+当前 [../tests/rules-smoke.html](../tests/rules-smoke.html) 覆盖 13 个用例：
 
 - `parseGoal` 的主目标、目标体重、训练频率、出差约束。
 - `generatePlan` 的完整健身房四练和酒店健身房出差替代。
 - `analyzeExerciseFeedback` 的 `pain_risk`、`grip_limiting`、`reduced_rom_late`、左右差和目标肌肉感觉弱。
 - `parseNutritionLog` 的餐次、食物项、标签、估算和建议。
 - `metricTrend` 的趋势计算和空数组保护。
+- `calculateVolumeLoad`、`calculateHardSets`、`detectSimplePr` 的基础训练统计。
+- `migrateState` 的 v1 到 v2 默认字段补齐。
 - `buildWeeklyReview` 的训练 / 饮食 / 指标整合和不静默改计划。
 - `buildIntegratedSignals`、`buildTrainingReminders`、`buildNutritionReminders` 的联动建议和提前提醒。
 

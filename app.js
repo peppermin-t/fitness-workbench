@@ -4,6 +4,7 @@
   const STORAGE_KEY = "fitness-coach-workbench-v1";
   const D = window.FitnessData;
   const P = window.FitnessPlanner;
+  const M = window.FitnessCore.StateMigrations;
   const $ = (s) => document.querySelector(s);
   const $$ = (s) => Array.from(document.querySelectorAll(s));
   const clone = (v) => JSON.parse(JSON.stringify(v));
@@ -30,7 +31,7 @@
 
   function defaultState() {
     return {
-      schemaVersion: 1,
+      schemaVersion: M.CURRENT_SCHEMA_VERSION,
       currentGymId: "gym_default",
       currentGoalId: null,
       gyms: clone(D.defaultGyms),
@@ -51,20 +52,26 @@
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return defaultState();
     try {
-      const data = JSON.parse(raw);
-      const base = defaultState();
-      const byId = new Map(D.exercises.map((x) => [x.id, x]));
-      (data.exercises || []).forEach((x) => byId.set(x.id, { ...byId.get(x.id), ...x }));
-      const next = { ...base, ...data, exercises: Array.from(byId.values()) };
-      if (!next.gyms?.length) next.gyms = base.gyms;
-      if (!next.gyms.some((g) => g.id === next.currentGymId)) next.currentGymId = next.gyms[0].id;
-      return next;
+      return prepareState(JSON.parse(raw));
     } catch {
       return defaultState();
     }
   }
 
+  function prepareState(data) {
+    const base = defaultState();
+    const byId = new Map(D.exercises.map((x) => [x.id, x]));
+    (Array.isArray(data?.exercises) ? data.exercises : []).forEach((x) => byId.set(x.id, { ...byId.get(x.id), ...x }));
+    const next = { ...base, ...(data || {}), exercises: Array.from(byId.values()) };
+    return normalizeState(next);
+  }
+
+  function normalizeState(next) {
+    return M.migrateState(next, defaultState());
+  }
+
   function saveState() {
+    state = normalizeState(state);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   }
 
@@ -186,7 +193,7 @@
     const gym = currentGym();
     const latest = latestMetric();
     const trend = P.metricTrend(state.metrics, "weight", 30);
-    const session = state.sessions[0];
+    const session = latestCompletedSession();
     const summary = [];
     const linkedSignals = P.buildIntegratedSignals({
       goal,
@@ -285,6 +292,7 @@
             <p style="margin-top:8px;">${esc(log.freeText || "无自由反馈")}</p>
             <div class="tag-row">${(log.analysis?.tags || []).map((item) => tag(item.tag, "info")).join("")}</div>
             <p class="mini-text" style="margin-top:8px;">${esc((log.analysis?.recommendations || []).join(" "))}</p>
+            ${trainingStatsLine(log)}
             ${log.analysis?.evidence?.length ? `<div class="context-box" style="margin-top:10px;"><div><strong>依据</strong></div>${renderEvidenceList(log.analysis.evidence.slice(0, 5))}</div>` : ""}
           </div>
           <button class="button danger" data-action="delete-exercise-log" data-id="${esc(log.id)}">删除</button>
@@ -327,6 +335,12 @@
         <div class="metric-pill"><span>平均 RPE</span><strong>${summary.avgRpe}</strong></div>
         <div class="metric-pill"><span>动作质量差</span><strong>${summary.poorCount}</strong></div>
         <div class="metric-pill"><span>疼痛风险</span><strong>${summary.painCount}</strong></div>
+        <div class="metric-pill"><span>总训练容量</span><strong>${volumeLabel(summary.totalVolumeLoad)}</strong></div>
+        <div class="metric-pill"><span>有效组数</span><strong>${summary.totalHardSets}</strong></div>
+        <div class="metric-pill"><span>简单 PR</span><strong>${summary.prCount}</strong></div>
+        <div class="metric-pill"><span>总训练容量</span><strong>${volumeLabel(summary.totalVolumeLoad)}</strong></div>
+        <div class="metric-pill"><span>有效组数</span><strong>${summary.totalHardSets}</strong></div>
+        <div class="metric-pill"><span>简单 PR</span><strong>${summary.prCount}</strong></div>
       </div>
       <div class="context-box" style="margin-top: 14px;">
         <div><strong>阶段 1 结论：</strong>${esc(summary.stage1Conclusion)}</div>
@@ -350,6 +364,7 @@
             <p style="margin-top:8px;">${esc(log.freeText || "无自由反馈")}</p>
             <div class="tag-row">${(log.analysis?.tags || []).map((item) => tag(item.tag, "info")).join("")}</div>
             <p class="mini-text" style="margin-top:8px;">${esc((log.analysis?.recommendations || []).join(" "))}</p>
+            ${trainingStatsLine(log)}
           </div>
           <button class="button danger" data-action="delete-exercise-log" data-id="${esc(log.id)}">删除</button>
         </div>
@@ -638,15 +653,10 @@
     if (!state.plan?.days?.length) return toast("请先生成训练计划。");
     const dayIndex = Number($("#today-plan-day-select").value || 0);
     const day = state.plan.days[dayIndex];
-    const session = {
-      id: uid("session"),
-      date: todayIso(),
-      createdAt: nowLabel(),
-      gymId: state.currentGymId,
-      gymName: currentGym()?.name || "",
-      planId: state.plan.id,
-      dayIndex,
-      focus: day.focus,
+    const session = getOrCreateWorkoutSession(dayIndex, day);
+    Object.assign(session, {
+      completedAt: nowLabel(),
+      status: "completed",
       completion: clamp(Number($("#log-completion").value || 0), 0, 100),
       rpe: clamp(Number($("#log-rpe").value || 0), 1, 10),
       painScore: clamp(Number($("#log-pain-score").value || 0), 0, 5),
@@ -654,8 +664,8 @@
       sleep: clamp(Number($("#log-sleep").value || 0), 1, 5),
       fatigue: clamp(Number($("#log-fatigue").value || 0), 1, 5),
       notes: $("#log-notes").value.trim()
-    };
-    state.sessions.unshift(session);
+    });
+    moveSessionToFront(session.id);
     state.feedback.unshift({ ...session, type: "post_workout" });
     const result = P.createAdviceFromSession({ session, day, nowLabel, uid });
     state.advice.unshift(...result.advice);
@@ -680,10 +690,12 @@
     const dayIndex = Number($("#today-plan-day-select").value || 0);
     const day = state.plan?.days?.[dayIndex];
     const plannedRow = day?.exercises?.find((row) => row.exerciseId === exerciseId);
+    const session = getOrCreateWorkoutSession(dayIndex, day);
     const log = {
       id: uid("exercise_log"),
       date: todayIso(),
       createdAt: nowLabel(),
+      sessionId: session.id,
       exerciseId,
       exerciseName: exercise.name,
       dayIndex,
@@ -704,9 +716,14 @@
       painArea: $("#exercise-log-pain-area").value.trim(),
       freeText: $("#exercise-log-feedback").value.trim()
     };
+    log.sets = parseSetLogs($("#exercise-log-sets")?.value, log.actualLoad, log.actualReps, log.rpe);
+    Object.assign(log, buildTrainingStatsForLog(log, state.exerciseLogs || []));
     log.analysis = P.analyzeExerciseFeedback(log, exercise);
     state.exerciseLogs = state.exerciseLogs || [];
     state.exerciseLogs.unshift(log);
+    session.exerciseLogIds = Array.isArray(session.exerciseLogIds) ? session.exerciseLogIds : [];
+    if (!session.exerciseLogIds.includes(log.id)) session.exerciseLogIds.push(log.id);
+    moveSessionToFront(session.id);
     state.advice.unshift({
       id: uid("advice"),
       createdAt: nowLabel(),
@@ -889,6 +906,7 @@
   }
 
   function exportJson() {
+    state = normalizeState(state);
     download(`fitness-workbench-backup-${todayIso()}.json`, JSON.stringify(state, null, 2), "application/json;charset=utf-8");
   }
 
@@ -898,8 +916,8 @@
     const reader = new FileReader();
     reader.onload = () => {
       try {
-        localStorage.setItem(STORAGE_KEY, String(reader.result || "{}"));
-        state = loadState();
+        state = prepareState(JSON.parse(String(reader.result || "{}")));
+        saveState();
         renderAll();
         toast("JSON 备份已导入。");
       } catch {
@@ -1211,6 +1229,9 @@
         avgRpe: "-",
         poorCount: 0,
         painCount: 0,
+        totalVolumeLoad: 0,
+        totalHardSets: 0,
+        prCount: 0,
         topTags: [],
         stage1Conclusion: "还没有动作反馈数据。"
       };
@@ -1218,6 +1239,9 @@
     const avgRpe = (logs.reduce((sum, log) => sum + Number(log.rpe || 0), 0) / count).toFixed(1);
     const poorCount = logs.filter((log) => log.quality === "poor").length;
     const painCount = logs.filter((log) => Number(log.painScore) >= 3).length;
+    const totalVolumeLoad = logs.reduce((sum, log) => sum + Number(log.volumeLoad || 0), 0);
+    const totalHardSets = logs.reduce((sum, log) => sum + Number(log.hardSets || 0), 0);
+    const prCount = logs.filter((log) => log.simplePr?.isPr).length;
     const tagCounts = {};
     logs.forEach((log) => {
       (log.analysis?.tags || []).forEach((item) => {
@@ -1226,7 +1250,7 @@
     });
     const topTags = Object.entries(tagCounts).sort((a, b) => b[1] - a[1]).slice(0, 4);
     const stage1Conclusion = inferStage1Conclusion(logs, topTags, poorCount, painCount);
-    return { count, avgRpe, poorCount, painCount, topTags, stage1Conclusion };
+    return { count, avgRpe, poorCount, painCount, totalVolumeLoad, totalHardSets, prCount, topTags, stage1Conclusion };
   }
 
   function inferStage1Conclusion(logs, topTags, poorCount, painCount) {
@@ -1880,6 +1904,7 @@
             <p style="margin-top:8px;">${esc(log.freeText || "无自由反馈")}</p>
             <div class="tag-row">${tag(advicePriorityLabel(log.analysis?.priority, log.analysis?.priorityLabel), advicePriorityType(log.analysis?.priority))}${(log.analysis?.tags || []).map((item) => tag(item.tag, "info")).join("")}</div>
             <p class="mini-text" style="margin-top:8px;">${esc((log.analysis?.recommendations || []).join(" "))}</p>
+            ${trainingStatsLine(log)}
             ${log.analysis?.evidence?.length ? `<div class="context-box" style="margin-top:10px;"><div><strong>依据</strong></div>${renderEvidenceList(log.analysis.evidence.slice(0, 5))}</div>` : ""}
           </div>
           <button class="button danger" data-action="delete-exercise-log" data-id="${esc(log.id)}">删除</button>
@@ -1945,6 +1970,7 @@
             <p style="margin-top:8px;">${esc(log.freeText || "无自由反馈")}</p>
             <div class="tag-row">${(log.analysis?.tags || []).map((item) => tag(item.tag, "info")).join("")}</div>
             <p class="mini-text" style="margin-top:8px;">${esc((log.analysis?.recommendations || []).join(" "))}</p>
+            ${trainingStatsLine(log)}
           </div>
           <button class="button danger" data-action="delete-exercise-log" data-id="${esc(log.id)}">删除</button>
         </div>
@@ -2177,6 +2203,125 @@
         ${renderEvidenceList((item.evidence || []).slice(0, 3))}
       </div>
     `).join("")}</div>`;
+  }
+
+  function getOrCreateWorkoutSession(dayIndex, day) {
+    state.sessions = state.sessions || [];
+    const date = todayIso();
+    const existing = state.sessions.find((session) =>
+      session.date === date
+      && Number(session.dayIndex) === Number(dayIndex)
+      && (!state.plan?.id || session.planId === state.plan.id)
+      && session.status !== "cancelled"
+    );
+    if (existing) {
+      existing.status = existing.status || "in_progress";
+      existing.exerciseLogIds = Array.isArray(existing.exerciseLogIds) ? existing.exerciseLogIds : [];
+      return existing;
+    }
+    const session = {
+      id: uid("session"),
+      date,
+      createdAt: nowLabel(),
+      startedAt: nowLabel(),
+      completedAt: null,
+      status: "in_progress",
+      gymId: state.currentGymId,
+      gymName: currentGym()?.name || "",
+      planId: state.plan?.id || null,
+      dayIndex,
+      focus: day?.focus || "",
+      completion: null,
+      rpe: null,
+      painScore: null,
+      painArea: "",
+      sleep: null,
+      fatigue: null,
+      notes: "",
+      exerciseLogIds: []
+    };
+    state.sessions.unshift(session);
+    return session;
+  }
+
+  function moveSessionToFront(sessionId) {
+    const index = (state.sessions || []).findIndex((session) => session.id === sessionId);
+    if (index <= 0) return;
+    const [session] = state.sessions.splice(index, 1);
+    state.sessions.unshift(session);
+  }
+
+  function latestCompletedSession() {
+    return (state.sessions || []).find((session) => !session.status || session.status === "completed") || null;
+  }
+
+  function parseSetLogs(rawText, actualLoadText, actualRepsText, defaultRpe) {
+    const explicitLines = String(rawText || "")
+      .split(/[\n;；]+/)
+      .map((line) => line.trim())
+      .filter(Boolean);
+    if (explicitLines.length) {
+      return explicitLines.map((line, index) => parseSetLine(line, index, defaultRpe));
+    }
+
+    const loadKg = parseLoadKg(actualLoadText);
+    const reps = String(actualRepsText || "")
+      .split(/[\/,，\s]+/)
+      .map((item) => parseNumber(item))
+      .filter((value) => value != null && value > 0);
+    if (loadKg == null || !reps.length) return [];
+    return reps.map((rep, index) => ({
+      id: uid("set"),
+      setIndex: index + 1,
+      loadKg,
+      reps: rep,
+      rpe: Number.isFinite(defaultRpe) && defaultRpe > 0 ? defaultRpe : null,
+      completed: true,
+      note: "由实际重量和实际次数自动推导"
+    }));
+  }
+
+  function parseSetLine(line, index, defaultRpe) {
+    const loadMatch = line.match(/(\d+(?:\.\d+)?)\s*(?:kg|公斤)?/i);
+    const repsMatch = line.match(/[x×]\s*(\d+(?:\.\d+)?)/i) || line.match(/(\d+(?:\.\d+)?)\s*(?:次|reps?)/i);
+    const rpeMatch = line.match(/(?:@|rpe\s*)(\d+(?:\.\d+)?)/i);
+    return {
+      id: uid("set"),
+      setIndex: index + 1,
+      loadKg: loadMatch ? Number(loadMatch[1]) : null,
+      reps: repsMatch ? Number(repsMatch[1]) : null,
+      rpe: rpeMatch ? Number(rpeMatch[1]) : (Number.isFinite(defaultRpe) && defaultRpe > 0 ? defaultRpe : null),
+      completed: true,
+      note: line
+    };
+  }
+
+  function buildTrainingStatsForLog(log, previousLogs) {
+    const volumeLoad = P.calculateVolumeLoad(log.sets || []);
+    const hardSets = P.calculateHardSets(log.sets || []);
+    const simplePr = P.detectSimplePr({ ...log, volumeLoad, hardSets }, previousLogs || []);
+    return { volumeLoad, hardSets, simplePr };
+  }
+
+  function trainingStatsLine(log) {
+    const setCount = (log.sets || []).length;
+    if (!setCount) return "";
+    const prText = log.simplePr?.isPr ? ` · ${log.simplePr.records.map((record) => record.label).join(" / ")}` : "";
+    return `<p class="mini-text">每组 ${setCount} 组 · 容量 ${volumeLabel(log.volumeLoad)} · 有效组 ${Number(log.hardSets || 0)}${esc(prText)}</p>`;
+  }
+
+  function parseLoadKg(text) {
+    if (/自重|bodyweight/i.test(String(text || ""))) return null;
+    return parseNumber(text);
+  }
+
+  function parseNumber(text) {
+    const match = String(text || "").match(/-?\d+(?:\.\d+)?/);
+    return match ? Number(match[0]) : null;
+  }
+
+  function volumeLabel(value) {
+    return Number(value) > 0 ? `${Math.round(Number(value))}kg` : "-";
   }
 
   function renderNutritionReminders() {

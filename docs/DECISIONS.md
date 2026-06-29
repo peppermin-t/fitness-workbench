@@ -169,3 +169,44 @@ AI 或规则只能生成候选建议，不能静默修改训练计划。
 - v0.2 仍以力量训练工作台稳定化为主。
 - 户外、滑雪、攀岩相关内容只作为长期愿景和未来模型扩展参考。
 - 不因为个人化方向引入当前阶段的功能膨胀。
+
+## 决策 7：长期技术路线是 TypeScript core + Tauri 桌面端 + SQLite
+
+### 决策
+
+长期技术路线不是永远停留在纯 HTML / JS。当前阶段保持静态 Web，是为了降低重构风险；长期目标是逐步形成 TypeScript core、Tauri 桌面端和 SQLite 本地数据库。
+
+### 路线
+
+- 业务 core 应逐步 TypeScript 化。
+- 桌面端优先选择 Tauri。
+- 长期本地数据存储优先考虑 SQLite。
+- JSON 仍应保留为备份、导入导出和迁移格式。
+
+### 迁移顺序
+
+迁移顺序不能反过来，必须先稳定模型、规则、迁移和测试，再上 Tauri / SQLite：
+
+1. 先完成 `WorkoutSession`、`ExerciseLog`、`SetLog` 等数据模型。
+2. 再完成 `schemaVersion` 迁移和 JSON 导入导出保护。
+3. 再迁移 TypeScript core。
+4. 再封装 Tauri 桌面端。
+5. 最后迁移 SQLite 作为运行时主存储。
+
+### 当前阶段边界
+
+- 当前仍保持 `index.html` 双击运行。
+- 当前不引入 npm 构建链。
+- 当前不引入 TypeScript 编译。
+- 当前不引入 Tauri。
+- 当前不引入 SQLite。
+
+### 原因
+
+当前最重要的是把训练计划、训练反馈、动作反馈、身体指标、饮食记录、建议和周复盘的数据关系固定下来。技术栈迁移应服务于这些模型和规则，而不是提前制造新的复杂度。
+
+### 影响
+
+- 后续路线文档应把 TypeScript core、Tauri 和 SQLite 写成长期路线中的明确阶段。
+- v0.2 讨论范围时，仍以 [V0_2_SCOPE.md](V0_2_SCOPE.md) 和 [REFACTOR_PLAN.md](REFACTOR_PLAN.md) 的当前阶段边界为准。
+- 任何 Tauri / SQLite 工作都必须以模型、迁移、测试和 JSON 回退路径稳定为前置条件。

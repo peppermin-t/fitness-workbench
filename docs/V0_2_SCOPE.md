@@ -108,37 +108,46 @@
 
 ### 1. 每组级训练记录 `SetLog`
 
-建议纳入 v0.2 的数据模型和最小实现。
+已完成第一版，纳入 v0.2 的数据模型和最小实现。
 
-当前动作级日志只有 `actualLoad` 和 `actualReps` 文本，例如 “24kg / 12/11/8”。这能支持快速反馈，但不足以计算训练容量、有效组数、PR、每组 RPE 或失败组。v0.2 建议新增 `SetLog` 模型，先允许动作日志内包含可选 `sets` 数组，不强迫每次都详细填写。
+动作级日志仍保留 `actualLoad` 和 `actualReps` 文本，例如 “24kg / 12/11/8”，以维持快速反馈。当前已新增可选 `sets` 数组；用户不填写每组记录时，系统会尽量从实际重量和实际次数推导。
 
 最小字段建议：
 
 - `id`
-- `exerciseLogId`
 - `setIndex`
-- `plannedReps`
-- `actualReps`
-- `load`
-- `loadUnit`
+- `reps`
+- `loadKg`
 - `rpe`
 - `completed`
-- `notes`
+- `note`
+
+- 当前迁移：
+
+- `schemaVersion: 2` 迁移会为旧动作日志补 `sets: []`。
+- 还没有热身组、失败组、目标组完成度等更细字段。
+- 重量单位当前隐含为 kg。
 
 ### 2. 更清晰的 `WorkoutSession` 数据结构
 
-建议纳入 v0.2。
+已完成第一版，纳入 v0.2。
 
-当前 `sessions` 是训练整体反馈，不承载完整训练执行状态；`exerciseLogs` 也没有稳定 session 关联。v0.2 应定义 `WorkoutSession`：
+当前 `sessions` 已开始从训练整体反馈扩展为 `WorkoutSession`，动作日志保存时会写入 `sessionId` 并关联当天训练日 session。
 
 - 一次训练的日期、场地、目标、计划、训练日。
 - 整体完成度、RPE、疼痛、睡眠、疲劳。
-- 训练状态：`planned`、`in_progress`、`completed`、`skipped` 可先只落文档，代码最小支持 `completed`。
+- 训练状态：当前代码支持 `in_progress` 和 `completed`。
 - 与 `ExerciseLog` 一对多。
+
+剩余边界：
+
+- `planned`、`skipped`、暂停、计时器、训练时长等状态机还未实现。
+- 旧动作日志已通过 `schemaVersion: 2` 迁移补 `sessionId: null`。
+- 当前训练日仍主要通过 `dayIndex` 关联，后续需要稳定 `workoutDayId`。
 
 ### 3. 训练容量、有效组数、PR 判断的基础数据预留
 
-建议纳入 v0.2 的模型预留，不急于做完整分析 UI。
+已完成第一版基础函数和少量 UI 展示，不做完整分析报表。
 
 只有在 `SetLog` 可选存在后，后续才能可靠计算：
 
@@ -148,13 +157,24 @@
 - estimated 1RM
 - reps PR / load PR / volume PR
 
-v0.2 可以先保留计算函数接口和测试用例，不一定在 UI 上大面积展示。
+当前已新增：
+
+- `calculateVolumeLoad`
+- `calculateHardSets`
+- `detectSimplePr`
+
+动作日志保存时会写入 `volumeLoad`、`hardSets` 和 `simplePr`，动作反馈列表和动作历史摘要会少量展示。
+
+剩余边界：
+
+- `top set`、estimated 1RM 和更细的 PR 规则还未实现。
+- 当前 hard sets 规则是第一版粗略判断。
 
 ### 4. 数据模型 schema
 
-强烈建议纳入 v0.2。
+已完成第一版，纳入 v0.2。
 
-当前虽然有 `schemaVersion: 1`，但没有 schema 文档和校验。v0.2 至少应有：
+当前已有 `schemaVersion: 2` 和第一版迁移机制。v0.2 仍应继续补充更正式的 schema 文档和导入校验：
 
 - `AppState` schema 草案。
 - 每个核心模型字段说明。
@@ -163,20 +183,21 @@ v0.2 可以先保留计算函数接口和测试用例，不一定在 UI 上大�
 
 ### 5. 数据迁移机制
 
-建议纳入 v0.2。
+已完成第一版，纳入 v0.2。
 
 迁移机制不需要引入数据库，也不需要破坏 localStorage。可以先做：
 
 - `CURRENT_SCHEMA_VERSION`
 - `migrateState(rawState)`
-- `migrations[version]`
-- 导入 JSON 后也走迁移。
+- v1 到 v2 的默认字段补齐
+- 导入 JSON 后也走迁移
+- 导入 JSON 先解析和迁移，成功后才覆盖 localStorage
 
 重点是让后续 `WorkoutSession`、`ExerciseLog.sets`、`SetLog` 不破坏旧数据。
 
 ### 6. 基础规则测试
 
-建议纳入 v0.2。
+已完成第一版，纳入 v0.2。
 
 当前核心规则在 `planner.js`，且没有自动化测试保护。即使仍保持静态运行方式，也可以新增非常轻量的浏览器外测试脚本或 Node 测试脚本，覆盖：
 
@@ -186,6 +207,8 @@ v0.2 可以先保留计算函数接口和测试用例，不一定在 UI 上大�
 - `parseNutritionLog`
 - `buildWeeklyReview`
 - `metricTrend`
+- `calculateVolumeLoad` / `calculateHardSets` / `detectSimplePr`
+- `stateMigration_v1_to_v2_preserves_data_and_defaults`
 
 测试不应改变应用运行方式，`index.html` 仍要能双击运行。
 
@@ -244,7 +267,7 @@ v0.2 可以先保留计算函数接口和测试用例，不一定在 UI 上大�
 
 ### 11. 不立即做 Tauri / SQLite
 
-桌面壳和 SQLite 是后续 Phase 4 规划。v0.2 先把模型、迁移、测试和核心逻辑边界打稳。
+桌面壳和 SQLite 分别是后续 Phase 5 / Phase 6 规划。v0.2 先把模型、迁移、测试和核心逻辑边界打稳。
 
 ### 12. 不让 AI 自动静默修改训练计划
 

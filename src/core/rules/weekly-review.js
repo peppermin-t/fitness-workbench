@@ -8,12 +8,13 @@
   const { buildIntegratedSignals } = window.FitnessCore.IntegratedSignals;
 
 function buildWeeklyReview({ goal, metrics, sessions, exerciseLogs, nutritionLogs, plan }) {
-    const recentSessions = withinDays(sessions || [], 7);
+    const completedSessions = filterCompletedSessions(sessions || []);
+    const recentSessions = withinDays(completedSessions, 7);
     const recentExerciseLogs = withinDays(exerciseLogs || [], 7);
     const recentNutritionLogs = withinDays(nutritionLogs || [], 7);
     const nutritionProfile = buildNutritionProfile(recentNutritionLogs, goal);
     const exerciseProfiles = buildExerciseProfiles(recentExerciseLogs);
-    const integratedSignals = buildIntegratedSignals({ goal, metrics, sessions, exerciseLogs, nutritionLogs });
+    const integratedSignals = buildIntegratedSignals({ goal, metrics, sessions: completedSessions, exerciseLogs, nutritionLogs });
     const latestMetric = sortedMetrics(metrics || []).at(-1);
     const weightTrend30 = metricTrend(metrics || [], "weight", 30);
     const completionAvg = averageOf(recentSessions, "completion");
@@ -171,6 +172,12 @@ function withinDays(items, days) {
       const stamp = item?.date ? new Date(item.date) : null;
       return stamp && !Number.isNaN(stamp.getTime()) && stamp >= cutoff;
     });
+  }
+
+
+
+function filterCompletedSessions(sessions) {
+    return (sessions || []).filter((session) => !session.status || session.status === "completed");
   }
 
 

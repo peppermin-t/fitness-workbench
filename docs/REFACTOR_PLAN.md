@@ -1,14 +1,47 @@
 # 后续重构计划
 
-本文档只规划后续重构，不在本轮执行。重构必须保持当前运行方式：`index.html` 直接双击可用，不引入 React / Vue / Tauri / SQLite / FastAPI，不删除现有功能。
+本文档规划从当前静态 Web 工作台到长期桌面端应用的技术路线。长期目标明确是：TypeScript core + Tauri 桌面端 + SQLite 本地数据库。当前 v0.2 仍然保持 `index.html` 直接双击可用，不立即引入 npm 构建链、不立即引入 TypeScript 编译、不立即引入 Tauri、不立即引入 SQLite、不删除现有功能。
+
+当前不立即上 TypeScript / Tauri / SQLite 的原因是，v0.2 的 `WorkoutSession`、`SetLog`、`schemaVersion` 迁移、数据导入导出稳定性、规则 smoke 测试和人工 smoke checklist 已完成第一版，但仍需要先人工验收并建立 Phase 3 基线。数据底座和行为保护没有固化之前，直接迁移技术栈会放大回退风险。
+
+## 总体路线
+
+```text
+Phase 0：现状冻结与行为保护
+Phase 1：JS 模块边界收敛
+Phase 2：核心规则行为保持型拆分
+Phase 3：v0.2 数据底座补齐
+Phase 4：TypeScript core 迁移
+Phase 5：Tauri 桌面端封装
+Phase 6：SQLite 本地数据库迁移
+Phase 7：AI 结构化解析与多端扩展
+```
 
 ## 当前阶段状态
 
-- Phase 0：文档、人工 smoke checklist、规则 smoke、样例 JSON 基线已具备；还差一次正式人工验收记录和可回退 git 基线。
-- Phase 1：边界设计已明确，`src/core/rules` 已开始落地；`src/core/models`、`src/app/state`、`src/app/storage` 仍保持为后续设计方向，尚不引入 TypeScript 构建链。
-- Phase 2：核心规则拆分已收口。`planner.js` 现在主要承担兼容导出和少量尚未单独成模块的训练整体反馈建议函数；无依赖规则 smoke 已覆盖 11 个核心用例。
+- Phase 0：文档、人工 smoke checklist、规则 smoke、样例 JSON 基线和 `phase2-baseline` git 基线已具备；还差一次正式人工验收记录。
+- Phase 1：JS 模块边界已开始收敛，`src/core/rules` 已落地；`src/core/models`、`src/app/state`、`src/app/storage` 仍保持为后续设计方向，尚不引入 TypeScript 构建链。
+- Phase 2：核心规则拆分已收口。`planner.js` 现在主要承担兼容导出和少量尚未单独成模块的训练整体反馈建议函数；无依赖规则 smoke 已覆盖 13 个核心用例。
+- Phase 3：已完成第一版：`SetLog` 可选记录、`WorkoutSession` 状态与动作日志关联、基础训练容量统计、`schemaVersion: 2` 迁移、JSON 导入稳定性和迁移 smoke 用例已经具备。
 
-## Phase 0：现状冻结
+## 当前阶段边界
+
+当前阶段仍然不引入 npm 构建链。
+当前阶段仍然不引入 TypeScript 编译。
+当前阶段仍然不引入 Tauri。
+当前阶段仍然不引入 SQLite。
+当前阶段仍然不破坏 `index.html` 双击运行。
+
+当前优先完成：
+
+- `WorkoutSession`
+- `SetLog`
+- `schemaVersion` 迁移
+- 数据导入导出稳定性
+- 规则 smoke 测试
+- 人工 smoke checklist
+
+## Phase 0：现状冻结与行为保护
 
 状态：基本完成，剩余项是人工执行和版本基线，不是业务代码重构。
 
@@ -47,13 +80,13 @@
 - JSON / CSV 导入导出路径明确可用。
 - 当前工作树有可回退基线，且有样例备份数据准备说明。
 
-## Phase 1：TypeScript 化准备
+## Phase 1：JS 模块边界收敛
 
-状态：边界设计完成，暂不进入全面 TypeScript 化。
+状态：边界设计完成，规则模块已开始落地，暂不进入 TypeScript 编译。
 
 ### 目标
 
-先设计类型和边界，不急于全面改写。保持 UI 行为不变，仍支持 `index.html` 直接运行。
+先用零构建链的 JS 模块收敛边界，不急于全面改写。保持 UI 行为不变，仍支持 `index.html` 直接运行。
 
 ### 建议目录
 
@@ -67,7 +100,7 @@ src/
     storage/
 ```
 
-在真正引入构建链前，也可以先以文档和 JSDoc 形式过渡。不要为了 TypeScript 立刻破坏现有静态运行方式。
+在真正引入构建链前，可以先以文档、JSDoc 和浏览器全局对象方式过渡。不要为了 TypeScript 立刻破坏现有静态运行方式。
 
 ### `src/core/models`
 
@@ -139,7 +172,7 @@ Phase 1 不应改页面结构和交互。即使内部开始拆模块，也要保
 - 计划 CSV 仍能导入 / 导出。
 - 智能建议不静默改计划。
 
-## Phase 2：拆分核心业务逻辑
+## Phase 2：核心规则行为保持型拆分
 
 状态：已收口。
 
@@ -364,16 +397,18 @@ Phase 1 不应改页面结构和交互。即使内部开始拆模块，也要保
 
 - `planner.js` 已变薄，主要作为兼容导出层，并保留 `createAdviceFromSession` 这类训练整体反馈建议入口。
 - 拆出的函数通过 `window.FitnessCore.*` 暴露，同时继续通过 `window.FitnessPlanner.*` 保持兼容。
-- 无依赖规则 smoke 已覆盖 11 个核心用例，包括目标解析、计划生成、动作反馈、饮食解析、指标趋势、周复盘、联动建议、训练前提醒和饮食前提醒。
+- 无依赖规则 smoke 已覆盖 13 个核心用例，包括目标解析、计划生成、动作反馈、饮食解析、指标趋势、训练容量统计、状态迁移、周复盘、联动建议、训练前提醒和饮食前提醒。
 - `index.html` 仍按静态脚本顺序加载，不需要构建链，不改变 UI 行为。
 
-## Phase 3：补齐 v0.2 功能缺口
+## Phase 3：v0.2 数据底座补齐
 
 ### 目标
 
 在核心边界清楚后，补齐当前最影响长期发展的数据底座。
 
 ### 1. 每组级训练记录
+
+状态：已完成第一版。
 
 新增 `SetLog` 模型，并在 `ExerciseLog` 内增加可选 `sets`。
 
@@ -385,7 +420,16 @@ Phase 1 不应改页面结构和交互。即使内部开始拆模块，也要保
 
 重点是不增加普通记录负担。
 
+当前实现：
+
+- 动作反馈表单保留 `actualLoad` 和 `actualReps` 快速填写。
+- 新增可选“每组记录”文本框。
+- 不填写每组记录时，会尽量从 `actualLoad` 和 `actualReps` 推导 `sets`。
+- `ExerciseLog.sets` 使用 `loadKg`、`reps`、`rpe`、`completed`、`note` 等字段。
+
 ### 2. `WorkoutSession` 状态
+
+状态：已完成第一版。
 
 将当前整体反馈扩展为更清晰的 session：
 
@@ -393,7 +437,16 @@ Phase 1 不应改页面结构和交互。即使内部开始拆模块，也要保
 - 动作日志保存时带上 `sessionId`。
 - 今日训练选择训练日时可以创建或复用当天 session。
 
+当前实现：
+
+- `WorkoutSession.status` 支持 `in_progress` 和 `completed`。
+- 保存动作日志时会为当天训练日创建或复用 session，并写入 `ExerciseLog.sessionId`。
+- 保存训练整体反馈时会复用当天训练日 session，并标记为 `completed`。
+- 周复盘和联动判断只统计 `completed` 或旧数据中没有 `status` 的 session，避免进行中 session 污染统计。
+
 ### 3. 基础训练容量统计
+
+状态：已完成第一版。
 
 在有 `SetLog` 后增加纯函数：
 
@@ -403,6 +456,13 @@ Phase 1 不应改页面结构和交互。即使内部开始拆模块，也要保
 
 v0.2 可以先在智能教练或动作历史里少量展示，不做复杂报表。
 
+当前实现：
+
+- 新增 `src/core/rules/training-stats.js`。
+- 通过 `window.FitnessPlanner.calculateVolumeLoad`、`window.FitnessPlanner.calculateHardSets`、`window.FitnessPlanner.detectSimplePr` 保持兼容导出。
+- 动作日志保存时写入 `volumeLoad`、`hardSets`、`simplePr`。
+- 动作反馈列表和动作历史摘要展示容量、有效组和 PR 计数。
+
 ### 4. 数据迁移
 
 新增迁移路径：
@@ -411,6 +471,16 @@ v0.2 可以先在智能教练或动作历史里少量展示，不做复杂报表
 - 为旧 `exerciseLogs` 补 `sessionId: null`、`sets: []`。
 - 为旧计划日和计划动作补稳定 ID。
 - 为旧 advice 补默认 `status`。
+
+状态：已完成第一版。
+
+当前实现：
+
+- 新增 `src/app/storage/state-migrations.js`。
+- `CURRENT_SCHEMA_VERSION` 当前为 `2`。
+- `loadState`、`saveState`、`exportJson` 和 `importJson` 都会经过迁移 / 规范化。
+- JSON 导入会先解析和迁移，成功后才覆盖 localStorage，避免坏 JSON 直接破坏本地数据。
+- 规则 smoke 已新增 `stateMigration_v1_to_v2_preserves_data_and_defaults`。
 
 ### 5. 规则测试
 
@@ -424,44 +494,150 @@ v0.2 可以先在智能教练或动作历史里少量展示，不做复杂报表
 - 周复盘。
 - 数据迁移。
 
+状态：已完成第一版。
+
+当前 `tests/rules-smoke.html` 覆盖 13 个用例，新增覆盖训练容量统计和 v1 到 v2 状态迁移。
+
 ### Phase 3 验收标准
 
-- 老 JSON 导入后不丢数据。
+- 老 JSON 导入后不丢数据，且导入失败不会覆盖旧 localStorage。
 - 新数据能记录可选每组日志。
 - 训练整体反馈和动作级反馈能通过 session 关联。
-- 至少关键规则有基础测试。
+- `schemaVersion: 1` 可迁移到 `schemaVersion: 2`。
+- 至少关键规则有基础测试，当前 smoke 为 13 passed / 0 failed。
 
-## Phase 4：后续扩展
+## Phase 4：TypeScript core 迁移
 
-Phase 4 只做规划，不在 v0.2 实现。
+Phase 4 是长期技术路线的一部分，但不是当前 v0.2 的立即执行项。进入本阶段前，仍必须保留静态 Web 版本可运行，避免一次性技术迁移造成行为回退。
 
-### 1. Tauri
+### 目标
 
-目标：
+把当前已经拆出的 `src/core/rules/*` 和后续 `src/core/models` 逐步迁移为 TypeScript，形成可测试、可复用、可被桌面端和后续多端共享的业务 core。
 
-- 把静态页面封装为桌面应用。
-- 提供更稳定的文件访问和备份能力。
+### 前置条件
 
-前置条件：
+- `WorkoutSession`、`ExerciseLog`、`SetLog` 模型稳定。
+- `schemaVersion` 迁移机制已经存在。
+- 规则 smoke 测试可运行。
+- JSON 样例数据可导入。
+- `window.FitnessPlanner` 兼容层行为已经冻结。
 
+### 建议步骤
+
+1. 新增最小 TypeScript 配置，但不急着改 UI。
+2. 先迁移纯模型：
+   - `src/core/models`
+   - `AppState`
+   - `Goal`
+   - `Gym`
+   - `Exercise`
+   - `TrainingPlan`
+   - `WorkoutSession`
+   - `ExerciseLog`
+   - `SetLog`
+   - `NutritionLog`
+   - `Advice`
+   - `Revision`
+3. 再迁移纯规则：
+   - `goal-parser`
+   - `plan-generator`
+   - `exercise-feedback-analyzer`
+   - `nutrition-parser`
+   - `metric-analyzer`
+   - `integrated-signals`
+   - `weekly-review`
+   - `advice-engine`
+4. 保留 JS 兼容入口，避免一次性改坏 `app.js`。
+5. 等 core 稳定后再考虑 UI 层迁移。
+
+### 非目标
+
+- 不在这个阶段重写 UI。
+- 不在这个阶段引入 React / Vue。
+- 不在这个阶段直接接 SQLite。
+- 不在这个阶段直接做 AI。
+- 不在这个阶段破坏已有 JSON 导入导出。
+
+## Phase 5：Tauri 桌面端封装
+
+Phase 5 的目标是桌面端封装，不是用桌面壳掩盖尚未稳定的数据模型。Tauri 是长期路线中的桌面端优先选择，但必须排在 TypeScript core 和迁移保护之后。
+
+### 目标
+
+将已经稳定的 TypeScript core 和现有工作台 UI 封装为桌面端应用。
+
+### 前置条件
+
+- TypeScript core 已稳定。
+- 数据模型和迁移机制稳定。
+- JSON 导入导出稳定。
+- 规则测试和人工 smoke checklist 可跑。
+- 当前静态 Web 版本仍然可运行，作为 fallback。
+
+### 建议步骤
+
+1. 新建 Tauri 壳。
+2. 先加载现有前端页面。
+3. 保留本地 JSON 导入导出。
+4. 增加桌面端文件保存 / 读取能力。
+5. 再逐步考虑自动备份、配置目录、日志等桌面能力。
+
+### 非目标
+
+- 不在刚上 Tauri 时立刻引入 SQLite。
+- 不立即做云同步。
+- 不立即做账号系统。
+- 不立即做复杂多端同步。
+
+## Phase 6：SQLite 本地数据库迁移
+
+Phase 6 是长期本地数据存储路线，不是 v0.2 的立即执行项。SQLite 应在 Tauri 壳和数据迁移机制稳定后再进入。
+
+### 目标
+
+从 localStorage / JSON 状态迁移到本地 SQLite，提高长期训练日志、动作日志、身体指标、饮食记录和建议记录的可查询性和可靠性。
+
+### 前置条件
+
+- Tauri 壳稳定。
 - 数据模型稳定。
-- localStorage 迁移机制成熟。
-- JSON 备份恢复可靠。
+- `schemaVersion` 迁移机制成熟。
+- JSON 备份仍然可导出。
+- 有从旧 JSON 导入 SQLite 的迁移路径。
 
-### 2. SQLite
+### 建议表
 
-目标：
+先规划，不立即实现：
 
-- 从 localStorage 升级为本地数据库。
-- 支持更可靠的查询、历史计划、训练日志和迁移。
+```text
+goals
+gyms
+exercises
+training_plans
+workout_days
+planned_exercises
+workout_sessions
+exercise_logs
+set_logs
+body_metrics
+nutrition_logs
+advice
+revisions
+```
 
-前置条件：
+### 迁移原则
 
-- schema 已稳定。
-- `WorkoutSession`、`ExerciseLog`、`SetLog` 关系清楚。
-- 有导入导出和迁移测试。
+- JSON 仍作为备份 / 导入导出格式。
+- SQLite 是运行时主存储。
+- 老 JSON 必须可以迁移。
+- 迁移失败不能丢数据。
+- 每次 schema 变更都要有迁移记录。
 
-### 3. AI 结构化解析
+## Phase 7：AI 结构化解析与多端扩展
+
+Phase 7 放在 TypeScript core、Tauri 和 SQLite 稳定之后。AI、手机端、手表端、云同步都是长期能力，不应反过来影响 v0.2 的数据底座稳定。
+
+### 1. AI 结构化解析
 
 目标：
 
@@ -471,11 +647,12 @@ Phase 4 只做规划，不在 v0.2 实现。
 
 边界：
 
-- AI 不直接静默改计划。
+- AI 只能生成结构化候选。
+- AI 不能静默修改训练计划。
+- 修改计划必须经过 schema 校验、规则引擎处理和用户确认。
 - 断网时保留本地规则降级。
-- AI 输出必须有 schema 校验。
 
-### 4. 手机端
+### 2. 手机端
 
 目标：
 
@@ -483,11 +660,11 @@ Phase 4 只做规划，不在 v0.2 实现。
 
 前置条件：
 
-- 当前桌面工作台功能稳定。
-- 核心业务逻辑已脱离 DOM。
+- TypeScript core 稳定。
+- Tauri / SQLite 版本的数据模型和迁移路径稳定。
 - 数据同步或导入导出策略清楚。
 
-### 5. 手表端
+### 3. 手表端
 
 目标：
 
@@ -497,8 +674,9 @@ Phase 4 只做规划，不在 v0.2 实现。
 
 - `WorkoutSession` 模型足够清楚。
 - 外部数据来源和权限边界明确。
+- 手机端或桌面端已有稳定的数据接入策略。
 
-### 6. 云同步
+### 4. 云同步
 
 目标：
 
@@ -506,9 +684,10 @@ Phase 4 只做规划，不在 v0.2 实现。
 
 前置条件：
 
+- TypeScript core、Tauri 和 SQLite 版本稳定。
 - 账号、加密、冲突合并和隐私策略成熟。
 - 本地优先的数据模型稳定。
 
 ## 正式重构的建议第一步
 
-第一步不要先改 UI，也不要先上框架。Phase 2 的核心规则拆分已经收口：`goal-parser`、`plan-generator`、`metric-analyzer`、`advice-engine`、`exercise-feedback-analyzer`、`nutrition-parser`、`integrated-signals`、`weekly-review` 都已拆出，并通过 `window.FitnessPlanner` 保持兼容。下一步先执行人工 smoke checklist 并保留可回退 git 基线；随后进入 Phase 3，优先补 `WorkoutSession`、`SetLog`、数据迁移和最小规则测试。
+第一步不要先改 UI，也不要先上框架。Phase 2 的核心规则拆分已经收口：`goal-parser`、`plan-generator`、`metric-analyzer`、`advice-engine`、`exercise-feedback-analyzer`、`nutrition-parser`、`integrated-signals`、`weekly-review` 都已拆出，并通过 `window.FitnessPlanner` 保持兼容。`phase2-baseline` 已作为可回退 git 基线；Phase 3 数据底座已完成第一版。下一步应先跑人工 smoke checklist 并建立 Phase 3 git 基线，再进入 Phase 4 TypeScript core 迁移准备。

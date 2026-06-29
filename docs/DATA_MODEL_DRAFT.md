@@ -8,7 +8,7 @@
 
 | 字段 | 含义 | 当前是否已有 | 建议调整 |
 | --- | --- | --- | --- |
-| `schemaVersion` | 本地状态版本 | 已有，当前为 `1` | 保留，并增加迁移机制 |
+| `schemaVersion` | 本地状态版本 | 已有，当前为 `2` | 保留，当前已具备 v1 到 v2 的第一版迁移机制 |
 | `currentGymId` | 当前健身房 ID | 已有 | 保留 |
 | `currentGoalId` | 当前目标 ID | 已有 | 保留 |
 | `gyms` | 健身房列表 | 已有 | 保留 |
@@ -230,18 +230,19 @@
 | `sleep` | 睡眠状态 1-5 | 已有 |
 | `fatigue` | 疲劳程度 1-5 | 已有 |
 | `notes` | 备注 | 已有 |
+| `status` | `in_progress`、`completed` | 已有第一版 | 后续扩展 `planned`、`skipped` |
+| `startedAt` | 开始时间展示文本 | 已有第一版 | 后续改 ISO 时间 |
+| `completedAt` | 完成时间展示文本 | 已有第一版 | 后续改 ISO 时间 |
+| `exerciseLogIds` | 动作日志 ID 列表 | 已有第一版 | 后续可由反向查询替代或校验 |
 
 ### 建议新增字段
 
 | 字段 | 含义 |
 | --- | --- |
-| `status` | `planned`、`in_progress`、`completed`、`skipped` |
-| `startedAt` | 开始时间 |
-| `endedAt` | 结束时间 |
+| `endedAt` | 结束时间，建议与 `completedAt` 统一命名 |
 | `durationMinutes` | 实际训练时长 |
 | `goalId` | 当时目标 ID |
 | `workoutDayId` | 训练日 ID |
-| `exerciseLogIds` | 动作日志 ID 列表，或由反向查询获得 |
 
 ### 关系
 
@@ -277,16 +278,18 @@
 | `painArea` | 疼痛部位 | 已有 | 保留 |
 | `freeText` | 自由文本反馈 | 已有 | 保留 |
 | `analysis` | 规则分析结果 | 已有 | 保留，但建议可重算 |
+| `sessionId` | 所属 `WorkoutSession` | 已有第一版 | v1 旧数据迁移时补 `null` |
+| `sets` | `SetLog[]` | 已有第一版 | 可选，不强制填写 |
+| `volumeLoad` | 容量统计 | 已有第一版 | 衍生字段，建议可重算 |
+| `hardSets` | 有效组数 | 已有第一版 | 当前按 RPE >= 7 粗略判断 |
+| `simplePr` | 简单 PR 判断结果 | 已有第一版 | 当前判断容量、最大重量、最大次数 |
 
 ### 建议新增字段
 
 | 字段 | 含义 |
 | --- | --- |
-| `sessionId` | 所属 `WorkoutSession` |
 | `plannedExerciseId` | 对应计划动作 |
-| `sets` | `SetLog[]` |
 | `completedSets` | 完成组数 |
-| `volumeLoad` | 可选衍生字段，建议可重算 |
 
 ### 关系
 
@@ -296,25 +299,25 @@
 
 ## 10. SetLog
 
-当前没有 `SetLog`。建议作为 v0.2 新增模型，先做可选字段，不强制所有动作记录都填写。
+当前已有 `SetLog` 第一版。它作为 `ExerciseLog.sets` 内的可选数组存在，不强制所有动作记录都填写；如果用户不填每组记录，系统会尽量从 `actualLoad` 和 `actualReps` 推导。
 
 ### 建议字段
 
 | 字段 | 含义 | 当前是否已有 | 建议调整 |
 | --- | --- | --- | --- |
 | `id` | 组记录 ID | 没有 | 新增 |
-| `sessionId` | 所属训练 session | 没有 | 新增 |
-| `exerciseLogId` | 所属动作日志 | 没有 | 新增 |
+| `sessionId` | 所属训练 session | 没有 | 当前通过 `ExerciseLog.sessionId` 间接关联 |
+| `exerciseLogId` | 所属动作日志 | 没有 | 当前由父级数组隐含 |
 | `plannedExerciseId` | 对应计划动作 | 没有 | 可选 |
-| `setIndex` | 第几组，从 1 开始 | 没有 | 新增 |
+| `setIndex` | 第几组，从 1 开始 | 已有第一版 | 保留 |
 | `plannedReps` | 计划次数 | 没有 | 可选 |
-| `actualReps` | 实际次数 | 没有 | 新增 |
-| `load` | 实际重量数值 | 没有 | 新增 |
-| `loadUnit` | 重量单位，默认 kg | 没有 | 新增 |
-| `rpe` | 本组 RPE | 没有 | 可选 |
-| `completed` | 是否完成 | 没有 | 新增 |
+| `actualReps` | 实际次数 | 已有第一版，字段名为 `reps` | 后续可统一命名 |
+| `load` | 实际重量数值 | 已有第一版，字段名为 `loadKg` | 当前默认 kg |
+| `loadUnit` | 重量单位，默认 kg | 没有 | 当前隐含为 kg |
+| `rpe` | 本组 RPE | 已有第一版 | 可选 |
+| `completed` | 是否完成 | 已有第一版 | 保留 |
 | `isWarmup` | 是否热身组 | 没有 | 可选 |
-| `notes` | 备注 | 没有 | 可选 |
+| `notes` | 备注 | 已有第一版，字段名为 `note` | 后续可统一命名 |
 
 ### 关系
 
@@ -459,6 +462,6 @@
 
 1. `WorkoutSession` 与 `ExerciseLog` 没有稳定关联，后续做训练容量和周复盘时会受限。
 2. `WorkoutDay` 和 `PlannedExercise` 缺少稳定 ID，当前用数组下标定位，计划调整后历史上下文容易漂移。
-3. `schemaVersion` 已有但没有迁移机制，新增字段时容易破坏旧 localStorage。
+3. `schemaVersion` 已升级到 `2`，并已有第一版迁移机制；后续新增字段仍需要继续补迁移记录和 smoke 用例。
 4. `Advice` 来源和状态不统一，未来会越来越难管理建议去重、过期和执行状态。
 5. `NutritionLog.analysis` 和 `ExerciseLog.analysis` 存储了可由规则重算的内容，后续需要决定是保存快照还是重算。

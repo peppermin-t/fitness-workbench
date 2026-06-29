@@ -4,6 +4,8 @@
 
 当前仍是本地优先静态 Web 工作台。本阶段不引入 React / Vue / Tauri / SQLite / FastAPI，不破坏 `index.html` 双击运行；重构前先冻结功能和验收路径。
 
+长期技术路线是 TypeScript core + Tauri 桌面端 + SQLite 本地数据库；当前阶段先稳定模型、规则和行为保护，不立即引入这些技术。
+
 ## 运行方式
 
 直接双击打开 `index.html` 即可使用。
@@ -25,7 +27,7 @@
 
 规则保护层：
 
-- 可直接用浏览器打开 [tests/rules-smoke.html](tests/rules-smoke.html)，运行 11 个无依赖规则 smoke 测试。
+- 可直接用浏览器打开 [tests/rules-smoke.html](tests/rules-smoke.html)，运行 13 个无依赖规则 smoke 测试。
 - 可在“导入导出”页导入 [docs/sample-data/manual-smoke-baseline.json](docs/sample-data/manual-smoke-baseline.json)，作为重构前人工验收基线。
 
 ## 当前状态
@@ -59,4 +61,4 @@
 
 ## 下一步
 
-Phase 2 核心规则拆分已收口。下一步先做一次人工 smoke checklist 和可回退 git 基线确认，然后进入 Phase 3：补齐 `WorkoutSession`、`SetLog`、数据迁移和最小规则测试等 v0.2 数据底座。
+Phase 2 核心规则拆分已收口，Phase 3 已完成第一版：`WorkoutSession` 状态、动作日志 `SetLog`、基础训练容量统计、`schemaVersion: 2` 迁移、JSON 导入稳定性和 13 个规则 smoke 用例已经具备。下一步建议先跑一遍人工 smoke checklist 并建立 Phase 3 git 基线，再进入 Phase 4 TypeScript core 迁移准备。

@@ -8,12 +8,13 @@
 
 function buildIntegratedSignals({ goal, metrics, sessions, exerciseLogs, nutritionLogs }) {
     const primary = goal?.parsed?.primaryGoal || "general_fitness";
+    const completedSessions = filterCompletedSessions(sessions || []);
     const nutritionProfile = buildNutritionProfile(nutritionLogs || [], goal);
     const exerciseProfiles = buildExerciseProfiles(exerciseLogs || []);
     const latestMetric = sortedMetrics(metrics || []).at(-1);
-    const latestSession = sortedSessions(sessions || []).at(-1);
+    const latestSession = sortedSessions(completedSessions).at(-1);
     const weightTrend21 = metricTrend(metrics || [], "weight", 21);
-    const sessionTrend = compareSessionWindows(sessions || [], 14);
+    const sessionTrend = compareSessionWindows(completedSessions, 14);
     const items = [];
 
     if (exerciseProfiles.some((profile) => profile.topTags.some(([tag]) => tag === "pain_risk"))) {
@@ -72,7 +73,7 @@ function buildIntegratedSignals({ goal, metrics, sessions, exerciseLogs, nutriti
 
 function buildTrainingReminders({ goal, metrics, sessions, exerciseLogs, nutritionLogs, day }) {
     const profiles = new Map(buildExerciseProfiles(exerciseLogs || []).map((profile) => [profile.exerciseId, profile]));
-    const integrated = buildIntegratedSignals({ goal, metrics, sessions, exerciseLogs, nutritionLogs });
+    const integrated = buildIntegratedSignals({ goal, metrics, sessions: filterCompletedSessions(sessions || []), exerciseLogs, nutritionLogs });
     const reminders = [];
 
     (day?.exercises || []).forEach((row) => {
@@ -152,6 +153,12 @@ function averageOf(items, key) {
 
 function sortedSessions(sessions) {
     return (sessions || []).slice().sort((a, b) => String(a.date || "").localeCompare(String(b.date || "")));
+  }
+
+
+
+function filterCompletedSessions(sessions) {
+    return (sessions || []).filter((session) => !session.status || session.status === "completed");
   }
 
 
