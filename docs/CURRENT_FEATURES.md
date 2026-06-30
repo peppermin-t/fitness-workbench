@@ -1,6 +1,6 @@
 # 当前功能清单
 
-本文档按当前代码实际实现梳理功能边界，主要依据 `README.md`、`docs/PRODUCT_VISION.md`、`index.html`、`data.js`、`src/core/rules/*`、`src/app/storage/*`、`src/app/import-export/*`、`src/app/charts/*`、`src/core/models/index.d.ts`、`planner.js`、`app.js` 和 `styles.css`。当前应用仍可直接双击运行：静态 Web 通过 `index.html` 加载 `data.js`、`src/core/rules/*.js`、`src/core/rules/facade.js`、`planner.js`、`src/app/storage/*.js`、`src/app/import-export/*.js`、`src/app/charts/*.js`、`app.js`，运行数据存放在浏览器 `localStorage`。Tauri 环境下会额外通过 `src/app/storage/desktop-sqlite.js` 同步到 SQLite。Phase 4 后，`src/core/rules/*.ts`、`src/app/storage/*.ts`、`src/app/import-export/*.ts` 和 `src/app/charts/*.ts` 是 core / app helper 源文件，同名 `.js` 是浏览器兼容输出；`window.FitnessCore.Rules` 是当前 UI 使用的规则 facade，`planner.js` 仅保留 `window.FitnessPlanner` 旧入口兼容。
+本文档按当前代码实际实现梳理功能边界，主要依据 `README.md`、`docs/PRODUCT_VISION.md`、`index.html`、`data.js`、`src/core/rules/*`、`src/app/storage/*`、`src/app/import-export/*`、`src/app/charts/*`、`src/app/presenters/*`、`src/core/models/index.d.ts`、`planner.js`、`app.js` 和 `styles.css`。当前应用仍可直接双击运行：静态 Web 通过 `index.html` 加载 `data.js`、`src/core/rules/*.js`、`src/core/rules/facade.js`、`planner.js`、`src/app/storage/*.js`、`src/app/import-export/*.js`、`src/app/charts/*.js`、`src/app/presenters/*.js`、`app.js`，运行数据存放在浏览器 `localStorage`。Tauri 环境下会额外通过 `src/app/storage/desktop-sqlite.js` 同步到 SQLite。Phase 4 后，`src/core/rules/*.ts`、`src/app/storage/*.ts`、`src/app/import-export/*.ts`、`src/app/charts/*.ts` 和 `src/app/presenters/*.ts` 是 core / app helper 源文件，同名 `.js` 是浏览器兼容输出；`window.FitnessCore.Rules` 是当前 UI 使用的规则 facade，`planner.js` 仅保留 `window.FitnessPlanner` 旧入口兼容。
 
 ## 1. 今日训练
 
@@ -143,7 +143,8 @@
 
 - `data.js`：`exercises` 静态主数据。
 - `index.html`：`view-exercises`。
-- `app.js`：`renderExerciseList`、`renderPlanRow`、`findOrCreateExercise`、`exerciseEnglishName`、`equipmentEnglishLabel`、`equipmentDisplayText`。
+- `app.js`：`renderExerciseList`、`renderPlanRow`、`findOrCreateExercise`。
+- `src/app/presenters/display-formatters.js`：中英双语动作名、器械展示文案、标签、证据列表和推荐项展示格式化。
 - `src/core/rules/plan-generator.js`：动作可用性和替代动作逻辑。
 - `planner.js`：兼容导出 `window.FitnessPlanner.availableSubstitutes`、`window.FitnessPlanner.isAvailable`。
 
@@ -549,9 +550,10 @@
 - `src/app/storage/app-state-store.js`
 - `src/app/import-export/data-portability.js`
 - `src/app/charts/line-chart.js`
+- `src/app/presenters/display-formatters.js`
 
 ### 当前缺口
 
 - `body` 设置 `min-width: 1100px`，当前定位更偏桌面端，不适合手机端。
 - `app.js` 直接拼接 HTML，缺少组件边界。
-- 默认状态、存储协调、CSV / JSON 构造解析 helper、通用 canvas 折线图 helper 已从 `app.js` 拆出；旧同名渲染 / 保存函数覆盖问题已清理；当前仍需继续拆 presenter 和业务状态写入。
+- 默认状态、存储协调、CSV / JSON 构造解析 helper、通用 canvas 折线图 helper 和展示格式化 helper 已从 `app.js` 拆出；旧同名渲染 / 保存函数覆盖问题已清理；当前仍需继续拆复杂渲染模板和业务状态写入。

@@ -63,7 +63,7 @@
 ### 边界问题
 
 - README 提到后续“更完整的动作库编辑能力”，但当前代码只支持隐式创建。
-- 动作展示和英文名映射仍在 `app.js`，导致动作库不仅是数据，还混入 UI 展示规则。此前未实际展示的器械图标 SVG、肌肉图 SVG 和动作媒体样式已移除。
+- 动作展示仍由 `app.js` 渲染，但英文名和器械展示文案已收敛到 `src/app/presenters/display-formatters.js`。此前未实际展示的器械图标 SVG、肌肉图 SVG 和动作媒体样式已移除。
 - 替代动作关系既来自 `substitutes`，也来自相同 `pattern` 推导。
 
 ### 建议边界
@@ -71,7 +71,7 @@
 - v0.2 动作库定位为“可查看 + 可被计划生成使用 + CSV 导入时可补充极简动作”。
 - 完整动作编辑器暂不做。
 - 后续模型中增加 `isCustom`，把用户自定义动作和内置动作区分开。
-- 英文名和器械展示文案应从 `app.js` 中逐步拆到数据或 presenter 层；未实际展示的媒体 / 图标代码不再保留。
+- 英文名和器械展示文案已先拆到 presenter 层；后续如果要进一步完善，可再考虑移动到更稳定的数据字典。未实际展示的媒体 / 图标代码不再保留。
 
 ## 4. 智能建议是否分散在多个页面
 
@@ -115,15 +115,15 @@
 - CSV 导入 / 导出的 UI 事件和状态写入；CSV 构造 / 解析 helper 已收敛到 `src/app/import-export/data-portability.js`。
 - JSON 导入 / 导出的 UI 事件和状态写入；JSON 序列化 / 解析 helper 已收敛到 `src/app/import-export/data-portability.js`。
 - canvas 图表入口和数据选择；通用折线图绘制 helper 已收敛到 `src/app/charts/line-chart.js`。
-- 英文名 / 器械英文名映射。
+- 展示格式化调用；英文名 / 器械英文名映射已收敛到 `src/app/presenters/display-formatters.js`。
 - 器械图标 SVG、肌肉图 SVG 和动作媒体样式已移除，不再作为当前功能保留。
 - 周复盘候选应用。
 
 ### 明确问题
 
-- 文件仍然过大，当前承担 UI 渲染、事件处理、状态协调和展示映射。
+- 文件仍然过大，当前承担 UI 渲染、事件处理、状态协调和展示格式化调用。
 - Phase 3 / Phase 5 之间已经清理过旧同名函数覆盖问题；当前脚本检查未发现 `app.js` 中仍存在同名函数重复定义。
-- `app.js` 仍然既是 UI 层又是应用服务层，还包含一部分展示数据字典；状态存储 helper、导入导出 helper 和通用图表 helper 已先拆出，但表单保存、复杂渲染和 presenter 仍在文件内。
+- `app.js` 仍然既是 UI 层又是应用服务层；状态存储 helper、导入导出 helper、通用图表 helper 和展示格式化 helper 已先拆出，但表单保存、复杂渲染模板和 revision 应用仍在文件内。
 - `planner.js` 当前已收窄为旧入口兼容别名；`src/core/rules/*.js` 是 `index.html` 直接运行所需的兼容输出，不应作为“无用冗余”删除。
 
 ### 建议拆分方向
