@@ -21,6 +21,7 @@ const directories = [
   path.join("src", "app", "import-export"),
   path.join("src", "app", "charts"),
   path.join("src", "app", "presenters"),
+  path.join("src", "app", "render"),
   path.join("src", "app", "state")
 ];
 

@@ -108,7 +108,7 @@
 - 路由 / view 切换。
 - 状态协调调用；默认状态、读取 localStorage、保存 localStorage 已收敛到 `src/app/storage/app-state-store.js`。
 - 表单数据收集；目标、场地、指标、计划、训练反馈、动作日志、饮食记录、revision 应用等主要状态写入已收敛到 `src/app/state/workbench-actions.js`。
-- HTML 字符串渲染。
+- HTML 字符串渲染；状态栏、目标、指标、计划、器械、场地列表等低耦合模板已收敛到 `src/app/render/view-renderers.js`。
 - 训练计划生成的 UI 协调；实际状态写入已收敛到 `src/app/state/workbench-actions.js`。
 - 训练反馈、动作反馈、饮食记录保存的 UI 协调。
 - 建议和 revision 写入的 UI 协调；第一批写入逻辑已收敛到 `src/app/state/workbench-actions.js`。
@@ -121,16 +121,16 @@
 
 ### 明确问题
 
-- 文件仍然过大，当前承担 UI 渲染、事件处理、状态协调和展示格式化调用。
+- 文件仍然过大，当前承担复杂 UI 渲染、事件处理、状态协调和展示格式化调用。
 - Phase 3 / Phase 5 之间已经清理过旧同名函数覆盖问题；当前脚本检查未发现 `app.js` 中仍存在同名函数重复定义。
-- `app.js` 仍然既是 UI 层又是应用服务层；状态存储 helper、导入导出 helper、通用图表 helper、展示格式化 helper 和主要业务状态动作已先拆出，但复杂渲染模板、文件读取 / 下载触发和部分浏览器 I/O 协调仍在文件内。
+- `app.js` 仍然既是 UI 层又是应用服务层；状态存储 helper、导入导出 helper、通用图表 helper、展示格式化 helper、低耦合视图模板 helper 和主要业务状态动作已先拆出，但智能教练、饮食列表、动作历史等复杂渲染模板、文件读取 / 下载触发和部分浏览器 I/O 协调仍在文件内。
 - `planner.js` 当前已收窄为旧入口兼容别名；`src/core/rules/*.js` 是 `index.html` 直接运行所需的兼容输出，不应作为“无用冗余”删除。
 
 ### 建议拆分方向
 
 - `app/state`：业务状态操作。已开始：`workbench-actions` 承担目标、场地、指标、计划、训练反馈、计划调整、动作日志、饮食日志和 revision 应用。
 - `app/storage`：localStorage、JSON、迁移。已开始：`app-state-store` 承担默认状态、本地读写和桌面 SQLite hydration。
-- `app/render`：页面渲染。
+- `app/render`：页面渲染。已开始：`view-renderers` 承担状态栏、目标、指标、计划、器械、场地列表等低耦合模板。
 - `app/charts`：canvas 图表。已开始：`line-chart` 承担身体指标和饮食趋势共用的折线图绘制。
 - `app/import-export`：CSV 和 JSON。已开始：`data-portability` 承担计划 CSV 构造 / 解析、JSON 备份序列化 / 解析和下载 helper。
 - `app/presenters`：标签、展示文案、英文名和器械文案映射。

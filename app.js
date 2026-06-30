@@ -10,6 +10,7 @@
   const DataPortability = window.FitnessApp.DataPortability;
   const LineChart = window.FitnessApp.LineChart;
   const DisplayFormatters = window.FitnessApp.DisplayFormatters.create({ equipment: D.equipment });
+  const ViewRenderers = window.FitnessApp.ViewRenderers.create({ formatters: DisplayFormatters, rules: P });
   const WorkbenchActions = window.FitnessApp.WorkbenchActions.create({ rules: P, uid, nowLabel, todayIso });
   const {
     esc,
@@ -17,9 +18,7 @@
     tag,
     fmt,
     numUnit,
-    trendLabel,
     deltaLabel,
-    volumeLabel,
     qualityLabel,
     romLabel,
     targetFeelLabel,
@@ -33,8 +32,7 @@
     equipmentEnglishLabel,
     exerciseEnglishName,
     bilingualNameMarkup,
-    equipmentDisplayText,
-    equipmentFamilyLabel
+    equipmentDisplayText
   } = DisplayFormatters;
   const $ = (s) => document.querySelector(s);
   const $$ = (s) => Array.from(document.querySelectorAll(s));
@@ -186,21 +184,16 @@
   function renderStatus() {
     const gym = currentGym();
     const goal = currentGoal();
-    $("#status-gym").textContent = `健身房：${gym ? gym.name : "未选择"}`;
-    $("#status-goal").textContent = `目标：${goal ? goal.parsed.primaryGoalLabel : "未设定"}`;
+    $("#status-gym").textContent = ViewRenderers.statusGymText(gym);
+    $("#status-goal").textContent = ViewRenderers.statusGoalText(goal);
   }
 
   function renderGymSelect() {
-    $("#current-gym-select").innerHTML = state.gyms.map((g) => `<option value="${esc(g.id)}"${g.id === state.currentGymId ? " selected" : ""}>${esc(g.name)}</option>`).join("");
+    $("#current-gym-select").innerHTML = ViewRenderers.gymSelectOptions(state.gyms, state.currentGymId);
   }
 
   function renderCurrentGymSummary() {
-    const gym = currentGym();
-    $("#current-gym-summary").innerHTML = gym ? `
-      <div><strong>${esc(gym.name)}</strong></div>
-      <div class="mini-text">${esc(gym.location || "无地点备注")}</div>
-      <div class="tag-row">${gym.equipment.map((id) => tag(equipmentLabel(id))).join("")}</div>
-    ` : `<p class="empty">还没有健身房，请先添加。</p>`;
+    $("#current-gym-summary").innerHTML = ViewRenderers.currentGymSummary(currentGym());
   }
 
   function renderTodayAdvice() {
@@ -276,63 +269,38 @@
   }
 
   function renderGoalsList() {
-    $("#goals-list").innerHTML = state.goals.length ? `<div class="item-list">${state.goals.map((g) => `
-      <article class="list-item"><div class="list-item-header"><div>
-        <h3>${esc(g.parsed.primaryGoalLabel)}</h3><p class="mini-text">${esc(g.text)}</p>
-        <div class="tag-row">
-          ${g.id === state.currentGoalId ? tag("当前目标", "success") : ""}
-          ${g.parsed.secondaryGoalLabel ? tag(g.parsed.secondaryGoalLabel, "info") : ""}
-          ${tag(`每周 ${g.parsed.trainingDaysPerWeek || 3} 次`)}
-          ${tag(`每次 ${g.parsed.sessionDurationMinutes || 60} 分钟`)}
-          ${g.parsed.frequentTravel ? tag("出差较多", "warn") : ""}
-          ${g.parsed.targetWeight ? tag(`目标体重 ${g.parsed.targetWeight}kg`) : ""}
-        </div>
-      </div><div class="item-actions">
-        <button class="button" data-action="set-goal" data-id="${esc(g.id)}">设为当前</button>
-        <button class="button danger" data-action="delete-goal" data-id="${esc(g.id)}">删除</button>
-      </div></div></article>`).join("")}</div>` : `<p class="empty">暂无保存目标。</p>`;
+    $("#goals-list").innerHTML = ViewRenderers.goalsList(state.goals, state.currentGoalId);
   }
 
   function renderMetrics() {
-    const sorted = P.sortedMetrics(state.metrics);
     const el = $("#metric-list");
-    if (!sorted.length) {
-      el.innerHTML = `<p class="empty">暂无身体指标。先录入一次体重/体脂/骨骼肌。</p>`;
+    const result = ViewRenderers.metricsList(state.metrics);
+    el.innerHTML = result.html;
+    if (!result.hasData) {
       drawMetricChart();
       return;
     }
-    const latest = sorted.at(-1);
-    el.innerHTML = `
-      <div class="metric-grid">
-        <div class="metric-pill"><span>最近体重</span><strong>${fmt(latest.weight, "kg")}</strong></div>
-        <div class="metric-pill"><span>近30天体重</span><strong>${trendLabel(P.metricTrend(state.metrics, "weight", 30), "kg")}</strong></div>
-        <div class="metric-pill"><span>近30天体脂</span><strong>${trendLabel(P.metricTrend(state.metrics, "bodyFat", 30), "%")}</strong></div>
-        <div class="metric-pill"><span>近30天骨骼肌</span><strong>${trendLabel(P.metricTrend(state.metrics, "skeletalMuscle", 30), "kg")}</strong></div>
-      </div>
-      <div class="table-wrap" style="margin-top:14px;"><table><thead><tr><th>日期</th><th>体重</th><th>体脂</th><th>骨骼肌</th><th>腰围</th><th>备注</th><th>操作</th></tr></thead><tbody>
-      ${sorted.slice().reverse().map((m) => `<tr><td>${esc(m.date)}</td><td>${fmt(m.weight, "kg")}</td><td>${fmt(m.bodyFat, "%")}</td><td>${fmt(m.skeletalMuscle, "kg")}</td><td>${fmt(m.waist, "cm")}</td><td>${esc(m.notes || "")}</td><td><button class="button danger" data-action="delete-metric" data-id="${esc(m.id)}">删除</button></td></tr>`).join("")}
-      </tbody></table></div>`;
     drawMetricChart();
   }
 
   function renderPlan() {
     const context = $("#plan-context");
     const table = $("#plan-table");
-    if (!state.plan) {
-      context.innerHTML = `<p class="empty">暂无计划。点击“生成计划”会按当前目标、身体指标和健身房器械生成。</p>`;
-      table.innerHTML = "";
+    const result = ViewRenderers.planContext(state.plan);
+    context.innerHTML = result.contextHtml;
+    if (!result.hasPlan) {
+      table.innerHTML = result.tableHtml;
       return;
     }
-    context.innerHTML = `<div><strong>生成时间：</strong>${esc(state.plan.generatedAt)}</div><div><strong>目标：</strong>${esc(state.plan.context.goalLabel)}</div><div><strong>健身房：</strong>${esc(state.plan.context.gymName)}</div><div><strong>身体指标：</strong>${esc(state.plan.context.metricSummary)}</div><div class="tag-row">${state.plan.context.notes.map((n) => tag(n, "info")).join("")}</div>`;
     table.innerHTML = state.plan.days.map((d, i) => renderWorkoutDay(d, i, false)).join("");
   }
 
   function renderWorkoutDay(day, dayIndex) {
-    return `<div class="day-block"><div class="day-header"><div><h3>第 ${dayIndex + 1} 天：${esc(day.focus)}</h3><p class="mini-text">${esc(day.intent)}</p></div>${tag(`${day.exercises.length} 个动作`)}</div><div class="table-wrap"><table><thead><tr><th>动作</th><th>组数</th><th>次数/时长</th><th>重量</th><th>RPE</th><th>休息</th><th>备注/替代</th><th>示例</th></tr></thead><tbody>${day.exercises.map((row, rowIndex) => renderPlanRow(row, dayIndex, rowIndex)).join("")}</tbody></table></div></div>`;
+    return ViewRenderers.workoutDay(day, dayIndex, renderPlanRow);
   }
 
   function renderDataSummary() {
-    $("#data-summary").innerHTML = `<div>健身房：${state.gyms.length} 个</div><div>动作：${state.exercises.length} 个</div><div>目标：${state.goals.length} 条</div><div>身体指标：${state.metrics.length} 条</div><div>训练记录：${state.sessions.length} 条</div><div>动作级反馈：${(state.exerciseLogs || []).length} 条</div><div>饮食记录：${(state.nutritionLogs || []).length} 条</div><div>智能建议：${state.advice.length} 条</div>`;
+    $("#data-summary").innerHTML = ViewRenderers.dataSummary(state);
   }
 
   function saveGoal() {
@@ -766,23 +734,13 @@
 
 
   function renderEquipmentChecklist() {
-    $("#equipment-checklist").innerHTML = D.equipment.map((x) => `
-      <label class="check-item check-item-text">
-        <input type="checkbox" value="${esc(x.id)}" />
-        <div class="dual-name">${bilingualNameMarkup(x.label, equipmentEnglishLabel(x.id))}</div>
-      </label>
-    `).join("");
+    $("#equipment-checklist").innerHTML = ViewRenderers.equipmentChecklist(D.equipment);
   }
 
   function renderEquipmentLibrary() {
     const el = $("#equipment-library");
     if (!el) return;
-    el.innerHTML = `<div class="visual-grid">${D.equipment.map((item) => `
-      <article class="visual-card">
-        <div class="dual-name">${bilingualNameMarkup(item.label, equipmentEnglishLabel(item.id), true)}</div>
-        <p class="mini-text">${esc(equipmentFamilyLabel(item.id))}</p>
-      </article>
-    `).join("")}</div>`;
+    el.innerHTML = ViewRenderers.equipmentLibrary(D.equipment);
   }
 
   function renderExerciseLogSelect() {
@@ -794,10 +752,7 @@
     }
     const dayIndex = Number($("#today-plan-day-select").value || 0);
     const day = state.plan.days[dayIndex] || state.plan.days[0];
-    select.innerHTML = day.exercises.map((row) => {
-      const ex = getExercise(row.exerciseId);
-      return `<option value="${esc(row.exerciseId)}">${esc(ex?.name || row.exerciseId)} / ${esc(exerciseEnglishName(row.exerciseId))}</option>`;
-    }).join("");
+    select.innerHTML = ViewRenderers.exerciseLogSelectOptions(day, getExercise, exerciseEnglishName);
   }
 
   function renderPlanRow(row, dayIndex, rowIndex) {
@@ -821,14 +776,7 @@
   }
 
   function renderGymList() {
-    $("#gym-list").innerHTML = state.gyms.length ? `<div class="item-list">${state.gyms.map((g) => `
-      <article class="list-item"><div class="list-item-header"><div>
-        <h3>${esc(g.name)}</h3><p class="mini-text">${esc(g.location || "无地点备注")}</p>
-        <div class="tag-row">${g.equipment.map((id) => tag(equipmentDisplayText(id))).join("")}</div>
-      </div><div class="item-actions">
-        ${g.id === state.currentGymId ? tag("当前", "success") : `<button class="button" data-action="set-current-gym" data-id="${esc(g.id)}">设为当前</button>`}
-        <button class="button danger" data-action="delete-gym" data-id="${esc(g.id)}">删除</button>
-      </div></div></article>`).join("")}</div>` : `<p class="empty">暂无健身房。</p>`;
+    $("#gym-list").innerHTML = ViewRenderers.gymList(state.gyms, state.currentGymId);
   }
 
   function renderExerciseLogList() {
@@ -1050,10 +998,7 @@
   }
 
   function trainingStatsLine(log) {
-    const setCount = (log.sets || []).length;
-    if (!setCount) return "";
-    const prText = log.simplePr?.isPr ? ` · ${log.simplePr.records.map((record) => record.label).join(" / ")}` : "";
-    return `<p class="mini-text">每组 ${setCount} 组 · 容量 ${volumeLabel(log.volumeLoad)} · 有效组 ${Number(log.hardSets || 0)}${esc(prText)}</p>`;
+    return ViewRenderers.trainingStatsLine(log);
   }
 
   function renderNutritionReminders() {
