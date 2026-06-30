@@ -592,11 +592,6 @@
     return id;
   }
 
-  function equipmentIconMarkup(id, size = "small") {
-    const variant = size === "large" ? "large" : "small";
-    return `<span class="equipment-icon ${variant}" aria-hidden="true">${equipmentIconSvg(equipmentIconType(id))}</span>`;
-  }
-
   function equipmentFamilyLabel(id) {
     return {
       free_weight: "自由重量",
@@ -610,262 +605,50 @@
   }
 
   function equipmentFamily(id) {
-    return equipmentProfile(id).family;
-  }
-
-  function equipmentIconType(id) {
-    return equipmentProfile(id).type;
-  }
-
-  function equipmentProfile(id) {
-    const profiles = {
-      barbell: { type: "barbell", family: "free_weight" },
-      dumbbell: { type: "dumbbell", family: "free_weight" },
-      kettlebell: { type: "kettlebell", family: "free_weight" },
-      trap_bar: { type: "trap_bar", family: "free_weight" },
-      squat_rack: { type: "rack", family: "rack_support" },
-      bench: { type: "bench", family: "rack_support" },
-      smith: { type: "smith", family: "fixed_machine" },
-      cable: { type: "cable", family: "cable_station" },
-      lat_pulldown: { type: "lat_pulldown", family: "cable_station" },
-      seated_row_machine: { type: "row_machine", family: "fixed_machine" },
-      leg_press: { type: "leg_machine", family: "fixed_machine" },
-      hack_squat: { type: "leg_machine", family: "fixed_machine" },
-      leg_extension: { type: "leg_machine", family: "fixed_machine" },
-      leg_curl: { type: "leg_machine", family: "fixed_machine" },
-      calf_raise: { type: "leg_machine", family: "fixed_machine" },
-      pec_deck: { type: "press_machine", family: "fixed_machine" },
-      chest_press_machine: { type: "press_machine", family: "fixed_machine" },
-      incline_press_machine: { type: "press_machine", family: "fixed_machine" },
-      shoulder_press_machine: { type: "press_machine", family: "fixed_machine" },
-      ez_bar: { type: "barbell", family: "free_weight" },
-      bicep_curl_machine: { type: "press_machine", family: "fixed_machine" },
-      high_row_machine: { type: "row_machine", family: "fixed_machine" },
-      t_bar_row_station: { type: "row_machine", family: "fixed_machine" },
-      pullup_bar: { type: "pullup_bar", family: "bodyweight_station" },
-      dip_station: { type: "dip_station", family: "bodyweight_station" },
-      assisted_pullup: { type: "assisted_pullup", family: "bodyweight_station" },
-      landmine: { type: "landmine", family: "rack_support" },
-      glute_drive: { type: "glute_drive", family: "fixed_machine" },
-      hip_abduction: { type: "leg_machine", family: "fixed_machine" },
-      hip_adduction: { type: "leg_machine", family: "fixed_machine" },
-      preacher_bench: { type: "bench", family: "rack_support" },
-      back_extension: { type: "back_extension", family: "fixed_machine" },
-      ab_machine: { type: "core_machine", family: "fixed_machine" },
-      bands: { type: "bands", family: "accessories" },
-      suspension_trainer: { type: "suspension_trainer", family: "accessories" },
-      mat: { type: "mat", family: "accessories" },
-      treadmill: { type: "treadmill", family: "conditioning" },
-      elliptical: { type: "elliptical", family: "conditioning" },
-      stair_climber: { type: "stair_climber", family: "conditioning" },
-      bike: { type: "bike", family: "conditioning" },
-      rower: { type: "rower", family: "conditioning" },
-      sled: { type: "sled", family: "conditioning" }
-    };
-    return profiles[id] || { type: "machine", family: "fixed_machine" };
-  }
-
-  function equipmentIconSvg(type) {
-    const accent = "#2f7d57";
-    const soft = "#cfe4d5";
-    const line = "#2f7d57";
-    const svg = (content) => `<svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="${line}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">${content}</svg>`;
-    switch (type) {
-      case "barbell":
-        return svg(`<line x1="12" y1="32" x2="52" y2="32"/><rect x="8" y="22" width="3" height="20" rx="1" fill="${accent}" stroke="none"/><rect x="13" y="24" width="4" height="16" rx="1" fill="${soft}" stroke="none"/><rect x="47" y="24" width="4" height="16" rx="1" fill="${soft}" stroke="none"/><rect x="53" y="22" width="3" height="20" rx="1" fill="${accent}" stroke="none"/>`);
-      case "dumbbell":
-        return svg(`<line x1="20" y1="32" x2="44" y2="32"/><rect x="14" y="24" width="4" height="16" rx="1" fill="${accent}" stroke="none"/><rect x="18.5" y="26" width="3" height="12" rx="1" fill="${soft}" stroke="none"/><rect x="42.5" y="26" width="3" height="12" rx="1" fill="${soft}" stroke="none"/><rect x="46" y="24" width="4" height="16" rx="1" fill="${accent}" stroke="none"/>`);
-      case "kettlebell":
-        return svg(`<path d="M24 24C24 19.6 27.6 16 32 16C36.4 16 40 19.6 40 24" /><path d="M21 28C21 23.6 24.6 20 29 20H35C39.4 20 43 23.6 43 28V31C43 41.2 37.6 48 32 48C26.4 48 21 41.2 21 31V28Z" fill="${soft}" />`);
-      case "trap_bar":
-        return svg(`<path d="M21 18L13 32L21 46H43L51 32L43 18H21Z" fill="${soft}" /><line x1="24" y1="24" x2="24" y2="40"/><line x1="40" y1="24" x2="40" y2="40"/>`);
-      case "rack":
-        return svg(`<path d="M18 50V14H26V50" /><path d="M38 50V14H46V50" /><line x1="18" y1="18" x2="46" y2="18"/><line x1="16" y1="30" x2="48" y2="30"/><circle cx="21" cy="30" r="2.5" fill="${accent}" stroke="none"/><circle cx="43" cy="30" r="2.5" fill="${accent}" stroke="none"/>`);
-      case "bench":
-        return svg(`<rect x="16" y="24" width="32" height="8" rx="4" fill="${soft}" /><line x1="22" y1="32" x2="18" y2="46"/><line x1="42" y1="32" x2="46" y2="46"/><line x1="26" y1="24" x2="18" y2="16"/><line x1="38" y1="24" x2="46" y2="16"/>`);
-      case "smith":
-        return svg(`<path d="M18 50V14H24V50" /><path d="M40 50V14H46V50" /><line x1="18" y1="18" x2="46" y2="18"/><line x1="18" y1="32" x2="46" y2="32"/><rect x="12" y="28" width="4" height="8" rx="1" fill="${accent}" stroke="none"/><rect x="48" y="28" width="4" height="8" rx="1" fill="${accent}" stroke="none"/>`);
-      case "cable":
-        return svg(`<path d="M18 50V14H24V50" /><path d="M40 50V14H46V50" /><line x1="21" y1="18" x2="43" y2="18"/><circle cx="21" cy="22" r="3" fill="${soft}" /><circle cx="43" cy="22" r="3" fill="${soft}" /><path d="M21 25V39L28 46" /><path d="M43 25V39L36 46" /><line x1="26" y1="44" x2="31" y2="49"/><line x1="38" y1="44" x2="33" y2="49"/>`);
-      case "lat_pulldown":
-        return svg(`<path d="M18 50V14H24V50" /><path d="M40 50V14H46V50" /><line x1="21" y1="18" x2="43" y2="18"/><path d="M18 22H46L38 28H26L18 22Z" fill="${soft}" /><line x1="32" y1="28" x2="32" y2="38"/><rect x="26" y="40" width="12" height="5" rx="2.5" fill="${accent}" stroke="none"/>`);
-      case "row_machine":
-        return svg(`<path d="M16 42H48" /><rect x="18" y="36" width="10" height="6" rx="2" fill="${soft}" /><line x1="28" y1="39" x2="40" y2="30"/><path d="M40 30L48 24V36L40 30Z" fill="${accent}" stroke="none"/><line x1="16" y1="46" x2="12" y2="50"/><line x1="48" y1="46" x2="52" y2="50"/>`);
-      case "leg_machine":
-        return svg(`<rect x="16" y="34" width="14" height="10" rx="4" fill="${soft}" /><line x1="30" y1="39" x2="42" y2="25"/><rect x="42" y="20" width="8" height="14" rx="4" fill="${accent}" stroke="none"/><line x1="18" y1="44" x2="14" y2="50"/><line x1="28" y1="44" x2="30" y2="50"/>`);
-      case "press_machine":
-        return svg(`<rect x="18" y="34" width="12" height="10" rx="4" fill="${soft}" /><path d="M30 39H42L48 26" /><line x1="42" y1="39" x2="50" y2="39"/><line x1="48" y1="26" x2="54" y2="22"/><line x1="18" y1="44" x2="14" y2="50"/>`);
-      case "pullup_bar":
-        return svg(`<line x1="14" y1="18" x2="50" y2="18"/><line x1="18" y1="18" x2="18" y2="50"/><line x1="46" y1="18" x2="46" y2="50"/><line x1="24" y1="18" x2="24" y2="26"/><line x1="40" y1="18" x2="40" y2="26"/>`);
-      case "dip_station":
-        return svg(`<line x1="20" y1="18" x2="20" y2="50"/><line x1="44" y1="18" x2="44" y2="50"/><line x1="20" y1="24" x2="32" y2="24"/><line x1="32" y1="24" x2="44" y2="24"/><line x1="16" y1="50" x2="24" y2="50"/><line x1="40" y1="50" x2="48" y2="50"/>`);
-      case "assisted_pullup":
-        return svg(`<path d="M18 50V14H24V50" /><path d="M40 50V14H46V50" /><line x1="21" y1="18" x2="43" y2="18"/><rect x="24" y="34" width="16" height="6" rx="3" fill="${soft}" /><line x1="32" y1="18" x2="32" y2="34"/>`);
-      case "landmine":
-        return svg(`<circle cx="16" cy="46" r="4" fill="${accent}" stroke="none"/><line x1="18" y1="44" x2="46" y2="18"/><rect x="46" y="14" width="4" height="10" rx="1" fill="${soft}" stroke="none"/><rect x="50" y="13" width="3" height="12" rx="1" fill="${accent}" stroke="none"/>`);
-      case "glute_drive":
-        return svg(`<rect x="16" y="36" width="12" height="8" rx="4" fill="${soft}" /><path d="M28 40L40 30L46 34" /><rect x="40" y="24" width="10" height="10" rx="5" fill="${accent}" stroke="none"/><line x1="18" y1="44" x2="14" y2="50"/>`);
-      case "back_extension":
-        return svg(`<line x1="18" y1="48" x2="28" y2="34"/><line x1="46" y1="48" x2="36" y2="34"/><rect x="24" y="28" width="16" height="6" rx="3" fill="${soft}" /><line x1="32" y1="28" x2="46" y2="18"/><circle cx="49" cy="16" r="3" fill="${accent}" stroke="none"/>`);
-      case "core_machine":
-        return svg(`<rect x="18" y="34" width="12" height="10" rx="4" fill="${soft}" /><path d="M30 40C36 40 36 24 44 24" /><rect x="42" y="18" width="8" height="12" rx="4" fill="${accent}" stroke="none"/><line x1="18" y1="44" x2="14" y2="50"/>`);
-      case "bands":
-        return svg(`<path d="M18 20C18 13 28 13 28 20C28 27 18 27 18 20Z" fill="${soft}" /><path d="M36 44C36 37 46 37 46 44C46 51 36 51 36 44Z" fill="${soft}" /><path d="M26 24C32 28 32 36 38 40" />`);
-      case "suspension_trainer":
-        return svg(`<circle cx="32" cy="14" r="4" fill="${accent}" stroke="none"/><line x1="32" y1="18" x2="22" y2="44"/><line x1="32" y1="18" x2="42" y2="44"/><rect x="18" y="44" width="8" height="6" rx="3" fill="${soft}" /><rect x="38" y="44" width="8" height="6" rx="3" fill="${soft}" />`);
-      case "mat":
-        return svg(`<rect x="14" y="24" width="36" height="16" rx="8" fill="${soft}" /><path d="M44 24C48 24 50 28 50 32C50 36 48 40 44 40" />`);
-      case "treadmill":
-        return svg(`<path d="M16 42H40L48 24H56" /><line x1="42" y1="24" x2="42" y2="16"/><line x1="18" y1="42" x2="14" y2="50"/><line x1="38" y1="42" x2="42" y2="50"/>`);
-      case "elliptical":
-        return svg(`<ellipse cx="28" cy="40" rx="12" ry="8" /><line x1="40" y1="18" x2="32" y2="34"/><line x1="24" y1="18" x2="32" y2="34"/><line x1="20" y1="48" x2="32" y2="34"/><line x1="36" y1="48" x2="32" y2="34"/>`);
-      case "stair_climber":
-        return svg(`<path d="M18 46H46V18" /><rect x="18" y="38" width="8" height="8" rx="2" fill="${soft}" /><rect x="26" y="30" width="8" height="8" rx="2" fill="${soft}" /><rect x="34" y="22" width="8" height="8" rx="2" fill="${soft}" />`);
-      case "bike":
-        return svg(`<circle cx="20" cy="42" r="8" /><circle cx="44" cy="42" r="8" /><path d="M20 42L28 28H36L44 42" /><line x1="28" y1="28" x2="24" y2="20"/><line x1="36" y1="28" x2="42" y2="22"/>`);
-      case "rower":
-        return svg(`<line x1="14" y1="44" x2="48" y2="44"/><rect x="18" y="36" width="10" height="6" rx="2" fill="${soft}" /><line x1="28" y1="39" x2="42" y2="28"/><circle cx="46" cy="24" r="4" fill="${accent}" stroke="none"/>`);
-      case "sled":
-        return svg(`<path d="M18 42H44L50 28" /><line x1="18" y1="42" x2="14" y2="48"/><line x1="44" y1="42" x2="48" y2="48"/><line x1="46" y1="18" x2="54" y2="8"/><line x1="40" y1="22" x2="48" y2="12"/>`);
-      default:
-        return svg(`<rect x="18" y="18" width="28" height="28" rx="8" fill="${soft}" /><line x1="24" y1="32" x2="40" y2="32"/><line x1="32" y1="24" x2="32" y2="40"/>`);
-    }
-  }
-
-  function muscleMapMarkup(exercise) {
-    const regions = resolveMuscleRegions(exercise?.muscles || []);
-    return `${muscleMapSvg(regions)}
-      <div class="muscle-map-labels">
-        <span>front</span>
-        <span>back</span>
-      </div>
-      <div class="legend-row">${(exercise?.muscles || []).slice(0, 4).map((muscle) => tag(muscle, "info")).join("")}</div>`;
-  }
-
-  function resolveMuscleRegions(muscles) {
-    const front = new Set();
-    const back = new Set();
-    (muscles || []).forEach((item) => {
-      const muscle = String(item || "");
-      if (muscle.includes("上胸")) front.add("upper_chest");
-      else if (muscle.includes("胸")) front.add("chest");
-      if (muscle.includes("前束")) front.add("front_delts");
-      else if (muscle.includes("中束")) {
-        front.add("side_delts");
-        back.add("side_delts");
-      } else if (muscle.includes("后束")) back.add("rear_delts");
-      else if (muscle.includes("肩")) {
-        front.add("front_delts");
-        back.add("rear_delts");
-      }
-      if (muscle.includes("二头")) front.add("biceps");
-      if (muscle.includes("三头")) back.add("triceps");
-      if (muscle.includes("背阔")) back.add("lats");
-      else if (muscle.includes("上背")) back.add("upper_back");
-      else if (muscle.includes("背")) {
-        back.add("lats");
-        back.add("upper_back");
-      }
-      if (muscle.includes("竖脊")) back.add("spinal_erectors");
-      if (muscle.includes("核心") || muscle.includes("腹")) front.add("core");
-      if (muscle.includes("臀中") || muscle.includes("臀小")) back.add("glute_medius");
-      else if (muscle.includes("臀")) back.add("glutes");
-      if (muscle.includes("股四")) front.add("quads");
-      if (muscle.includes("腘绳")) back.add("hamstrings");
-      if (muscle.includes("腿")) {
-        front.add("quads");
-        back.add("hamstrings");
-      }
-      if (muscle.includes("小腿")) {
-        front.add("calves");
-        back.add("calves");
-      }
-      if (muscle.includes("内收")) front.add("adductors");
-      if (muscle.includes("心肺")) front.add("cardio");
-    });
-    if (!front.size && !back.size) front.add("core");
-    return { front, back };
-  }
-
-  function muscleMapSvg(regions) {
-    const colors = {
-      base: "#e7efe9",
-      outline: "#98ab9f",
-      accent: "#2f7d57",
-      accentSoft: "#b8d3c0"
-    };
-    return `<svg viewBox="0 0 220 188" role="img" aria-label="训练肌肉示意图" xmlns="http://www.w3.org/2000/svg">
-      ${muscleFigureSvg(40, regions.front, "front", colors)}
-      ${muscleFigureSvg(136, regions.back, "back", colors)}
-    </svg>`;
-  }
-
-  function muscleFigureSvg(x, activeRegions, side, colors) {
-    const active = (key) => activeRegions.has(key);
-    const fill = (key) => active(key) ? colors.accent : colors.base;
-    const opacity = (key) => active(key) ? "1" : "0.42";
-    return `<g transform="translate(${x}, 0)">
-      <circle cx="22" cy="20" r="10" fill="${colors.base}" stroke="${colors.outline}" stroke-width="2"/>
-      <rect x="14" y="32" width="16" height="40" rx="8" fill="${colors.base}" stroke="${colors.outline}" stroke-width="2"/>
-      <rect x="6" y="36" width="8" height="34" rx="4" fill="${colors.base}" stroke="${colors.outline}" stroke-width="2"/>
-      <rect x="30" y="36" width="8" height="34" rx="4" fill="${colors.base}" stroke="${colors.outline}" stroke-width="2"/>
-      <rect x="15" y="72" width="7" height="54" rx="4" fill="${colors.base}" stroke="${colors.outline}" stroke-width="2"/>
-      <rect x="22" y="72" width="7" height="54" rx="4" fill="${colors.base}" stroke="${colors.outline}" stroke-width="2"/>
-      ${side === "front" ? frontMuscleOverlay(fill, opacity, colors) : backMuscleOverlay(fill, opacity)}
-    </g>`;
-  }
-
-  function frontMuscleOverlay(fill, opacity, colors) {
-    return `
-      <circle cx="11" cy="37" r="5" fill="${fill("front_delts")}" fill-opacity="${opacity("front_delts")}"/>
-      <circle cx="33" cy="37" r="5" fill="${fill("front_delts")}" fill-opacity="${opacity("front_delts")}"/>
-      <circle cx="11" cy="37" r="5" fill="${fill("side_delts")}" fill-opacity="${opacity("side_delts")}"/>
-      <circle cx="33" cy="37" r="5" fill="${fill("side_delts")}" fill-opacity="${opacity("side_delts")}"/>
-      <rect x="8" y="43" width="5" height="14" rx="2.5" fill="${fill("biceps")}" fill-opacity="${opacity("biceps")}"/>
-      <rect x="31" y="43" width="5" height="14" rx="2.5" fill="${fill("biceps")}" fill-opacity="${opacity("biceps")}"/>
-      <path d="M14 40C14 34 18 32 22 32C18 36 18 42 18 46H14V40Z" fill="${fill("upper_chest")}" fill-opacity="${opacity("upper_chest")}"/>
-      <path d="M30 40C30 34 26 32 22 32C26 36 26 42 26 46H30V40Z" fill="${fill("upper_chest")}" fill-opacity="${opacity("upper_chest")}"/>
-      <path d="M14 42C14 49 17 54 22 54C17 54 15 60 15 66H14V42Z" fill="${fill("chest")}" fill-opacity="${opacity("chest")}"/>
-      <path d="M30 42C30 49 27 54 22 54C27 54 29 60 29 66H30V42Z" fill="${fill("chest")}" fill-opacity="${opacity("chest")}"/>
-      <rect x="17" y="50" width="10" height="20" rx="5" fill="${fill("core")}" fill-opacity="${opacity("core")}"/>
-      <path d="M22 46C24 44 27 44 29 46C27 50 25 52 22 54C19 52 17 50 15 46C17 44 20 44 22 46Z" fill="${fill("cardio")}" fill-opacity="${opacity("cardio")}" stroke="${activeStroke("cardio", opacity, colors)}" stroke-width="${activeStrokeWidth("cardio", opacity)}"/>
-      <rect x="15" y="76" width="7" height="26" rx="3.5" fill="${fill("quads")}" fill-opacity="${opacity("quads")}"/>
-      <rect x="22" y="76" width="7" height="26" rx="3.5" fill="${fill("quads")}" fill-opacity="${opacity("quads")}"/>
-      <rect x="19" y="78" width="4" height="22" rx="2" fill="${fill("adductors")}" fill-opacity="${opacity("adductors")}"/>
-      <rect x="21" y="78" width="4" height="22" rx="2" fill="${fill("adductors")}" fill-opacity="${opacity("adductors")}"/>
-      <rect x="15" y="104" width="7" height="18" rx="3.5" fill="${fill("calves")}" fill-opacity="${opacity("calves")}"/>
-      <rect x="22" y="104" width="7" height="18" rx="3.5" fill="${fill("calves")}" fill-opacity="${opacity("calves")}"/>
-    `;
-  }
-
-  function backMuscleOverlay(fill, opacity) {
-    return `
-      <circle cx="11" cy="37" r="5" fill="${fill("rear_delts")}" fill-opacity="${opacity("rear_delts")}"/>
-      <circle cx="33" cy="37" r="5" fill="${fill("rear_delts")}" fill-opacity="${opacity("rear_delts")}"/>
-      <circle cx="11" cy="37" r="5" fill="${fill("side_delts")}" fill-opacity="${opacity("side_delts")}"/>
-      <circle cx="33" cy="37" r="5" fill="${fill("side_delts")}" fill-opacity="${opacity("side_delts")}"/>
-      <rect x="8" y="43" width="5" height="14" rx="2.5" fill="${fill("triceps")}" fill-opacity="${opacity("triceps")}"/>
-      <rect x="31" y="43" width="5" height="14" rx="2.5" fill="${fill("triceps")}" fill-opacity="${opacity("triceps")}"/>
-      <rect x="14" y="34" width="16" height="10" rx="5" fill="${fill("upper_back")}" fill-opacity="${opacity("upper_back")}"/>
-      <path d="M14 44C14 56 17 64 22 68C27 64 30 56 30 44H14Z" fill="${fill("lats")}" fill-opacity="${opacity("lats")}"/>
-      <rect x="20" y="42" width="4" height="24" rx="2" fill="${fill("spinal_erectors")}" fill-opacity="${opacity("spinal_erectors")}"/>
-      <ellipse cx="18" cy="76" rx="6" ry="7" fill="${fill("glutes")}" fill-opacity="${opacity("glutes")}"/>
-      <ellipse cx="26" cy="76" rx="6" ry="7" fill="${fill("glutes")}" fill-opacity="${opacity("glutes")}"/>
-      <ellipse cx="14" cy="74" rx="4" ry="5" fill="${fill("glute_medius")}" fill-opacity="${opacity("glute_medius")}"/>
-      <ellipse cx="30" cy="74" rx="4" ry="5" fill="${fill("glute_medius")}" fill-opacity="${opacity("glute_medius")}"/>
-      <rect x="15" y="82" width="7" height="24" rx="3.5" fill="${fill("hamstrings")}" fill-opacity="${opacity("hamstrings")}"/>
-      <rect x="22" y="82" width="7" height="24" rx="3.5" fill="${fill("hamstrings")}" fill-opacity="${opacity("hamstrings")}"/>
-      <rect x="15" y="104" width="7" height="18" rx="3.5" fill="${fill("calves")}" fill-opacity="${opacity("calves")}"/>
-      <rect x="22" y="104" width="7" height="18" rx="3.5" fill="${fill("calves")}" fill-opacity="${opacity("calves")}"/>
-    `;
-  }
-
-  function activeStroke(key, opacity, colors) {
-    return opacity(key) === "1" ? colors.accent : "none";
-  }
-
-  function activeStrokeWidth(key, opacity) {
-    return opacity(key) === "1" ? "1.5" : "0";
+    return {
+      barbell: "free_weight",
+      dumbbell: "free_weight",
+      kettlebell: "free_weight",
+      trap_bar: "free_weight",
+      squat_rack: "rack_support",
+      bench: "rack_support",
+      smith: "fixed_machine",
+      cable: "cable_station",
+      lat_pulldown: "cable_station",
+      seated_row_machine: "fixed_machine",
+      leg_press: "fixed_machine",
+      hack_squat: "fixed_machine",
+      leg_extension: "fixed_machine",
+      leg_curl: "fixed_machine",
+      calf_raise: "fixed_machine",
+      pec_deck: "fixed_machine",
+      chest_press_machine: "fixed_machine",
+      incline_press_machine: "fixed_machine",
+      shoulder_press_machine: "fixed_machine",
+      ez_bar: "free_weight",
+      bicep_curl_machine: "fixed_machine",
+      high_row_machine: "fixed_machine",
+      t_bar_row_station: "fixed_machine",
+      pullup_bar: "bodyweight_station",
+      dip_station: "bodyweight_station",
+      assisted_pullup: "bodyweight_station",
+      landmine: "rack_support",
+      glute_drive: "fixed_machine",
+      hip_abduction: "fixed_machine",
+      hip_adduction: "fixed_machine",
+      preacher_bench: "rack_support",
+      back_extension: "fixed_machine",
+      ab_machine: "fixed_machine",
+      bands: "accessories",
+      suspension_trainer: "accessories",
+      mat: "accessories",
+      treadmill: "conditioning",
+      elliptical: "conditioning",
+      stair_climber: "conditioning",
+      bike: "conditioning",
+      rower: "conditioning",
+      sled: "conditioning"
+    }[id] || "fixed_machine";
   }
 
   function buildExerciseHistorySummary(logs) {

@@ -137,13 +137,13 @@
 - 动作列表可搜索。
 - 展示当前场地是否可做。
 - 展示当前场地替代动作。
-- 有中英双语名称和部分动作图片 / 媒体解析的后续增强代码。
+- 有中英双语名称展示；此前未实际展示的器械 SVG 图标、肌肉示意图和动作媒体样式已移除。
 
 ### 主要代码位置
 
 - `data.js`：`exercises` 静态主数据。
 - `index.html`：`view-exercises`。
-- `app.js`：`renderExerciseList`、`renderPlanRow`、`findOrCreateExercise`、`exerciseEnglishName`、`equipmentEnglishLabel`、`resolveExerciseMedia`、`exercisePreviewMarkup`。
+- `app.js`：`renderExerciseList`、`renderPlanRow`、`findOrCreateExercise`、`exerciseEnglishName`、`equipmentEnglishLabel`、`equipmentDisplayText`。
 - `src/core/rules/plan-generator.js`：动作可用性和替代动作逻辑。
 - `planner.js`：兼容导出 `window.FitnessPlanner.availableSubstitutes`、`window.FitnessPlanner.isAvailable`。
 
@@ -166,7 +166,7 @@
 - 动作库没有正式编辑 UI。
 - `findOrCreateExercise` 只为 CSV 导入创建最小动作，字段不完整。
 - 静态主数据和业务语义混在 `data.js`，例如替代关系、风险提示和示例链接都在同一个对象中。
-- 动作媒体解析逻辑位于 `app.js`，不是动作库模型的一部分。
+- 动作库当前以文字、标签和外部示例链接为主；不再保留未展示的内置图标 / 肌肉图代码。
 
 ## 5. 训练计划
 

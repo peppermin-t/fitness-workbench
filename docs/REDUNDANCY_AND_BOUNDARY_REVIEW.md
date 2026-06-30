@@ -63,7 +63,7 @@
 ### 边界问题
 
 - README 提到后续“更完整的动作库编辑能力”，但当前代码只支持隐式创建。
-- 动作展示、英文名映射、器械图标、动作媒体推断都在 `app.js`，导致动作库不仅是数据，还混入 UI 展示规则。
+- 动作展示和英文名映射仍在 `app.js`，导致动作库不仅是数据，还混入 UI 展示规则。此前未实际展示的器械图标 SVG、肌肉图 SVG 和动作媒体样式已移除。
 - 替代动作关系既来自 `substitutes`，也来自相同 `pattern` 推导。
 
 ### 建议边界
@@ -71,7 +71,7 @@
 - v0.2 动作库定位为“可查看 + 可被计划生成使用 + CSV 导入时可补充极简动作”。
 - 完整动作编辑器暂不做。
 - 后续模型中增加 `isCustom`，把用户自定义动作和内置动作区分开。
-- 动作媒体、英文名、器械展示应从 `app.js` 中逐步拆到数据或 presenter 层。
+- 英文名和器械展示文案应从 `app.js` 中逐步拆到数据或 presenter 层；未实际展示的媒体 / 图标代码不再保留。
 
 ## 4. 智能建议是否分散在多个页面
 
@@ -115,9 +115,8 @@
 - CSV 导入 / 导出的 UI 事件和状态写入；CSV 构造 / 解析 helper 已收敛到 `src/app/import-export/data-portability.js`。
 - JSON 导入 / 导出的 UI 事件和状态写入；JSON 序列化 / 解析 helper 已收敛到 `src/app/import-export/data-portability.js`。
 - canvas 图表入口和数据选择；通用折线图绘制 helper 已收敛到 `src/app/charts/line-chart.js`。
-- 器械图标 SVG。
-- 肌肉图 SVG。
-- 动作媒体 / 英文名 / 器械英文名映射。
+- 英文名 / 器械英文名映射。
+- 器械图标 SVG、肌肉图 SVG 和动作媒体样式已移除，不再作为当前功能保留。
 - 周复盘候选应用。
 
 ### 明确问题
@@ -134,7 +133,7 @@
 - `app/render`：页面渲染。
 - `app/charts`：canvas 图表。已开始：`line-chart` 承担身体指标和饮食趋势共用的折线图绘制。
 - `app/import-export`：CSV 和 JSON。已开始：`data-portability` 承担计划 CSV 构造 / 解析、JSON 备份序列化 / 解析和下载 helper。
-- `app/presenters`：标签、展示文案、英文名、图标映射。
+- `app/presenters`：标签、展示文案、英文名和器械文案映射。
 
 ## 6. `planner.js` 是否已经过大
 

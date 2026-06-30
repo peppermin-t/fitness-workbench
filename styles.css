@@ -392,49 +392,6 @@ textarea:focus {
   line-height: 1.35;
 }
 
-.equipment-icon {
-  display: grid;
-  place-items: center;
-  width: 42px;
-  height: 42px;
-  border: 1px solid #bcd4c5;
-  border-radius: var(--radius);
-  background: var(--accent-soft);
-  color: var(--accent-dark);
-  flex: 0 0 auto;
-  overflow: hidden;
-}
-
-.equipment-icon.large {
-  width: 56px;
-  height: 56px;
-}
-
-.equipment-icon.small {
-  width: 30px;
-  height: 30px;
-}
-
-.equipment-icon svg,
-.muscle-map svg {
-  display: block;
-}
-
-.equipment-icon svg {
-  width: 22px;
-  height: 22px;
-}
-
-.equipment-icon.large svg {
-  width: 32px;
-  height: 32px;
-}
-
-.muscle-map svg {
-  width: 100%;
-  height: auto;
-}
-
 .equipment-inline {
   display: flex;
   flex-wrap: wrap;
@@ -468,56 +425,6 @@ textarea:focus {
 
 .exercise-card-layout.exercise-card-layout-text {
   grid-template-columns: minmax(0, 1fr);
-}
-
-.exercise-visuals {
-  display: grid;
-  gap: 10px;
-}
-
-.visual-frame {
-  padding: 10px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--surface-soft);
-}
-
-.muscle-map {
-  display: grid;
-  gap: 8px;
-}
-
-.exercise-media-card {
-  display: grid;
-  gap: 10px;
-}
-
-.exercise-media-image {
-  width: 100%;
-  aspect-ratio: 4 / 3;
-  object-fit: cover;
-  display: block;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: #eef3ef;
-}
-
-.exercise-media-meta {
-  display: grid;
-  gap: 8px;
-}
-
-.exercise-media-meta strong {
-  line-height: 1.35;
-}
-
-.muscle-map-labels {
-  display: flex;
-  justify-content: space-between;
-  color: var(--muted);
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
 }
 
 .legend-row {
