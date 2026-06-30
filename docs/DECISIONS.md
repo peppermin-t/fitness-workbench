@@ -6,7 +6,7 @@
 
 ### 决策
 
-当前阶段继续保持零依赖静态 Web 应用，通过 `index.html` 直接双击运行。
+当前阶段继续保持零运行时依赖的静态 Web 应用，通过 `index.html` 直接双击运行。Phase 4 已加入最小 TypeScript core 检查链，但不改变浏览器运行方式。
 
 ### 明确不做
 
@@ -14,11 +14,11 @@
 - 当前不引入 SQLite。
 - 当前不引入 FastAPI。
 - 当前不引入 React / Vue。
-- 当前不引入 TypeScript 构建链。
+- 当前不把 TypeScript 构建链作为应用运行前置条件。
 
 ### 原因
 
-当前最重要的是稳定功能边界、数据模型、规则边界和验收清单。过早引入桌面壳、数据库、后端服务或前端框架，会把问题从“业务边界不清”转移成“技术迁移复杂”，增加功能回退风险。
+当前最重要的是稳定功能边界、数据模型、规则边界和验收清单。过早引入桌面壳、数据库、后端服务或前端框架，会把问题从“业务边界不清”转移成“技术迁移复杂”，增加功能回退风险。TypeScript core 迁移只用于收紧模型和规则，不应迫使用户改变打开应用的方式。
 
 ### 影响
 
@@ -174,11 +174,11 @@ AI 或规则只能生成候选建议，不能静默修改训练计划。
 
 ### 决策
 
-长期技术路线不是永远停留在纯 HTML / JS。当前阶段保持静态 Web，是为了降低重构风险；长期目标是逐步形成 TypeScript core、Tauri 桌面端和 SQLite 本地数据库。
+长期技术路线不是永远停留在纯 HTML / JS。当前阶段保持静态 Web 运行入口，是为了降低重构风险；长期目标是逐步形成 TypeScript core、Tauri 桌面端和 SQLite 本地数据库。
 
 ### 路线
 
-- 业务 core 应逐步 TypeScript 化。
+- 业务 core 应逐步 TypeScript 化；Phase 4 已完成最小迁移。
 - 桌面端优先选择 Tauri。
 - 长期本地数据存储优先考虑 SQLite。
 - JSON 仍应保留为备份、导入导出和迁移格式。
@@ -189,21 +189,28 @@ AI 或规则只能生成候选建议，不能静默修改训练计划。
 
 1. 先完成 `WorkoutSession`、`ExerciseLog`、`SetLog` 等数据模型。
 2. 再完成 `schemaVersion` 迁移和 JSON 导入导出保护。
-3. 再迁移 TypeScript core。
+3. 再迁移 TypeScript core。已完成最小迁移，后续继续收紧类型。
 4. 再封装 Tauri 桌面端。
 5. 最后迁移 SQLite 作为运行时主存储。
 
 ### 当前阶段边界
 
 - 当前仍保持 `index.html` 双击运行。
-- 当前不引入 npm 构建链。
-- 当前不引入 TypeScript 编译。
+- 当前已引入最小 npm / TypeScript 检查链，但只用于 core 构建和类型检查。
 - 当前不引入 Tauri。
 - 当前不引入 SQLite。
 
 ### 原因
 
 当前最重要的是把训练计划、训练反馈、动作反馈、身体指标、饮食记录、建议和周复盘的数据关系固定下来。技术栈迁移应服务于这些模型和规则，而不是提前制造新的复杂度。
+
+### Phase 4 当前结果
+
+- `src/core/models/index.d.ts` 提供核心模型声明。
+- `src/core/types/globals.d.ts` 固定浏览器全局对象声明。
+- `src/core/rules/*.ts` 和 `src/app/storage/state-normalizer.ts` 作为 TypeScript core 源文件。
+- 同名 `.js` 文件仍作为浏览器运行入口，`index.html` 不直接加载 `.ts`。
+- 规则 `.ts` 文件中的 `// @ts-nocheck` 是过渡措施，后续应逐模块移除并收紧类型。
 
 ### 影响
 

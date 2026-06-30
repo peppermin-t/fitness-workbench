@@ -4,13 +4,22 @@
 
 当前仍是本地优先静态 Web 工作台。本阶段不引入 React / Vue / Tauri / SQLite / FastAPI，不破坏 `index.html` 双击运行；重构前先冻结功能和验收路径。
 
-长期技术路线是 TypeScript core + Tauri 桌面端 + SQLite 本地数据库；当前阶段先稳定模型、规则和行为保护，不立即引入这些技术。
+长期技术路线是 TypeScript core + Tauri 桌面端 + SQLite 本地数据库；当前已经完成 TypeScript core 的最小迁移，但运行入口仍然是静态 JS，Tauri 和 SQLite 仍不是当前阶段立即执行项。
 
 ## 运行方式
 
 直接双击打开 `index.html` 即可使用。
 
 当前版本是零依赖静态应用，数据保存在浏览器本地存储中。建议定期在“导入导出”页导出 JSON 备份。
+
+如需检查 TypeScript core，可在命令行运行：
+
+```text
+npm.cmd run check:core
+npm.cmd run build:core
+```
+
+构建只用于生成和检查 core 的 JS 兼容输出，不改变 `index.html` 的双击运行方式。
 
 ## 文档导航
 
@@ -61,4 +70,4 @@
 
 ## 下一步
 
-Phase 2 核心规则拆分已收口，Phase 3 已完成第一版：`WorkoutSession` 状态、动作日志 `SetLog`、基础训练容量统计、`schemaVersion: 2`、JSON 导入稳定性和 12 个规则 smoke 用例已经具备。下一步建议先跑一遍人工 smoke checklist 并建立 Phase 3 git 基线，再进入 Phase 4 TypeScript core 迁移准备。
+Phase 4 TypeScript core 最小迁移已完成：核心规则和状态规范化已有 `.ts` 源文件，模型声明位于 `src/core/models/index.d.ts`，现有浏览器入口继续加载生成后的 `.js`。下一步建议先收紧核心模块类型，再评估 Phase 5 Tauri 桌面端封装。

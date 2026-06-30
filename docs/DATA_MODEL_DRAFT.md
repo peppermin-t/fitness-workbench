@@ -1,6 +1,6 @@
 # 数据模型草案
 
-本文档根据当前 `app.js`、`planner.js`、`data.js` 中的状态结构整理。它是重构前的数据模型草案，不要求本轮迁移代码。
+本文档根据当前 `app.js`、`planner.js`、`data.js` 中的状态结构整理。Phase 4 后，核心模型的第一版 TypeScript 声明位于 `src/core/models/index.d.ts`，本文档仍作为字段语义和后续调整依据。
 
 ## 0. AppState
 

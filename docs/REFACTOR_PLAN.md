@@ -1,8 +1,8 @@
 # 后续重构计划
 
-本文档规划从当前静态 Web 工作台到长期桌面端应用的技术路线。长期目标明确是：TypeScript core + Tauri 桌面端 + SQLite 本地数据库。当前 v0.2 仍然保持 `index.html` 直接双击可用，不立即引入 npm 构建链、不立即引入 TypeScript 编译、不立即引入 Tauri、不立即引入 SQLite、不删除现有功能。
+本文档规划从当前静态 Web 工作台到长期桌面端应用的技术路线。长期目标明确是：TypeScript core + Tauri 桌面端 + SQLite 本地数据库。当前已经完成 TypeScript core 的最小迁移，但 v0.2 仍然保持 `index.html` 直接双击可用，不立即引入 Tauri、不立即引入 SQLite、不删除现有功能。
 
-当前不立即上 TypeScript / Tauri / SQLite 的原因是，v0.2 的 `WorkoutSession`、`SetLog`、`schemaVersion` 迁移、数据导入导出稳定性、规则 smoke 测试和人工 smoke checklist 已完成第一版，但仍需要先人工验收并建立 Phase 3 基线。数据底座和行为保护没有固化之前，直接迁移技术栈会放大回退风险。
+当前不立即上 Tauri / SQLite 的原因是，v0.2 的 `WorkoutSession`、`SetLog`、`schemaVersion` 迁移、数据导入导出稳定性、规则 smoke 测试和人工 smoke checklist 已完成第一版，但仍需要持续用这些保护层约束后续迁移。数据底座和行为保护没有固化之前，直接进入桌面壳或数据库迁移会放大回退风险。
 
 ## 总体路线
 
@@ -19,27 +19,25 @@ Phase 7：AI 结构化解析与多端扩展
 
 ## 当前阶段状态
 
-- Phase 0：文档、人工 smoke checklist、规则 smoke、样例 JSON 基线和 `phase2-baseline` git 基线已具备；还差一次正式人工验收记录。
-- Phase 1：JS 模块边界已开始收敛，`src/core/rules` 已落地；`src/core/models`、`src/app/state`、`src/app/storage` 仍保持为后续设计方向，尚不引入 TypeScript 构建链。
+- Phase 0：文档、人工 smoke checklist、规则 smoke、样例 JSON 基线和 git 基线已具备。
+- Phase 1：JS 模块边界已收敛到 `src/core/rules` 与 `src/app/storage`，浏览器全局兼容层仍保留。
 - Phase 2：核心规则拆分已收口。`planner.js` 现在主要承担兼容导出和少量尚未单独成模块的训练整体反馈建议函数；无依赖规则 smoke 已覆盖 12 个核心用例。
 - Phase 3：已完成第一版：`SetLog` 可选记录、`WorkoutSession` 状态与动作日志关联、基础训练容量统计、`schemaVersion: 2`、JSON 导入稳定性和当前状态规范化已经具备。
+- Phase 4：已完成最小迁移：新增 TypeScript 配置、模型声明、全局声明，核心规则和状态规范化已有 `.ts` 源文件，并继续生成 `.js` 兼容输出。
 
 ## 当前阶段边界
 
-当前阶段仍然不引入 npm 构建链。
-当前阶段仍然不引入 TypeScript 编译。
+当前阶段已经引入最小 npm / TypeScript 检查链，仅用于 core 类型检查和生成 JS 兼容输出。
 当前阶段仍然不引入 Tauri。
 当前阶段仍然不引入 SQLite。
 当前阶段仍然不破坏 `index.html` 双击运行。
 
 当前优先完成：
 
-- `WorkoutSession`
-- `SetLog`
-- `schemaVersion` 迁移
-- 数据导入导出稳定性
-- 规则 smoke 测试
-- 人工 smoke checklist
+- 收紧已迁移 core 模块的 TypeScript 类型。
+- 持续维护 `WorkoutSession`、`SetLog`、`schemaVersion` 迁移和 JSON 导入导出稳定性。
+- 保持规则 smoke 测试和人工 smoke checklist 可运行。
+- 在进入 Tauri / SQLite 前保留静态 Web fallback。
 
 ## Phase 0：现状冻结与行为保护
 
@@ -82,7 +80,7 @@ Phase 7：AI 结构化解析与多端扩展
 
 ## Phase 1：JS 模块边界收敛
 
-状态：边界设计完成，规则模块已开始落地，暂不进入 TypeScript 编译。
+状态：已完成。规则模块已落地，后续 Phase 4 在不改变静态运行方式的前提下引入 TypeScript core 检查链。
 
 ### 目标
 
@@ -506,11 +504,13 @@ v0.2 可以先在智能教练或动作历史里少量展示，不做复杂报表
 
 ## Phase 4：TypeScript core 迁移
 
-Phase 4 是长期技术路线的一部分，但不是当前 v0.2 的立即执行项。进入本阶段前，仍必须保留静态 Web 版本可运行，避免一次性技术迁移造成行为回退。
+状态：已完成最小迁移，后续重点是逐模块收紧类型，而不是继续扩大技术栈。
+
+Phase 4 是长期技术路线的一部分。当前执行方式是最小迁移：引入 TypeScript core 源文件和检查命令，但保留静态 Web 版本可运行，避免一次性技术迁移造成行为回退。
 
 ### 目标
 
-把当前已经拆出的 `src/core/rules/*` 和后续 `src/core/models` 逐步迁移为 TypeScript，形成可测试、可复用、可被桌面端和后续多端共享的业务 core。
+把当前已经拆出的 `src/core/rules/*`、`src/app/storage/state-normalizer` 和核心模型声明逐步迁移为 TypeScript，形成可测试、可复用、可被桌面端和后续多端共享的业务 core。
 
 ### 前置条件
 
@@ -522,8 +522,8 @@ Phase 4 是长期技术路线的一部分，但不是当前 v0.2 的立即执行
 
 ### 建议步骤
 
-1. 新增最小 TypeScript 配置，但不急着改 UI。
-2. 先迁移纯模型：
+1. 新增最小 TypeScript 配置，但不急着改 UI。已完成：`package.json`、`package-lock.json`、`tsconfig.json`。
+2. 先迁移纯模型。已完成第一版：`src/core/models/index.d.ts`。
    - `src/core/models`
    - `AppState`
    - `Goal`
@@ -536,7 +536,7 @@ Phase 4 是长期技术路线的一部分，但不是当前 v0.2 的立即执行
    - `NutritionLog`
    - `Advice`
    - `Revision`
-3. 再迁移纯规则：
+3. 再迁移纯规则。已完成第一版：`src/core/rules/*.ts`，并保留同名 `.js` 兼容输出。
    - `goal-parser`
    - `plan-generator`
    - `exercise-feedback-analyzer`
@@ -545,8 +545,26 @@ Phase 4 是长期技术路线的一部分，但不是当前 v0.2 的立即执行
    - `integrated-signals`
    - `weekly-review`
    - `advice-engine`
-4. 保留 JS 兼容入口，避免一次性改坏 `app.js`。
-5. 等 core 稳定后再考虑 UI 层迁移。
+4. 保留 JS 兼容入口，避免一次性改坏 `app.js`。已完成：`index.html` 仍加载 `.js`。
+5. 后续逐个模块移除过渡性的 `// @ts-nocheck`，补充更精确的输入输出类型。
+6. 等 core 稳定后再考虑 UI 层迁移。
+
+### 已落地文件
+
+- `tsconfig.json`
+- `package.json`
+- `package-lock.json`
+- `src/core/models/index.d.ts`
+- `src/core/types/globals.d.ts`
+- `src/core/rules/*.ts`
+- `src/app/storage/state-normalizer.ts`
+- 同名 `.js` 兼容输出，继续供 `index.html` 直接加载。
+
+### 当前限制
+
+- 已迁移的规则 `.ts` 文件仍使用 `// @ts-nocheck` 作为过渡措施，确保本阶段只迁移源形态和构建链，不混入规则改写。
+- `window.FitnessPlanner` 兼容 API 仍是当前 UI 唯一依赖入口。
+- Phase 4 完成不代表可以立即进入 SQLite；数据库迁移仍必须等 Tauri 壳、模型和迁移保护进一步稳定。
 
 ### 非目标
 
@@ -688,4 +706,4 @@ Phase 7 放在 TypeScript core、Tauri 和 SQLite 稳定之后。AI、手机端�
 
 ## 正式重构的建议第一步
 
-第一步不要先改 UI，也不要先上框架。Phase 2 的核心规则拆分已经收口：`goal-parser`、`plan-generator`、`metric-analyzer`、`advice-engine`、`exercise-feedback-analyzer`、`nutrition-parser`、`integrated-signals`、`weekly-review` 都已拆出，并通过 `window.FitnessPlanner` 保持兼容。`phase2-baseline` 已作为可回退 git 基线；Phase 3 数据底座已完成第一版。下一步应先跑人工 smoke checklist 并建立 Phase 3 git 基线，再进入 Phase 4 TypeScript core 迁移准备。
+第一步不要先改 UI，也不要先上框架。Phase 2 的核心规则拆分已经收口：`goal-parser`、`plan-generator`、`metric-analyzer`、`advice-engine`、`exercise-feedback-analyzer`、`nutrition-parser`、`integrated-signals`、`weekly-review` 都已拆出，并通过 `window.FitnessPlanner` 保持兼容。Phase 3 数据底座已完成第一版，Phase 4 TypeScript core 已完成最小迁移。下一步应先收紧 core 类型并继续跑规则 smoke / 人工 smoke，再评估 Phase 5 Tauri 桌面端封装。
