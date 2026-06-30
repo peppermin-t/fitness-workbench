@@ -3,44 +3,14 @@
 
   const CURRENT_SCHEMA_VERSION = 2;
 
-  function migrateState(input, defaults) {
+  function normalizeAppState(input, defaults) {
     if (!isRecord(input)) {
       throw new Error("Imported state must be a JSON object.");
     }
     const base = clone(defaults || {});
-    let next = { ...base, ...clone(input) };
-    const sourceVersion = Number(next.schemaVersion) || 1;
-
-    if (sourceVersion < 2) next = migrateV1ToV2(next);
-
+    const next = { ...base, ...clone(input) };
     next.schemaVersion = CURRENT_SCHEMA_VERSION;
     return normalizeState(next, base);
-  }
-
-  function migrateV1ToV2(state) {
-    const next = { ...state };
-    next.sessions = ensureArray(next.sessions).map((session) => ({
-      ...session,
-      status: session.status || "completed",
-      startedAt: session.startedAt || session.createdAt || null,
-      completedAt: session.completedAt || session.createdAt || null,
-      exerciseLogIds: ensureArray(session.exerciseLogIds)
-    }));
-    next.exerciseLogs = ensureArray(next.exerciseLogs).map((log) => ({
-      ...log,
-      sessionId: log.sessionId || null,
-      sets: ensureArray(log.sets)
-    }));
-    next.plan = normalizePlan(next.plan);
-    next.advice = ensureArray(next.advice).map((item) => ({
-      ...item,
-      status: item.status || "active"
-    }));
-    next.revisions = ensureArray(next.revisions).map((item) => ({
-      ...item,
-      status: item.status || "pending"
-    }));
-    return next;
   }
 
   function normalizeState(input, defaults) {
@@ -187,8 +157,8 @@
   }
 
   window.FitnessCore = window.FitnessCore || {};
-  window.FitnessCore.StateMigrations = {
+  window.FitnessCore.StateNormalizer = {
     CURRENT_SCHEMA_VERSION,
-    migrateState
+    normalizeAppState
   };
 })();

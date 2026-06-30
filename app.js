@@ -4,7 +4,7 @@
   const STORAGE_KEY = "fitness-coach-workbench-v1";
   const D = window.FitnessData;
   const P = window.FitnessPlanner;
-  const M = window.FitnessCore.StateMigrations;
+  const M = window.FitnessCore.StateNormalizer;
   const $ = (s) => document.querySelector(s);
   const $$ = (s) => Array.from(document.querySelectorAll(s));
   const clone = (v) => JSON.parse(JSON.stringify(v));
@@ -67,7 +67,7 @@
   }
 
   function normalizeState(next) {
-    return M.migrateState(next, defaultState());
+    return M.normalizeAppState(next, defaultState());
   }
 
   function saveState() {
@@ -110,26 +110,6 @@
       renderTrainingReminders();
     });
     document.addEventListener("click", handleClick);
-  }
-
-  function handleClick(event) {
-    const t = event.target.closest("[data-action]");
-    if (!t) return;
-    const action = t.dataset.action;
-    if (action === "set-current-gym") state.currentGymId = t.dataset.id;
-    if (action === "delete-gym") deleteGym(t.dataset.id);
-    if (action === "set-goal") state.currentGoalId = t.dataset.id;
-    if (action === "delete-goal") deleteGoal(t.dataset.id);
-    if (action === "delete-metric") deleteMetric(t.dataset.id);
-    if (action === "delete-exercise-log") deleteExerciseLog(t.dataset.id);
-    if (action === "delete-nutrition-log") deleteNutritionLog(t.dataset.id);
-    if (action === "delete-advice") state.advice = state.advice.filter((x) => x.id !== t.dataset.id);
-    if (action === "apply-revision") applyRevision(t.dataset.id);
-    if (action === "replace-exercise") replaceExercise(Number(t.dataset.day), Number(t.dataset.row), t.dataset.exerciseId);
-    if (["set-current-gym", "set-goal", "delete-advice"].includes(action)) {
-      saveState();
-      renderAll();
-    }
   }
 
   function switchView(view) {
@@ -275,140 +255,6 @@
     }).join("");
   }
 
-  function renderExerciseLogList() {
-    const el = $("#exercise-log-list");
-    if (!el) return;
-    const logs = (state.exerciseLogs || []).slice(0, 6);
-    if (!logs.length) {
-      el.innerHTML = `<p class="empty">暂无动作级反馈。</p>`;
-      return;
-    }
-    el.innerHTML = `<div class="item-list">${logs.map((log) => `
-      <article class="list-item">
-        <div class="list-item-header">
-          <div>
-            <h3>${esc(log.exerciseName)}</h3>
-            <p class="mini-text">${esc(log.createdAt)} · ${esc(log.focus || "未记录训练日")} · 计划 ${esc(log.plannedSets || "-")} 组 / ${esc(log.plannedReps || "-")} · 实际 ${esc(log.actualLoad || "-")} / ${esc(log.actualReps || "-")} · RPE ${esc(log.rpe)}</p>
-            <p style="margin-top:8px;">${esc(log.freeText || "无自由反馈")}</p>
-            <div class="tag-row">${(log.analysis?.tags || []).map((item) => tag(item.tag, "info")).join("")}</div>
-            <p class="mini-text" style="margin-top:8px;">${esc((log.analysis?.recommendations || []).join(" "))}</p>
-            ${trainingStatsLine(log)}
-            ${log.analysis?.evidence?.length ? `<div class="context-box" style="margin-top:10px;"><div><strong>依据</strong></div>${renderEvidenceList(log.analysis.evidence.slice(0, 5))}</div>` : ""}
-          </div>
-          <button class="button danger" data-action="delete-exercise-log" data-id="${esc(log.id)}">删除</button>
-        </div>
-      </article>`).join("")}</div>`;
-  }
-
-  function renderExerciseHistoryFilter() {
-    const select = $("#exercise-history-filter");
-    if (!select) return;
-    const currentValue = select.value || "all";
-    const options = [];
-    const seen = new Set();
-    (state.exerciseLogs || []).forEach((log) => {
-      if (log.exerciseId && !seen.has(log.exerciseId)) {
-        seen.add(log.exerciseId);
-        options.push({ value: log.exerciseId, label: log.exerciseName || log.exerciseId });
-      }
-    });
-    select.innerHTML = [`<option value="all">全部动作</option>`, ...options.map((item) => `<option value="${esc(item.value)}">${esc(item.label)}</option>`)].join("");
-    select.value = options.some((item) => item.value === currentValue) || currentValue === "all" ? currentValue : "all";
-  }
-
-  function renderExerciseHistory() {
-    const summaryEl = $("#exercise-history-summary");
-    const listEl = $("#exercise-history-list");
-    const logs = state.exerciseLogs || [];
-    if (!summaryEl || !listEl) return;
-    if (!logs.length) {
-      summaryEl.innerHTML = "";
-      listEl.innerHTML = `<p class="empty">暂无动作反馈历史。</p>`;
-      return;
-    }
-    const filterValue = $("#exercise-history-filter")?.value || "all";
-    const filtered = filterValue === "all" ? logs.slice() : logs.filter((log) => log.exerciseId === filterValue);
-    const summary = buildExerciseHistorySummary(filtered);
-    summaryEl.innerHTML = `
-      <div class="metric-grid">
-        <div class="metric-pill"><span>反馈次数</span><strong>${summary.count}</strong></div>
-        <div class="metric-pill"><span>平均 RPE</span><strong>${summary.avgRpe}</strong></div>
-        <div class="metric-pill"><span>动作质量差</span><strong>${summary.poorCount}</strong></div>
-        <div class="metric-pill"><span>疼痛风险</span><strong>${summary.painCount}</strong></div>
-        <div class="metric-pill"><span>总训练容量</span><strong>${volumeLabel(summary.totalVolumeLoad)}</strong></div>
-        <div class="metric-pill"><span>有效组数</span><strong>${summary.totalHardSets}</strong></div>
-        <div class="metric-pill"><span>简单 PR</span><strong>${summary.prCount}</strong></div>
-        <div class="metric-pill"><span>总训练容量</span><strong>${volumeLabel(summary.totalVolumeLoad)}</strong></div>
-        <div class="metric-pill"><span>有效组数</span><strong>${summary.totalHardSets}</strong></div>
-        <div class="metric-pill"><span>简单 PR</span><strong>${summary.prCount}</strong></div>
-      </div>
-      <div class="context-box" style="margin-top: 14px;">
-        <div><strong>阶段 1 结论：</strong>${esc(summary.stage1Conclusion)}</div>
-        <div class="tag-row">${summary.topTags.map(([issueTag, count]) => tag(`${issueTag} ×${count}`, "info")).join("")}</div>
-      </div>
-    `;
-    listEl.innerHTML = `<div class="item-list">${filtered.map((log) => `
-      <article class="list-item">
-        <div class="list-item-header">
-          <div>
-            <h3>${esc(log.exerciseName)}</h3>
-            <p class="mini-text">${esc(log.createdAt)} · ${esc(log.focus || "未记录训练日")}</p>
-            <p class="mini-text">计划：${esc(log.plannedSets || "-")} 组 · ${esc(log.plannedReps || "-")} · ${esc(log.plannedLoad || "-")} · 计划 RPE ${esc(log.plannedRpe || "-")}</p>
-            <p class="mini-text">实际：${esc(log.actualLoad || "-")} · ${esc(log.actualReps || "-")} · RPE ${esc(log.rpe)} · 动作质量 ${qualityLabel(log.quality)} · 幅度 ${romLabel(log.rangeOfMotion)}</p>
-            <div class="tag-row">
-              ${tag(`目标感觉 ${targetFeelLabel(log.targetMuscleFeel)}`)}
-              ${tag(`限制因素 ${limiterLabel(log.limitingFactor)}`)}
-              ${tag(`左右差 ${sideIssueLabel(log.sideIssue)}`)}
-              ${tag(`疼痛 ${log.painScore}/5`, Number(log.painScore) >= 3 ? "warn" : "")}
-            </div>
-            <p style="margin-top:8px;">${esc(log.freeText || "无自由反馈")}</p>
-            <div class="tag-row">${(log.analysis?.tags || []).map((item) => tag(item.tag, "info")).join("")}</div>
-            <p class="mini-text" style="margin-top:8px;">${esc((log.analysis?.recommendations || []).join(" "))}</p>
-            ${trainingStatsLine(log)}
-          </div>
-          <button class="button danger" data-action="delete-exercise-log" data-id="${esc(log.id)}">删除</button>
-        </div>
-      </article>
-    `).join("")}</div>`;
-  }
-
-  function renderEquipmentChecklist() {
-    $("#equipment-checklist").innerHTML = D.equipment.map((x) => `
-      <label class="check-item">
-        <input type="checkbox" value="${esc(x.id)}" />
-        ${equipmentIconMarkup(x.id)}
-        <span>${esc(x.label)}</span>
-      </label>
-    `).join("");
-  }
-
-  function renderEquipmentLibrary() {
-    const el = $("#equipment-library");
-    if (!el) return;
-    el.innerHTML = `<div class="visual-grid">${D.equipment.map((item) => `
-      <article class="visual-card">
-        ${equipmentIconMarkup(item.id, "large")}
-        <strong>${esc(item.label)}</strong>
-        <p class="mini-text">${esc(equipmentFamilyLabel(item.id))}</p>
-      </article>
-    `).join("")}</div>`;
-  }
-
-  function renderGymList() {
-    $("#gym-list").innerHTML = state.gyms.length ? `<div class="item-list">${state.gyms.map((g) => `
-      <article class="list-item"><div class="list-item-header"><div>
-        <h3>${esc(g.name)}</h3><p class="mini-text">${esc(g.location || "无地点备注")}</p>
-        <div class="tag-row">${g.equipment.map((id) => tag(equipmentLabel(id))).join("")}</div>
-      </div><div class="item-actions">
-        ${g.id === state.currentGymId ? tag("当前", "success") : `<button class="button" data-action="set-current-gym" data-id="${esc(g.id)}">设为当前</button>`}
-        <button class="button danger" data-action="delete-gym" data-id="${esc(g.id)}">删除</button>
-      </div></div></article>`).join("")}</div>` : `<p class="empty">暂无健身房。</p>`;
-  }
-
-  function renderParsedGoal() {
-    $("#parsed-goal-output").textContent = parsedGoalDraft ? JSON.stringify(parsedGoalDraft, null, 2) : "尚未解析。输入目标描述后点击“解析目标”。";
-  }
-
   function renderGoalsList() {
     $("#goals-list").innerHTML = state.goals.length ? `<div class="item-list">${state.goals.map((g) => `
       <article class="list-item"><div class="list-item-header"><div>
@@ -449,38 +295,6 @@
     drawMetricChart();
   }
 
-  function renderNutritionList() {
-    const el = $("#nutrition-list");
-    if (!el) return;
-    const logs = (state.nutritionLogs || []).slice(0, 12);
-    if (!logs.length) {
-      el.innerHTML = `<p class="empty">暂无饮食记录。输入自然语言饮食描述后，这里会显示解析结果和建议。</p>`;
-      return;
-    }
-    const mealLabel = { breakfast: "早餐", lunch: "午餐", dinner: "晚餐", snack: "加餐", all_day: "全天" };
-    el.innerHTML = `<div class="item-list">${logs.map((log) => `
-      <article class="list-item">
-        <div class="list-item-header">
-          <div>
-            <h3>${esc(log.date)} 饮食记录</h3>
-            <p class="mini-text">置信度：${esc(log.analysis.confidence)} · ${esc(log.rawText)}</p>
-            <div class="tag-row">${(log.analysis.tags || []).map((item) => tag(item, "info")).join("")}</div>
-            <div style="margin-top:10px;">
-              ${(log.analysis.meals || []).map((meal) => `
-                <div class="compact-list" style="margin-top:8px;">
-                  <strong>${esc(mealLabel[meal.meal] || meal.meal)}</strong>
-                  <div>${esc(meal.text)}</div>
-                  <div class="tag-row">${(meal.tags || []).map((item) => tag(item)).join("")}</div>
-                </div>
-              `).join("")}
-            </div>
-            <p class="mini-text" style="margin-top:10px;">${esc((log.analysis.recommendations || []).join(" "))}</p>
-          </div>
-          <button class="button danger" data-action="delete-nutrition-log" data-id="${esc(log.id)}">删除</button>
-        </div>
-      </article>`).join("")}</div>`;
-  }
-
   function renderPlan() {
     const context = $("#plan-context");
     const table = $("#plan-table");
@@ -495,69 +309,6 @@
 
   function renderWorkoutDay(day, dayIndex) {
     return `<div class="day-block"><div class="day-header"><div><h3>第 ${dayIndex + 1} 天：${esc(day.focus)}</h3><p class="mini-text">${esc(day.intent)}</p></div>${tag(`${day.exercises.length} 个动作`)}</div><div class="table-wrap"><table><thead><tr><th>动作</th><th>组数</th><th>次数/时长</th><th>重量</th><th>RPE</th><th>休息</th><th>备注/替代</th><th>示例</th></tr></thead><tbody>${day.exercises.map((row, rowIndex) => renderPlanRow(row, dayIndex, rowIndex)).join("")}</tbody></table></div></div>`;
-  }
-
-  function renderPlanRow(row, dayIndex, rowIndex) {
-    const ex = getExercise(row.exerciseId);
-    if (!ex) return "";
-    const gym = currentGym();
-    const available = P.isAvailable(ex, gym);
-    const subs = P.availableSubstitutes(ex, gym, state.exercises).slice(0, 4);
-    return `<tr><td><strong>${esc(ex.name)}</strong><div class="mini-text">${esc(ex.pattern)} · ${esc(ex.muscles.join(" / "))}</div><div class="tag-row">${tag(available ? "当前场地可做" : "当前场地缺器械", available ? "success" : "warn")}${ex.equipment.map((id) => tag(equipmentLabel(id))).join("")}</div></td><td>${esc(row.sets)}</td><td>${esc(row.reps)}</td><td>${esc(row.load || "-")}</td><td>${esc(row.rpe)}</td><td>${esc(row.rest || "-")}</td><td><div class="mini-text">${esc(row.notes || ex.cue)}</div><div class="tag-row">${subs.map((s) => `<button class="button" data-action="replace-exercise" data-day="${dayIndex}" data-row="${rowIndex}" data-exercise-id="${esc(s.id)}">${esc(s.name)}</button>`).join("") || `<span class="mini-text">暂无适配替代</span>`}</div></td><td><div class="link-list">${ex.links.map((l) => `<a href="${esc(l.url)}" target="_blank" rel="noreferrer">${esc(l.label)}</a>`).join("")}</div></td></tr>`;
-  }
-
-  function renderExerciseList() {
-    const q = ($("#exercise-search").value || "").trim().toLowerCase();
-    const gym = currentGym();
-    const items = state.exercises.filter((x) => !q || [x.name, x.pattern, x.muscles.join(" "), x.equipment.map(equipmentLabel).join(" ")].join(" ").toLowerCase().includes(q));
-    $("#exercise-list").innerHTML = items.length ? `<div class="item-list">${items.map((x) => {
-      const available = P.isAvailable(x, gym);
-      const subs = P.availableSubstitutes(x, gym, state.exercises).slice(0, 5);
-      return `<article class="list-item"><div class="exercise-card-layout"><div><h3>${esc(x.name)}</h3><p class="mini-text">${esc(x.cue)}</p><p class="mini-text">注意：${esc(x.risk)}</p><div class="tag-row">${tag(available ? "当前场地可做" : "当前场地缺器械", available ? "success" : "warn")}${tag(x.pattern)}${x.muscles.map((m) => tag(m)).join("")}</div><div class="equipment-inline" style="margin-top:10px;">${x.equipment.map((id) => `<span class="equipment-chip">${equipmentIconMarkup(id)}<span>${esc(equipmentLabel(id))}</span></span>`).join("")}</div><div class="link-list" style="margin-top:10px;">${x.links.map((l) => `<a href="${esc(l.url)}" target="_blank" rel="noreferrer">${esc(l.label)}</a>`).join("")}</div><p class="mini-text" style="margin-top:10px;">当前场地替代：${subs.map((s) => s.name).join("、") || "暂无"}</p></div><div class="exercise-visuals"><div class="visual-frame"><div class="muscle-map">${muscleMapMarkup(x)}</div></div></div></div></article>`;
-    }).join("")}</div>` : `<p class="empty">没有匹配的动作。</p>`;
-  }
-
-  function renderCoach() {
-    $("#coach-advice").innerHTML = state.advice.length ? `<div class="item-list">${state.advice.map((x) => `<article class="list-item"><div class="list-item-header"><div><h3>${esc(x.title)}</h3><p class="mini-text">${esc(x.createdAt)}</p><p style="margin-top:8px;">${esc(x.body)}</p><div class="tag-row">${(x.tags || []).map((t) => tag(t, "info")).join("")}</div></div><button class="button danger" data-action="delete-advice" data-id="${esc(x.id)}">删除</button></div></article>`).join("")}</div>` : `<p class="empty">暂无建议。完成一次训练反馈后，这里会生成优化建议。</p>`;
-    $("#revisions-list").innerHTML = state.revisions.length ? `<div class="item-list">${state.revisions.map((x) => `<article class="list-item"><div class="list-item-header"><div><h3>${esc(x.summary)}</h3><p class="mini-text">${esc(x.createdAt)} · ${esc(x.status === "applied" ? "已应用" : "待确认")}</p><p style="margin-top:8px;">${esc(x.reason)}</p><div class="tag-row">${(x.tags || []).map((t) => tag(t)).join("")}</div></div><div class="item-actions">${x.status === "pending" ? `<button class="button primary" data-action="apply-revision" data-id="${esc(x.id)}">应用</button>` : tag("已应用", "success")}</div></div></article>`).join("")}</div>` : `<p class="empty">暂无计划调整记录。</p>`;
-    renderProfiles();
-  }
-
-  function renderProfiles() {
-    const exerciseEl = $("#exercise-profiles");
-    const nutritionEl = $("#nutrition-profiles");
-    if (exerciseEl) {
-      const profiles = P.buildExerciseProfiles(state.exerciseLogs || []).slice(0, 6);
-      exerciseEl.innerHTML = profiles.length ? `<div class="item-list">${profiles.map((profile) => `
-        <article class="list-item">
-          <div class="list-item-header">
-            <div>
-              <h3>${esc(profile.exerciseName)}</h3>
-              <p class="mini-text">反馈 ${profile.count} 次 · 动作质量差 ${profile.poorQualityCount} 次 · 疼痛风险 ${profile.painCount} 次</p>
-              <div class="tag-row">${profile.topTags.map(([issueTag, count]) => tag(`${issueTag} ×${count}`, "info")).join("")}</div>
-              <p class="mini-text" style="margin-top:8px;">${esc(profile.advice.join(" "))}</p>
-            </div>
-          </div>
-        </article>
-      `).join("")}</div>` : `<p class="empty">动作级反馈还不够多，继续记录后这里会形成长期画像。</p>`;
-    }
-    if (nutritionEl) {
-      const profile = P.buildNutritionProfile(state.nutritionLogs || [], currentGoal());
-      nutritionEl.innerHTML = profile.count ? `
-        <div class="item-list">
-          <article class="list-item">
-            <div class="list-item-header">
-              <div>
-                <h3>近期饮食模式</h3>
-                <p class="mini-text">已记录 ${profile.count} 天饮食。</p>
-                <div class="tag-row">${profile.topTags.map(([issueTag, count]) => tag(`${issueTag} ×${count}`, "info")).join("")}</div>
-                <p class="mini-text" style="margin-top:8px;">${esc(profile.advice.join(" "))}</p>
-              </div>
-            </div>
-          </article>
-        </div>
-      ` : `<p class="empty">饮食记录还不够多，继续记录后这里会形成长期画像。</p>`;
-    }
   }
 
   function renderDataSummary() {
@@ -789,28 +540,6 @@
     saveState();
     renderAll();
     toast("饮食记录已删除。");
-  }
-
-  function applyRevision(id) {
-    const rev = state.revisions.find((x) => x.id === id);
-    const day = state.plan?.days?.[rev?.patch?.dayIndex];
-    if (!rev || !day) return;
-    if (rev.patch.type === "reduce_day_volume") day.exercises.forEach((r) => {
-      if (Number(r.sets) > 1) r.sets = Math.max(2, Math.round(Number(r.sets) * rev.patch.factor));
-      r.notes = appendNote(r.notes, "已根据疼痛反馈降量。");
-    });
-    if (rev.patch.type === "trim_accessory" && day.exercises.length > 4) {
-      day.exercises = day.exercises.slice(0, Math.max(4, day.exercises.length - 2));
-      day.intent = `${day.intent} 已根据完成度反馈简化。`;
-    }
-    if (rev.patch.type === "add_progression_note") day.exercises.slice(0, 3).forEach((r) => {
-      r.notes = appendNote(r.notes, "下次可尝试加重 2.5%-5% 或增加 1-2 次。");
-    });
-    rev.status = "applied";
-    rev.appliedAt = nowLabel();
-    saveState();
-    renderAll();
-    toast("计划调整已应用。");
   }
 
   function replaceExercise(dayIndex, rowIndex, exerciseId) {
@@ -1455,245 +1184,6 @@
     ctx.fillText(label, legendX, 22);
   }
 
-  function renderExerciseList() {
-    const q = ($("#exercise-search").value || "").trim().toLowerCase();
-    const gym = currentGym();
-    const items = state.exercises.filter((x) => !q || [x.name, x.pattern, x.muscles.join(" "), x.equipment.map(equipmentLabel).join(" ")].join(" ").toLowerCase().includes(q));
-    $("#exercise-list").innerHTML = items.length ? `<div class="item-list">${items.map((x) => {
-      const available = P.isAvailable(x, gym);
-      const subs = P.availableSubstitutes(x, gym, state.exercises).slice(0, 5);
-      return `<article class="list-item"><div class="exercise-card-layout"><div><h3>${esc(x.name)}</h3><p class="mini-text">${esc(x.cue)}</p><p class="mini-text">注意：${esc(x.risk)}</p><div class="tag-row">${tag(available ? "当前场地可做" : "当前场地缺器械", available ? "success" : "warn")}${tag(x.pattern)}${x.muscles.map((m) => tag(m)).join("")}</div><div class="equipment-inline" style="margin-top:10px;">${x.equipment.map((id) => `<span class="equipment-chip">${equipmentIconMarkup(id)}<span>${esc(equipmentLabel(id))}</span></span>`).join("")}</div><div class="link-list" style="margin-top:10px;">${x.links.map((l) => `<a href="${esc(l.url)}" target="_blank" rel="noreferrer">${esc(l.label)}</a>`).join("")}</div><p class="mini-text" style="margin-top:10px;">当前场地替代：${subs.map((s) => s.name).join("、") || "暂无"}</p></div><div class="exercise-visuals"><div class="visual-frame">${exercisePreviewMarkup(x)}</div></div></div></article>`;
-    }).join("")}</div>` : `<p class="empty">没有匹配的动作。</p>`;
-  }
-
-  function exercisePreviewMarkup(exercise) {
-    const media = resolveExerciseMedia(exercise);
-    if (!media) return `<div class="muscle-map">${muscleMapMarkup(exercise)}</div>`;
-    return `
-      <div class="exercise-media-card">
-        <img
-          class="exercise-media-image"
-          src="${esc(commonsImageUrl(media.file, media.width || 640))}"
-          alt="${esc(media.title)}"
-          loading="lazy"
-          decoding="async"
-          referrerpolicy="no-referrer"
-        />
-        <div class="exercise-media-meta">
-          <div class="tag-row">${tag("Wikimedia Commons", "info")}${tag(media.license || "See file page")}</div>
-          <strong>${esc(media.title)}</strong>
-          <p class="mini-text">${esc(media.description || "开放许可素材预览")}</p>
-          <p class="mini-text">图：${esc(media.author || "Wikimedia Commons contributors")}</p>
-          <div class="legend-row">${(exercise?.muscles || []).slice(0, 4).map((muscle) => tag(muscle, "info")).join("")}</div>
-          <div class="link-list">
-            <a href="${esc(commonsFilePageUrl(media.file))}" target="_blank" rel="noreferrer">来源与许可</a>
-          </div>
-        </div>
-      </div>`;
-  }
-
-  function resolveExerciseMedia(exercise) {
-    if (!exercise?.id) return null;
-    const mediaCatalog = {
-      squat: {
-        file: "Squat.png",
-        title: "深蹲示例",
-        description: "通用深蹲动作预览",
-        author: "Rexwar",
-        license: "Public domain"
-      },
-      legPress: {
-        file: "Leg press.jpg",
-        title: "腿举示例",
-        description: "腿举机动作预览",
-        author: "Eugene R. Zelenko",
-        license: "CC BY-SA 4.0"
-      },
-      deadlift: {
-        file: "Deadlift.JPG",
-        title: "硬拉示例",
-        description: "通用硬拉动作预览",
-        author: "Hipnotic88",
-        license: "CC0 1.0"
-      },
-      romanianDeadlift: {
-        file: "Romanian-deadlift-1.png",
-        title: "罗马尼亚硬拉示例",
-        description: "髋铰链和腘绳链条动作预览",
-        author: "Everkinetic",
-        license: "CC BY 4.0"
-      },
-      gluteBridge: {
-        file: "Glute-bridge.png",
-        title: "臀桥示例",
-        description: "臀推 / 臀桥动作预览",
-        author: "Everkinetic",
-        license: "CC BY 4.0"
-      },
-      benchPress: {
-        file: "Bench_press.png",
-        title: "卧推动作预览",
-        description: "胸推类动作预览",
-        author: "Paul Rogers",
-        license: "Public domain"
-      },
-      pushUp: {
-        file: "Civilian_push-up.jpg",
-        title: "俯卧撑示例",
-        description: "自重推类动作预览",
-        author: "Herzi Pinki",
-        license: "CC BY-SA 4.0"
-      },
-      shoulderPress: {
-        file: "Female_Dumbbell_Shoulder_Press.png",
-        title: "肩推动作预览",
-        description: "垂直推和侧平举类动作预览",
-        author: "Um3wawy64m4",
-        license: "CC BY 4.0"
-      },
-      latPulldown: {
-        file: "Amer-Lat-Pulldown.jpg",
-        title: "高位下拉示例",
-        description: "垂直拉动作预览",
-        author: "A. McCarron",
-        license: "CC BY-SA 3.0"
-      },
-      pullUp: {
-        file: "TEB_Pull-ups.png",
-        title: "引体向上示例",
-        description: "引体向上 / 辅助引体动作预览",
-        author: "TEB Medien",
-        license: "CC BY-SA 4.0"
-      },
-      seatedRow: {
-        file: "Cable-seated-rows-1.png",
-        title: "坐姿划船示例",
-        description: "水平拉动作预览",
-        author: "Everkinetic",
-        license: "CC BY 4.0"
-      },
-      bicepsCurl: {
-        file: "TEB_Bicep_Curls.png",
-        title: "弯举示例",
-        description: "二头弯举动作预览",
-        author: "DiMer16",
-        license: "CC BY-SA 4.0"
-      },
-      tricepsPushdown: {
-        file: "Triceps-pushdown-1.gif",
-        title: "下压示例",
-        description: "三头下压 / 伸展动作预览",
-        author: "Everkinetic",
-        license: "CC BY 4.0"
-      },
-      plank: {
-        file: "Plank.jpg",
-        title: "平板支撑示例",
-        description: "核心稳定动作预览",
-        author: "Pets Adviser",
-        license: "CC BY-SA 4.0"
-      },
-      treadmill: {
-        file: "Young man running on treadmill during sports training in a gym.jpg",
-        title: "跑步机训练示例",
-        description: "通用有氧动作预览",
-        author: "Nenad Stojkovic",
-        license: "CC BY 2.0"
-      },
-      bike: {
-        file: "Hicc - exercise bike.jpg",
-        title: "动感单车训练示例",
-        description: "自行车有氧动作预览",
-        author: "Mrs Lee",
-        license: "CC BY-SA 4.0"
-      },
-      rower: {
-        file: "Rowing machine.jpg",
-        title: "划船机训练示例",
-        description: "划船机有氧动作预览",
-        author: "rrafson",
-        license: "CC BY-SA 3.0"
-      }
-    };
-
-    const mediaKeyMap = {
-      barbell_squat: "squat",
-      goblet_squat: "squat",
-      smith_squat: "squat",
-      bulgarian_split_squat: "squat",
-      hack_squat_machine: "squat",
-      leg_press: "legPress",
-      barbell_deadlift: "deadlift",
-      trap_bar_deadlift: "deadlift",
-      dumbbell_rdl: "romanianDeadlift",
-      kettlebell_swing: "romanianDeadlift",
-      back_extension: "romanianDeadlift",
-      hip_thrust: "gluteBridge",
-      glute_bridge: "gluteBridge",
-      glute_drive_machine: "gluteBridge",
-      hip_abduction_machine: "gluteBridge",
-      hip_adduction_machine: "gluteBridge",
-      bench_press: "benchPress",
-      dumbbell_bench_press: "benchPress",
-      machine_chest_press: "benchPress",
-      chest_press_machine: "benchPress",
-      incline_press_machine: "benchPress",
-      incline_dumbbell_press: "benchPress",
-      incline_barbell_press: "benchPress",
-      push_up: "pushUp",
-      dip: "pushUp",
-      dumbbell_shoulder_press: "shoulderPress",
-      barbell_overhead_press: "shoulderPress",
-      machine_shoulder_press: "shoulderPress",
-      landmine_press: "shoulderPress",
-      lateral_raise: "shoulderPress",
-      cable_lateral_raise: "shoulderPress",
-      lat_pulldown: "latPulldown",
-      band_pulldown: "latPulldown",
-      pull_up: "pullUp",
-      assisted_pullup_machine: "pullUp",
-      seated_cable_row: "seatedRow",
-      seated_row_machine: "seatedRow",
-      high_row_machine: "seatedRow",
-      chest_supported_row: "seatedRow",
-      t_bar_row: "seatedRow",
-      face_pull: "seatedRow",
-      rear_delt_fly: "seatedRow",
-      one_arm_dumbbell_row: "seatedRow",
-      band_row: "seatedRow",
-      dumbbell_curl: "bicepsCurl",
-      incline_dumbbell_curl: "bicepsCurl",
-      cable_curl: "bicepsCurl",
-      preacher_curl: "bicepsCurl",
-      ez_bar_curl: "bicepsCurl",
-      reverse_ez_bar_curl: "bicepsCurl",
-      bicep_curl_machine: "bicepsCurl",
-      triceps_pushdown: "tricepsPushdown",
-      overhead_triceps_extension: "tricepsPushdown",
-      plank: "plank",
-      dead_bug: "plank",
-      ab_crunch_machine: "plank",
-      leg_extension_machine: "legPress",
-      seated_leg_curl: "romanianDeadlift",
-      standing_calf_raise: "legPress",
-      treadmill_incline_walk: "treadmill",
-      elliptical_easy: "treadmill",
-      stair_climber_easy: "treadmill",
-      bike_easy: "bike",
-      sled_push: "treadmill",
-      rower_easy: "rower"
-    };
-
-    return mediaCatalog[mediaKeyMap[exercise.id]] || null;
-  }
-
-  function commonsImageUrl(file, width = 640) {
-    return `https://commons.wikimedia.org/wiki/Special:Redirect/file/${encodeURIComponent(file)}?width=${width}`;
-  }
-
-  function commonsFilePageUrl(file) {
-    return `https://commons.wikimedia.org/wiki/File:${encodeURIComponent(file).replace(/%20/g, "_")}`;
-  }
 
   function equipmentEnglishLabel(id) {
     return {

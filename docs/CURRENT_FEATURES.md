@@ -516,8 +516,8 @@
 
 ### 当前缺口
 
-- `schemaVersion` 当前为 `2`，已有第一版 v1 到 v2 迁移函数。
-- `src/app/storage/state-migrations.js`：状态迁移、默认字段补齐、导入规范化。
+- `schemaVersion` 当前为 `2`。
+- `src/app/storage/state-normalizer.js`：当前状态规范化、默认字段补齐、导入保护。
 - JSON 导入会先解析和迁移，成功后才覆盖 localStorage；坏 JSON 不应覆盖旧数据。
 - JSON 导入没有 schema 校验。
 - CSV 导入解析简单，不支持复杂逗号、换行、引号边界。

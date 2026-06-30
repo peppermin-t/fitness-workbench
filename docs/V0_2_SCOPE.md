@@ -188,8 +188,8 @@
 迁移机制不需要引入数据库，也不需要破坏 localStorage。可以先做：
 
 - `CURRENT_SCHEMA_VERSION`
-- `migrateState(rawState)`
-- v1 到 v2 的默认字段补齐
+- `normalizeAppState(rawState)`
+- 当前 v2 状态默认字段补齐
 - 导入 JSON 后也走迁移
 - 导入 JSON 先解析和迁移，成功后才覆盖 localStorage
 
@@ -208,7 +208,6 @@
 - `buildWeeklyReview`
 - `metricTrend`
 - `calculateVolumeLoad` / `calculateHardSets` / `detectSimplePr`
-- `stateMigration_v1_to_v2_preserves_data_and_defaults`
 
 测试不应改变应用运行方式，`index.html` 仍要能双击运行。
 

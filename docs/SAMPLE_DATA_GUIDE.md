@@ -181,6 +181,6 @@ docs/sample-data/manual-smoke-baseline.json
 
 - 每次 schemaVersion 升级后，都要验证旧样例能迁移。
 - 如果字段新增，应优先通过迁移补默认值，而不是手动重写所有样例。
-- 当前 `docs/sample-data/manual-smoke-baseline.json` 已升级到 `schemaVersion: 2`；如需验证旧数据迁移，可参考 `tests/rules-smoke.html` 中的 `stateMigration_v1_to_v2_preserves_data_and_defaults`。
+- 当前 `docs/sample-data/manual-smoke-baseline.json` 已升级到 `schemaVersion: 2`；一次性旧数据迁移代码已移除，后续新增 schema 时再补新的迁移说明和用例。
 - 样例数据不应包含隐私信息。
 - 样例数据应尽量覆盖真实业务链路，而不是只满足字段存在。

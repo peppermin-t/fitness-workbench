@@ -8,7 +8,7 @@
 
 | 字段 | 含义 | 当前是否已有 | 建议调整 |
 | --- | --- | --- | --- |
-| `schemaVersion` | 本地状态版本 | 已有，当前为 `2` | 保留，当前已具备 v1 到 v2 的第一版迁移机制 |
+| `schemaVersion` | 本地状态版本 | 已有，当前为 `2` | 保留，当前只保留 v2 状态规范化和导入保护 |
 | `currentGymId` | 当前健身房 ID | 已有 | 保留 |
 | `currentGoalId` | 当前目标 ID | 已有 | 保留 |
 | `gyms` | 健身房列表 | 已有 | 保留 |
@@ -278,7 +278,7 @@
 | `painArea` | 疼痛部位 | 已有 | 保留 |
 | `freeText` | 自由文本反馈 | 已有 | 保留 |
 | `analysis` | 规则分析结果 | 已有 | 保留，但建议可重算 |
-| `sessionId` | 所属 `WorkoutSession` | 已有第一版 | v1 旧数据迁移时补 `null` |
+| `sessionId` | 所属 `WorkoutSession` | 已有第一版 | 当前 schema 下允许为空 |
 | `sets` | `SetLog[]` | 已有第一版 | 可选，不强制填写 |
 | `volumeLoad` | 容量统计 | 已有第一版 | 衍生字段，建议可重算 |
 | `hardSets` | 有效组数 | 已有第一版 | 当前按 RPE >= 7 粗略判断 |
@@ -462,6 +462,6 @@
 
 1. `WorkoutSession` 与 `ExerciseLog` 没有稳定关联，后续做训练容量和周复盘时会受限。
 2. `WorkoutDay` 和 `PlannedExercise` 缺少稳定 ID，当前用数组下标定位，计划调整后历史上下文容易漂移。
-3. `schemaVersion` 已升级到 `2`，并已有第一版迁移机制；后续新增字段仍需要继续补迁移记录和 smoke 用例。
+3. `schemaVersion` 已升级到 `2`；一次性 v1 到 v2 迁移代码已移除，后续新增字段时再按需要增加迁移记录和 smoke 用例。
 4. `Advice` 来源和状态不统一，未来会越来越难管理建议去重、过期和执行状态。
 5. `NutritionLog.analysis` 和 `ExerciseLog.analysis` 存储了可由规则重算的内容，后续需要决定是保存快照还是重算。

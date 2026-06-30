@@ -21,8 +21,8 @@ Phase 7：AI 结构化解析与多端扩展
 
 - Phase 0：文档、人工 smoke checklist、规则 smoke、样例 JSON 基线和 `phase2-baseline` git 基线已具备；还差一次正式人工验收记录。
 - Phase 1：JS 模块边界已开始收敛，`src/core/rules` 已落地；`src/core/models`、`src/app/state`、`src/app/storage` 仍保持为后续设计方向，尚不引入 TypeScript 构建链。
-- Phase 2：核心规则拆分已收口。`planner.js` 现在主要承担兼容导出和少量尚未单独成模块的训练整体反馈建议函数；无依赖规则 smoke 已覆盖 13 个核心用例。
-- Phase 3：已完成第一版：`SetLog` 可选记录、`WorkoutSession` 状态与动作日志关联、基础训练容量统计、`schemaVersion: 2` 迁移、JSON 导入稳定性和迁移 smoke 用例已经具备。
+- Phase 2：核心规则拆分已收口。`planner.js` 现在主要承担兼容导出和少量尚未单独成模块的训练整体反馈建议函数；无依赖规则 smoke 已覆盖 12 个核心用例。
+- Phase 3：已完成第一版：`SetLog` 可选记录、`WorkoutSession` 状态与动作日志关联、基础训练容量统计、`schemaVersion: 2`、JSON 导入稳定性和当前状态规范化已经具备。
 
 ## 当前阶段边界
 
@@ -397,7 +397,7 @@ Phase 1 不应改页面结构和交互。即使内部开始拆模块，也要保
 
 - `planner.js` 已变薄，主要作为兼容导出层，并保留 `createAdviceFromSession` 这类训练整体反馈建议入口。
 - 拆出的函数通过 `window.FitnessCore.*` 暴露，同时继续通过 `window.FitnessPlanner.*` 保持兼容。
-- 无依赖规则 smoke 已覆盖 13 个核心用例，包括目标解析、计划生成、动作反馈、饮食解析、指标趋势、训练容量统计、状态迁移、周复盘、联动建议、训练前提醒和饮食前提醒。
+- 无依赖规则 smoke 已覆盖 12 个核心用例，包括目标解析、计划生成、动作反馈、饮食解析、指标趋势、训练容量统计、周复盘、联动建议、训练前提醒和饮食前提醒。
 - `index.html` 仍按静态脚本顺序加载，不需要构建链，不改变 UI 行为。
 
 ## Phase 3：v0.2 数据底座补齐
@@ -465,22 +465,20 @@ v0.2 可以先在智能教练或动作历史里少量展示，不做复杂报表
 
 ### 4. 数据迁移
 
-新增迁移路径：
+当前状态：
 
-- `schemaVersion: 1` 旧数据可迁移到 `schemaVersion: 2`。
-- 为旧 `exerciseLogs` 补 `sessionId: null`、`sets: []`。
-- 为旧计划日和计划动作补稳定 ID。
-- 为旧 advice 补默认 `status`。
+- `schemaVersion` 已固定为 `2`。
+- 一次性 v1 到 v2 迁移代码已移除。
+- 当前保留状态规范化和导入保护：为缺失数组、session 字段、动作日志统计字段、计划日 / 计划动作 ID、advice / revision 状态补默认值。
 
 状态：已完成第一版。
 
 当前实现：
 
-- 新增 `src/app/storage/state-migrations.js`。
+- 新增 `src/app/storage/state-normalizer.js`。
 - `CURRENT_SCHEMA_VERSION` 当前为 `2`。
-- `loadState`、`saveState`、`exportJson` 和 `importJson` 都会经过迁移 / 规范化。
+- `loadState`、`saveState`、`exportJson` 和 `importJson` 都会经过当前状态规范化。
 - JSON 导入会先解析和迁移，成功后才覆盖 localStorage，避免坏 JSON 直接破坏本地数据。
-- 规则 smoke 已新增 `stateMigration_v1_to_v2_preserves_data_and_defaults`。
 
 ### 5. 规则测试
 
@@ -496,15 +494,15 @@ v0.2 可以先在智能教练或动作历史里少量展示，不做复杂报表
 
 状态：已完成第一版。
 
-当前 `tests/rules-smoke.html` 覆盖 13 个用例，新增覆盖训练容量统计和 v1 到 v2 状态迁移。
+当前 `tests/rules-smoke.html` 覆盖 12 个用例，新增覆盖训练容量统计。
 
 ### Phase 3 验收标准
 
 - 老 JSON 导入后不丢数据，且导入失败不会覆盖旧 localStorage。
 - 新数据能记录可选每组日志。
 - 训练整体反馈和动作级反馈能通过 session 关联。
-- `schemaVersion: 1` 可迁移到 `schemaVersion: 2`。
-- 至少关键规则有基础测试，当前 smoke 为 13 passed / 0 failed。
+- `schemaVersion: 2` 状态可规范化保存和导出。
+- 至少关键规则有基础测试，当前 smoke 为 12 passed / 0 failed。
 
 ## Phase 4：TypeScript core 迁移
 
