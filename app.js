@@ -8,6 +8,7 @@
   const DesktopStorage = window.FitnessCore.DesktopStorage;
   const AppStateStore = window.FitnessCore.AppStateStore;
   const DataPortability = window.FitnessApp.DataPortability;
+  const LineChart = window.FitnessApp.LineChart;
   const $ = (s) => document.querySelector(s);
   const $$ = (s) => Array.from(document.querySelectorAll(s));
   const clone = (v) => JSON.parse(JSON.stringify(v));
@@ -516,50 +517,18 @@
 
   function drawMetricChart() {
     const canvas = $("#metric-chart");
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    const w = canvas.width;
-    const h = canvas.height;
-    ctx.clearRect(0, 0, w, h);
-    ctx.fillStyle = "#fff";
-    ctx.fillRect(0, 0, w, h);
-    ctx.strokeStyle = "#d8ded6";
-    for (let i = 0; i < 5; i += 1) {
-      const y = 38 + i * 55;
-      ctx.beginPath();
-      ctx.moveTo(48, y);
-      ctx.lineTo(w - 22, y);
-      ctx.stroke();
-    }
     const data = P.sortedMetrics(state.metrics);
-    ctx.fillStyle = "#66736b";
-    ctx.font = "14px sans-serif";
-    if (data.length < 2) return ctx.fillText("至少录入两次身体指标后显示趋势。", 48, 160);
-    drawSeries(ctx, data, "weight", "#2f7d57", "体重 kg", 52);
-    drawSeries(ctx, data, "bodyFat", "#b85c27", "体脂 %", 150);
-    drawSeries(ctx, data, "skeletalMuscle", "#2e6f9e", "骨骼肌 kg", 248);
-  }
-
-  function drawSeries(ctx, data, field, color, label, legendX) {
-    const points = data.filter((x) => typeof x[field] === "number");
-    if (points.length < 2) return;
-    const values = points.map((x) => x[field]);
-    const min = Math.min(...values);
-    const range = Math.max(...values) - min || 1;
-    const left = 58, right = ctx.canvas.width - 32, top = 42, bottom = ctx.canvas.height - 48;
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 2.5;
-    ctx.beginPath();
-    points.forEach((p, i) => {
-      const x = left + (i / (points.length - 1)) * (right - left);
-      const y = bottom - ((p[field] - min) / range) * (bottom - top);
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
+    LineChart.draw(canvas, {
+      data,
+      emptyText: "至少录入两次身体指标后显示趋势。",
+      emptyY: 160,
+      gridStep: 55,
+      series: [
+        { field: "weight", color: "#2f7d57", label: "体重 kg", legendX: 52 },
+        { field: "bodyFat", color: "#b85c27", label: "体脂 %", legendX: 150 },
+        { field: "skeletalMuscle", color: "#2e6f9e", label: "骨骼肌 kg", legendX: 248 }
+      ]
     });
-    ctx.stroke();
-    ctx.fillStyle = color;
-    ctx.font = "13px sans-serif";
-    ctx.fillText(label, legendX, 22);
   }
 
   function exportPlanCsv() {
@@ -1082,55 +1051,17 @@
 
   function drawNutritionChart() {
     const canvas = $("#nutrition-chart");
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    const w = canvas.width;
-    const h = canvas.height;
-    ctx.clearRect(0, 0, w, h);
-    ctx.fillStyle = "#fff";
-    ctx.fillRect(0, 0, w, h);
-    ctx.strokeStyle = "#d8ded6";
-    for (let i = 0; i < 5; i += 1) {
-      const y = 38 + i * 50;
-      ctx.beginPath();
-      ctx.moveTo(48, y);
-      ctx.lineTo(w - 22, y);
-      ctx.stroke();
-    }
     const data = P.buildNutritionTrend(state.nutritionLogs || []);
-    ctx.fillStyle = "#66736b";
-    ctx.font = "14px sans-serif";
-    if (data.length < 2) {
-      ctx.fillText("至少记录两天饮食后显示热量和蛋白趋势。", 48, 150);
-      return;
-    }
-    drawNutritionSeries(ctx, data, "calories", "#b85c27", "热量 kcal", 52);
-    drawNutritionSeries(ctx, data, "protein", "#2f7d57", "蛋白 g", 160);
-  }
-
-  function drawNutritionSeries(ctx, data, field, color, label, legendX) {
-    const points = data.filter((x) => typeof x[field] === "number");
-    if (points.length < 2) return;
-    const values = points.map((x) => x[field]);
-    const min = Math.min(...values);
-    const range = Math.max(...values) - min || 1;
-    const left = 58;
-    const right = ctx.canvas.width - 32;
-    const top = 42;
-    const bottom = ctx.canvas.height - 48;
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 2.5;
-    ctx.beginPath();
-    points.forEach((point, index) => {
-      const x = left + (index / (points.length - 1)) * (right - left);
-      const y = bottom - ((point[field] - min) / range) * (bottom - top);
-      if (index === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
+    LineChart.draw(canvas, {
+      data,
+      emptyText: "至少记录两天饮食后显示热量和蛋白趋势。",
+      emptyY: 150,
+      gridStep: 50,
+      series: [
+        { field: "calories", color: "#b85c27", label: "热量 kcal", legendX: 52 },
+        { field: "protein", color: "#2f7d57", label: "蛋白 g", legendX: 160 }
+      ]
     });
-    ctx.stroke();
-    ctx.fillStyle = color;
-    ctx.font = "13px sans-serif";
-    ctx.fillText(label, legendX, 22);
   }
 
 

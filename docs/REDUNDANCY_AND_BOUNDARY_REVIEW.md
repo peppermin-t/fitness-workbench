@@ -114,7 +114,7 @@
 - 建议和 revision 写入。
 - CSV 导入 / 导出的 UI 事件和状态写入；CSV 构造 / 解析 helper 已收敛到 `src/app/import-export/data-portability.js`。
 - JSON 导入 / 导出的 UI 事件和状态写入；JSON 序列化 / 解析 helper 已收敛到 `src/app/import-export/data-portability.js`。
-- canvas 图表绘制。
+- canvas 图表入口和数据选择；通用折线图绘制 helper 已收敛到 `src/app/charts/line-chart.js`。
 - 器械图标 SVG。
 - 肌肉图 SVG。
 - 动作媒体 / 英文名 / 器械英文名映射。
@@ -124,7 +124,7 @@
 
 - 文件仍然过大，当前承担 UI 渲染、事件处理、状态协调和展示映射。
 - Phase 3 / Phase 5 之间已经清理过旧同名函数覆盖问题；当前脚本检查未发现 `app.js` 中仍存在同名函数重复定义。
-- `app.js` 仍然既是 UI 层又是应用服务层，还包含一部分展示数据字典；状态存储 helper 和导入导出 helper 已先拆出，但表单保存、图表和 presenter 仍在文件内。
+- `app.js` 仍然既是 UI 层又是应用服务层，还包含一部分展示数据字典；状态存储 helper、导入导出 helper 和通用图表 helper 已先拆出，但表单保存、复杂渲染和 presenter 仍在文件内。
 - `planner.js` 当前已收窄为旧入口兼容别名；`src/core/rules/*.js` 是 `index.html` 直接运行所需的兼容输出，不应作为“无用冗余”删除。
 
 ### 建议拆分方向
@@ -132,7 +132,7 @@
 - `app/state`：业务状态操作，例如训练反馈、计划调整、动作日志写入。
 - `app/storage`：localStorage、JSON、迁移。已开始：`app-state-store` 承担默认状态、本地读写和桌面 SQLite hydration。
 - `app/render`：页面渲染。
-- `app/charts`：canvas 图表。
+- `app/charts`：canvas 图表。已开始：`line-chart` 承担身体指标和饮食趋势共用的折线图绘制。
 - `app/import-export`：CSV 和 JSON。已开始：`data-portability` 承担计划 CSV 构造 / 解析、JSON 备份序列化 / 解析和下载 helper。
 - `app/presenters`：标签、展示文案、英文名、图标映射。
 

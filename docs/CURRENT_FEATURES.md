@@ -1,6 +1,6 @@
 # 当前功能清单
 
-本文档按当前代码实际实现梳理功能边界，主要依据 `README.md`、`docs/PRODUCT_VISION.md`、`index.html`、`data.js`、`src/core/rules/*`、`src/app/storage/*`、`src/app/import-export/*`、`src/core/models/index.d.ts`、`planner.js`、`app.js` 和 `styles.css`。当前应用仍可直接双击运行：静态 Web 通过 `index.html` 加载 `data.js`、`src/core/rules/*.js`、`src/core/rules/facade.js`、`planner.js`、`src/app/storage/*.js`、`src/app/import-export/*.js`、`app.js`，运行数据存放在浏览器 `localStorage`。Tauri 环境下会额外通过 `src/app/storage/desktop-sqlite.js` 同步到 SQLite。Phase 4 后，`src/core/rules/*.ts`、`src/app/storage/*.ts` 和 `src/app/import-export/*.ts` 是 core / app helper 源文件，同名 `.js` 是浏览器兼容输出；`window.FitnessCore.Rules` 是当前 UI 使用的规则 facade，`planner.js` 仅保留 `window.FitnessPlanner` 旧入口兼容。
+本文档按当前代码实际实现梳理功能边界，主要依据 `README.md`、`docs/PRODUCT_VISION.md`、`index.html`、`data.js`、`src/core/rules/*`、`src/app/storage/*`、`src/app/import-export/*`、`src/app/charts/*`、`src/core/models/index.d.ts`、`planner.js`、`app.js` 和 `styles.css`。当前应用仍可直接双击运行：静态 Web 通过 `index.html` 加载 `data.js`、`src/core/rules/*.js`、`src/core/rules/facade.js`、`planner.js`、`src/app/storage/*.js`、`src/app/import-export/*.js`、`src/app/charts/*.js`、`app.js`，运行数据存放在浏览器 `localStorage`。Tauri 环境下会额外通过 `src/app/storage/desktop-sqlite.js` 同步到 SQLite。Phase 4 后，`src/core/rules/*.ts`、`src/app/storage/*.ts`、`src/app/import-export/*.ts` 和 `src/app/charts/*.ts` 是 core / app helper 源文件，同名 `.js` 是浏览器兼容输出；`window.FitnessCore.Rules` 是当前 UI 使用的规则 facade，`planner.js` 仅保留 `window.FitnessPlanner` 旧入口兼容。
 
 ## 1. 今日训练
 
@@ -311,7 +311,8 @@
 ### 主要代码位置
 
 - `index.html`：`view-metrics`、`metric-form`、`metric-chart`、`metric-list`。
-- `app.js`：`saveMetric`、`deleteMetric`、`renderMetrics`、`drawMetricChart`、`drawSeries`、`latestMetric`。
+- `app.js`：`saveMetric`、`deleteMetric`、`renderMetrics`、`drawMetricChart`、`latestMetric`。
+- `src/app/charts/line-chart.js`：通用 canvas 折线图绘制 helper。
 - `src/core/rules/metric-analyzer.js`：`sortedMetrics`、`metricTrend`。
 - `src/core/rules/plan-generator.js`：`buildPlanContext` 读取最近指标和体重趋势。
 - `src/core/rules/integrated-signals.js`：联动判断读取指标趋势。
@@ -350,7 +351,8 @@
 ### 主要代码位置
 
 - `index.html`：`view-nutrition`、`nutrition-form`、`nutrition-chart`。
-- `app.js`：`saveNutritionLog`、`renderNutritionList`、`drawNutritionChart`、`drawNutritionSeries`、`renderNutritionReminders`。
+- `app.js`：`saveNutritionLog`、`renderNutritionList`、`drawNutritionChart`、`renderNutritionReminders`。
+- `src/app/charts/line-chart.js`：饮食趋势图使用的通用 canvas 折线图绘制 helper。
 - `src/core/rules/nutrition-parser.js`：`FOOD_LIBRARY`、`parseNutritionLog`、`splitMeals`、`extractFoodItems`、`nutritionTargets`、`buildNutritionRecommendationItems`、`buildNutritionProfile`、`buildNutritionTrend`、`buildNutritionReminders`。
 - `planner.js`：兼容导出 `window.FitnessPlanner.parseNutritionLog`、`window.FitnessPlanner.buildNutritionProfile`、`window.FitnessPlanner.buildNutritionTrend`、`window.FitnessPlanner.buildNutritionReminders`。
 
@@ -545,9 +547,11 @@
 - `styles.css`
 - `app.js`
 - `src/app/storage/app-state-store.js`
+- `src/app/import-export/data-portability.js`
+- `src/app/charts/line-chart.js`
 
 ### 当前缺口
 
 - `body` 设置 `min-width: 1100px`，当前定位更偏桌面端，不适合手机端。
 - `app.js` 直接拼接 HTML，缺少组件边界。
-- 默认状态、存储协调、CSV / JSON 构造解析 helper 已从 `app.js` 拆出；旧同名渲染 / 保存函数覆盖问题已清理；当前仍需继续拆图表和 presenter。
+- 默认状态、存储协调、CSV / JSON 构造解析 helper、通用 canvas 折线图 helper 已从 `app.js` 拆出；旧同名渲染 / 保存函数覆盖问题已清理；当前仍需继续拆 presenter 和业务状态写入。
