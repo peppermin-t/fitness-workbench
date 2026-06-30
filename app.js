@@ -7,6 +7,7 @@
   const M = window.FitnessCore.StateNormalizer;
   const DesktopStorage = window.FitnessCore.DesktopStorage;
   const AppStateStore = window.FitnessCore.AppStateStore;
+  const DataPortability = window.FitnessApp.DataPortability;
   const $ = (s) => document.querySelector(s);
   const $$ = (s) => Array.from(document.querySelectorAll(s));
   const clone = (v) => JSON.parse(JSON.stringify(v));
@@ -563,9 +564,8 @@
 
   function exportPlanCsv() {
     if (!state.plan) return toast("暂无计划可导出。");
-    const rows = [["day", "focus", "exercise", "sets", "reps", "load", "rpe", "rest", "notes"]];
-    state.plan.days.forEach((day, i) => day.exercises.forEach((r) => rows.push([i + 1, day.focus, getExercise(r.exerciseId)?.name || r.exerciseId, r.sets, r.reps, r.load, r.rpe, r.rest, r.notes])));
-    download(`training-plan-${todayIso()}.csv`, "\ufeff" + rows.map((r) => r.map(csvCell).join(",")).join("\n"), "text/csv;charset=utf-8");
+    const csv = DataPortability.buildPlanCsv(state.plan, (exerciseId) => getExercise(exerciseId)?.name);
+    DataPortability.downloadFile(`training-plan-${todayIso()}.csv`, csv, "text/csv;charset=utf-8");
   }
 
   function importPlanCsv(event) {
@@ -573,17 +573,8 @@
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => {
-      const rows = String(reader.result || "").split(/\r?\n/).filter(Boolean).map((line) => line.split(",").map((c) => c.trim().replace(/^"|"$/g, "")));
-      const head = rows.shift()?.map((x) => x.toLowerCase()) || [];
-      const idx = (n) => head.indexOf(n);
-      const byDay = new Map();
-      rows.forEach((row) => {
-        const key = row[idx("day")] || "1";
-        const focus = row[idx("focus")] || `训练日 ${key}`;
-        if (!byDay.has(key)) byDay.set(key, { focus, intent: "从教练 CSV 导入。", exercises: [] });
-        byDay.get(key).exercises.push({ exerciseId: findOrCreateExercise(row[idx("exercise")] || "自定义动作"), sets: row[idx("sets")] || 3, reps: row[idx("reps")] || "8-12", load: row[idx("load")] || "按记录", rpe: row[idx("rpe")] || "7", rest: row[idx("rest")] || "90 秒", notes: row[idx("notes")] || "" });
-      });
-      state.plan = { id: uid("plan"), generatedAt: nowLabel(), context: P.generatePlan({ gym: currentGym(), goal: currentGoal(), metrics: state.metrics, exercises: state.exercises, nowLabel, uid }).context, days: Array.from(byDay.values()) };
+      const days = DataPortability.parsePlanCsv(String(reader.result || ""), findOrCreateExercise);
+      state.plan = { id: uid("plan"), generatedAt: nowLabel(), context: P.generatePlan({ gym: currentGym(), goal: currentGoal(), metrics: state.metrics, exercises: state.exercises, nowLabel, uid }).context, days };
       saveState();
       renderAll();
       event.target.value = "";
@@ -594,7 +585,7 @@
 
   function exportJson() {
     state = normalizeState(state);
-    download(`fitness-workbench-backup-${todayIso()}.json`, JSON.stringify(state, null, 2), "application/json;charset=utf-8");
+    DataPortability.downloadFile(`fitness-workbench-backup-${todayIso()}.json`, DataPortability.buildBackupJson(state), "application/json;charset=utf-8");
   }
 
   function importJson(event) {
@@ -603,7 +594,7 @@
     const reader = new FileReader();
     reader.onload = () => {
       try {
-        state = prepareState(JSON.parse(String(reader.result || "{}")));
+        state = prepareState(DataPortability.parseBackupJson(reader.result));
         saveState();
         renderAll();
         toast("JSON 备份已导入。");
@@ -1836,8 +1827,6 @@
   function nowLabel() { const d = new Date(); return `${d.toLocaleDateString("zh-CN")} ${d.toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" })}`; }
   function uid(prefix) { return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`; }
   function esc(v) { return String(v ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#039;"); }
-  function csvCell(v) { const t = String(v ?? ""); return /[",\n]/.test(t) ? `"${t.replaceAll('"', '""')}"` : t; }
-  function download(name, content, type) { const blob = new Blob([content], { type }); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = name; a.click(); URL.revokeObjectURL(url); }
   let toastTimer = null;
   function toast(msg) { const el = $("#toast"); el.textContent = msg; el.classList.add("show"); clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove("show"), 2600); }
 })();

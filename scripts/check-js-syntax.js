@@ -12,6 +12,9 @@ const files = [
   ...fs.readdirSync(path.join(root, "src", "app", "storage"))
     .filter((name) => name.endsWith(".js"))
     .map((name) => path.join("src", "app", "storage", name)),
+  ...fs.readdirSync(path.join(root, "src", "app", "import-export"))
+    .filter((name) => name.endsWith(".js"))
+    .map((name) => path.join("src", "app", "import-export", name)),
   ...fs.readdirSync(path.join(root, "src", "core", "rules"))
     .filter((name) => name.endsWith(".js"))
     .map((name) => path.join("src", "core", "rules", name))

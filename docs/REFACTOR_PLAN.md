@@ -40,7 +40,7 @@ Phase 7：AI 结构化解析与多端扩展
 - 持续维护 `WorkoutSession`、`SetLog`、`schemaVersion` 迁移和 JSON 导入导出稳定性。
 - 保持规则 smoke 测试和人工 smoke checklist 可运行。
 - 在继续移除兼容层前保留静态 Web fallback、localStorage 和 JSON 回退路径。
-- 继续把 `app.js` 中的导入导出、presenter 和图表职责分批拆出。
+- 继续把 `app.js` 中的 presenter、图表和业务状态写入职责分批拆出。
 
 ## Phase 0：现状冻结与行为保护
 
@@ -564,6 +564,7 @@ Phase 4 是长期技术路线的一部分。当前执行方式是最小迁移：
 - `src/core/rules/facade.ts`
 - `src/app/storage/state-normalizer.ts`
 - `src/app/storage/app-state-store.ts`
+- `src/app/import-export/data-portability.ts`
 - 同名 `.js` 兼容输出，继续供 `index.html` 直接加载。
 
 ### 当前限制

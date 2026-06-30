@@ -17,7 +17,8 @@ const files = [
 
 const directories = [
   path.join("src", "core", "rules"),
-  path.join("src", "app", "storage")
+  path.join("src", "app", "storage"),
+  path.join("src", "app", "import-export")
 ];
 
 removeDir(outDir);

@@ -16,6 +16,7 @@ interface FitnessCoreNamespace {
 
 interface Window {
   FitnessCore: FitnessCoreNamespace;
+  FitnessApp: any;
   FitnessData: any;
   FitnessPlanner: any;
 }

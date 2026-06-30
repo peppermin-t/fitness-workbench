@@ -1,6 +1,6 @@
 # 当前功能清单
 
-本文档按当前代码实际实现梳理功能边界，主要依据 `README.md`、`docs/PRODUCT_VISION.md`、`index.html`、`data.js`、`src/core/rules/*`、`src/core/models/index.d.ts`、`planner.js`、`app.js` 和 `styles.css`。当前应用仍可直接双击运行：静态 Web 通过 `index.html` 加载 `data.js`、`src/core/rules/*.js`、`src/core/rules/facade.js`、`planner.js`、`app.js`，运行数据存放在浏览器 `localStorage`。Tauri 环境下会额外通过 `src/app/storage/desktop-sqlite.js` 同步到 SQLite。Phase 4 后，`src/core/rules/*.ts` 和 `src/app/storage/*.ts` 是 core / storage 源文件，同名 `.js` 是浏览器兼容输出；`window.FitnessCore.Rules` 是当前 UI 使用的规则 facade，`planner.js` 仅保留 `window.FitnessPlanner` 旧入口兼容。
+本文档按当前代码实际实现梳理功能边界，主要依据 `README.md`、`docs/PRODUCT_VISION.md`、`index.html`、`data.js`、`src/core/rules/*`、`src/app/storage/*`、`src/app/import-export/*`、`src/core/models/index.d.ts`、`planner.js`、`app.js` 和 `styles.css`。当前应用仍可直接双击运行：静态 Web 通过 `index.html` 加载 `data.js`、`src/core/rules/*.js`、`src/core/rules/facade.js`、`planner.js`、`src/app/storage/*.js`、`src/app/import-export/*.js`、`app.js`，运行数据存放在浏览器 `localStorage`。Tauri 环境下会额外通过 `src/app/storage/desktop-sqlite.js` 同步到 SQLite。Phase 4 后，`src/core/rules/*.ts`、`src/app/storage/*.ts` 和 `src/app/import-export/*.ts` 是 core / app helper 源文件，同名 `.js` 是浏览器兼容输出；`window.FitnessCore.Rules` 是当前 UI 使用的规则 facade，`planner.js` 仅保留 `window.FitnessPlanner` 旧入口兼容。
 
 ## 1. 今日训练
 
@@ -184,7 +184,8 @@
 ### 主要代码位置
 
 - `index.html`：`view-plan`、生成计划、导出 CSV、导入 CSV。
-- `app.js`：`generatePlan`、`renderPlan`、`renderWorkoutDay`、`renderPlanRow`、`replaceExercise`、`exportPlanCsv`、`importPlanCsv`。
+- `app.js`：`generatePlan`、`renderPlan`、`renderWorkoutDay`、`renderPlanRow`、`replaceExercise`、`exportPlanCsv`、`importPlanCsv` 的 UI 事件和状态写入。
+- `src/app/import-export/data-portability.js`：训练计划 CSV 构造和解析 helper。
 - `src/core/rules/plan-generator.js`：训练计划生成、训练日模板、动作可用性和替代动作逻辑。
 - `planner.js`：兼容导出 `window.FitnessPlanner.generatePlan`、`window.FitnessPlanner.isAvailable`、`window.FitnessPlanner.availableSubstitutes` 等 API。
 
@@ -505,7 +506,8 @@
 ### 主要代码位置
 
 - `index.html`：`view-data` 和计划页 CSV 导入导出。
-- `app.js`：`exportJson`、`importJson`、`resetData`、`exportPlanCsv`、`importPlanCsv`、`renderDataSummary`。
+- `app.js`：`exportJson`、`importJson`、`resetData`、`exportPlanCsv`、`importPlanCsv`、`renderDataSummary` 的 UI 事件和状态写入。
+- `src/app/import-export/data-portability.js`：JSON 备份序列化 / 解析、CSV 构造 / 解析和浏览器下载 helper。
 
 ### 依赖的数据状态
 
@@ -522,7 +524,7 @@
 - `schemaVersion` 当前为 `2`。
 - `src/app/storage/state-normalizer.js`：当前状态规范化、默认字段补齐、导入保护。
 - `src/app/storage/app-state-store.js`：默认状态、localStorage 读写、Tauri SQLite hydration / persist 协调。
-- JSON 导入会先解析和迁移，成功后才覆盖 localStorage；坏 JSON 不应覆盖旧数据。
+- JSON 导入会先通过 `data-portability` 解析，再经 `state-normalizer` 迁移，成功后才覆盖 localStorage；坏 JSON 不应覆盖旧数据。
 - JSON 导入没有 schema 校验。
 - CSV 导入解析简单，不支持复杂逗号、换行、引号边界。
 - 没有自动备份或备份恢复前预检。
@@ -548,4 +550,4 @@
 
 - `body` 设置 `min-width: 1100px`，当前定位更偏桌面端，不适合手机端。
 - `app.js` 直接拼接 HTML，缺少组件边界。
-- 默认状态和存储协调已从 `app.js` 拆出；旧同名渲染 / 保存函数覆盖问题已清理；当前仍需继续拆导入导出、图表和 presenter。
+- 默认状态、存储协调、CSV / JSON 构造解析 helper 已从 `app.js` 拆出；旧同名渲染 / 保存函数覆盖问题已清理；当前仍需继续拆图表和 presenter。
