@@ -5,7 +5,10 @@
   "type": "commonjs",
   "scripts": {
     "build:core": "tsc -p tsconfig.json",
-    "check:core": "tsc -p tsconfig.json --noEmit"
+    "check:core": "tsc -p tsconfig.json --noEmit",
+    "check:js": "node scripts/check-js-syntax.js",
+    "smoke:rules": "node scripts/run-rules-smoke.js",
+    "verify:phase5": "npm run check:core && npm run build:core && npm run check:js && npm run smoke:rules"
   },
   "devDependencies": {
     "typescript": "^5.5.0"

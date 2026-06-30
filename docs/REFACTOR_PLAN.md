@@ -24,6 +24,7 @@ Phase 7：AI 结构化解析与多端扩展
 - Phase 2：核心规则拆分已收口。`planner.js` 现在主要承担兼容导出和少量尚未单独成模块的训练整体反馈建议函数；无依赖规则 smoke 已覆盖 12 个核心用例。
 - Phase 3：已完成第一版：`SetLog` 可选记录、`WorkoutSession` 状态与动作日志关联、基础训练容量统计、`schemaVersion: 2`、JSON 导入稳定性和当前状态规范化已经具备。
 - Phase 4：已完成最小迁移：新增 TypeScript 配置、模型声明、全局声明，核心规则和状态规范化已有 `.ts` 源文件，并继续生成 `.js` 兼容输出。
+- Phase 5 前准备：已补齐 `npm.cmd run verify:phase5`，用于检查 TypeScript core、JS 语法和 12 个规则 smoke 用例。
 
 ## 当前阶段边界
 
@@ -589,6 +590,7 @@ Phase 5 的目标是桌面端封装，不是用桌面壳掩盖尚未稳定的数
 - JSON 导入导出稳定。
 - 规则测试和人工 smoke checklist 可跑。
 - 当前静态 Web 版本仍然可运行，作为 fallback。
+- 进入 Phase 5 前先运行 `npm.cmd run verify:phase5`，并参考 [PHASE5_PREPARED.md](PHASE5_PREPARED.md) 完成人工确认。
 
 ### 建议步骤
 
@@ -706,4 +708,4 @@ Phase 7 放在 TypeScript core、Tauri 和 SQLite 稳定之后。AI、手机端�
 
 ## 正式重构的建议第一步
 
-第一步不要先改 UI，也不要先上框架。Phase 2 的核心规则拆分已经收口：`goal-parser`、`plan-generator`、`metric-analyzer`、`advice-engine`、`exercise-feedback-analyzer`、`nutrition-parser`、`integrated-signals`、`weekly-review` 都已拆出，并通过 `window.FitnessPlanner` 保持兼容。Phase 3 数据底座已完成第一版，Phase 4 TypeScript core 已完成最小迁移。下一步应先收紧 core 类型并继续跑规则 smoke / 人工 smoke，再评估 Phase 5 Tauri 桌面端封装。
+第一步不要先改 UI，也不要先上框架。Phase 2 的核心规则拆分已经收口：`goal-parser`、`plan-generator`、`metric-analyzer`、`advice-engine`、`exercise-feedback-analyzer`、`nutrition-parser`、`integrated-signals`、`weekly-review` 都已拆出，并通过 `window.FitnessPlanner` 保持兼容。Phase 3 数据底座已完成第一版，Phase 4 TypeScript core 已完成最小迁移，Phase 5 前准备检查已落地。下一步可以进入 Tauri 桌面端封装设计，但必须保留静态 Web fallback，且不在 Phase 5 同步迁移 SQLite。

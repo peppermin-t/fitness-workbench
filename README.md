@@ -17,9 +17,10 @@
 ```text
 npm.cmd run check:core
 npm.cmd run build:core
+npm.cmd run verify:phase5
 ```
 
-构建只用于生成和检查 core 的 JS 兼容输出，不改变 `index.html` 的双击运行方式。
+构建只用于生成和检查 core 的 JS 兼容输出，不改变 `index.html` 的双击运行方式。`verify:phase5` 用于进入 Tauri 封装前的本地准备检查。
 
 ## 文档导航
 
@@ -29,6 +30,7 @@ npm.cmd run build:core
 - [docs/DATA_MODEL_DRAFT.md](docs/DATA_MODEL_DRAFT.md)：当前和建议的数据模型。
 - [docs/REDUNDANCY_AND_BOUNDARY_REVIEW.md](docs/REDUNDANCY_AND_BOUNDARY_REVIEW.md)：当前冗余、边界混乱和风险。
 - [docs/REFACTOR_PLAN.md](docs/REFACTOR_PLAN.md)：后续重构路线。
+- [docs/PHASE5_PREPARED.md](docs/PHASE5_PREPARED.md)：进入 Tauri 桌面端封装前的准备状态和检查命令。
 - [docs/SMOKE_CHECKLIST.md](docs/SMOKE_CHECKLIST.md)：重构前后必须跑通的人工验收清单。
 - [docs/RULE_TEST_CASES.md](docs/RULE_TEST_CASES.md)：拆分规则逻辑前固定的核心输入输出样例。
 - [docs/DECISIONS.md](docs/DECISIONS.md)：关键架构和产品决策记录。
@@ -37,6 +39,7 @@ npm.cmd run build:core
 规则保护层：
 
 - 可直接用浏览器打开 [tests/rules-smoke.html](tests/rules-smoke.html)，运行 12 个无依赖规则 smoke 测试。
+- 可运行 `npm.cmd run smoke:rules`，在命令行等价执行同一组规则用例。
 - 可在“导入导出”页导入 [docs/sample-data/manual-smoke-baseline.json](docs/sample-data/manual-smoke-baseline.json)，作为重构前人工验收基线。
 
 ## 当前状态
@@ -70,4 +73,4 @@ npm.cmd run build:core
 
 ## 下一步
 
-Phase 4 TypeScript core 最小迁移已完成：核心规则和状态规范化已有 `.ts` 源文件，模型声明位于 `src/core/models/index.d.ts`，现有浏览器入口继续加载生成后的 `.js`。下一步建议先收紧核心模块类型，再评估 Phase 5 Tauri 桌面端封装。
+Phase 4 TypeScript core 最小迁移已完成，仓库已补齐 Phase 5 前准备检查。下一步可以开始 Phase 5 Tauri 桌面端封装设计，但正式实施前应先运行 `npm.cmd run verify:phase5`，并按 `docs/PHASE5_PREPARED.md` 确认静态 Web fallback 可用。
