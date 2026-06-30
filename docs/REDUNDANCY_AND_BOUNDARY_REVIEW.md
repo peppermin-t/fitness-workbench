@@ -122,10 +122,10 @@
 
 ### 明确问题
 
-- 文件过大，当前约 2200 行。
-- 同名函数重复定义，后面的函数会覆盖前面的函数。例如 `renderNutritionList`、`renderProfiles`、`saveNutritionLog`、`renderExerciseList`、`renderEquipmentChecklist`、`renderGymList`、`renderExerciseLogSelect`、`renderExerciseLogList`、`renderExerciseHistoryFilter`、`renderExerciseHistory`、`handleClick`、`applyRevision` 都出现重复定义。
-- 重复定义看起来是功能演进叠加形成的残留，不一定导致当前运行错误，但会显著增加维护风险。
-- `app.js` 既是 UI 层又是应用服务层，还包含一部分展示数据字典。
+- 文件仍然过大，当前承担 UI 渲染、事件处理、状态协调和展示映射。
+- Phase 3 / Phase 5 之间已经清理过旧同名函数覆盖问题；当前脚本检查未发现 `app.js` 中仍存在同名函数重复定义。
+- `app.js` 仍然既是 UI 层又是应用服务层，还包含一部分展示数据字典。
+- `planner.js` 和 `src/core/rules/*.js` 当前是兼容层 / 运行输出，不应作为“无用冗余”删除。
 
 ### 建议拆分方向
 
@@ -140,27 +140,11 @@
 
 ### 当前职责
 
-`planner.js` 当前承担：
+`planner.js` 当前主要承担：
 
-- 食物库。
-- 目标解析。
-- 训练计划生成。
-- 训练整体反馈建议。
-- 动作级反馈分析。
-- 饮食文本解析。
-- 饮食营养估算。
-- 饮食建议。
-- 动作画像。
-- 饮食画像。
-- 饮食趋势。
-- 训练 / 饮食 / 指标联动信号。
-- 训练前提醒。
-- 饮食前提醒。
-- 今日联动建议。
-- 周复盘。
-- revision 创建。
-- 指标排序和趋势。
-- 多个工具函数。
+- `window.FitnessPlanner` 兼容导出。
+- 训练整体反馈建议 `createAdviceFromSession`。
+- 对已拆分 `window.FitnessCore.*` 规则模块的聚合。
 
 ### 应拆分的函数组
 
@@ -175,9 +159,9 @@
 
 ### 风险
 
-- 规则没有测试，拆分时容易改变行为。
-- `parseNutritionLog` 支持 `latestMetric` 参数，但 `app.js` 当前没有传入，说明调用链和能力之间已经出现偏差。
-- 食物库和规则同文件会导致营养模块继续膨胀。
+- `planner.js` 仍是 `app.js` 唯一稳定规则入口，不能在 UI 层迁移前删除。
+- `createAdviceFromSession` 仍留在 `planner.js`，后续可以拆入 advice / session feedback 模块。
+- 规则 `.ts` 文件仍保留过渡性的 `// @ts-nocheck`，类型债需要逐模块偿还。
 
 ## 7. `data.js` 是否混合静态主数据和业务语义
 
@@ -211,24 +195,13 @@
 
 ### 重复渲染
 
-`app.js` 中存在多组同名函数重复定义。由于 JavaScript 函数声明提升和后定义覆盖，运行时最终使用后面的定义，但前面的旧实现仍留在文件中。
+Phase 5 清理后，`app.js` 当前未发现同名函数重复定义。此前遗留的旧 `renderExerciseLogSelect` 和旧 `saveNutritionLog` 已删除，保留的是当前实际行为版本。
 
-高风险重复函数包括：
+后续仍应继续控制新增重复：
 
-- `renderNutritionList`
-- `renderProfiles`
-- `saveNutritionLog`
-- `renderExerciseList`
-- `renderEquipmentChecklist`
-- `renderGymList`
-- `renderExerciseLogSelect`
-- `renderExerciseLogList`
-- `renderExerciseHistoryFilter`
-- `renderExerciseHistory`
-- `handleClick`
-- `applyRevision`
-
-建议正式重构第一步不要改行为，只删除或合并确认无用的旧重复定义，并用 smoke test 保护。
+- 新增 UI 入口前先检查是否已有渲染函数。
+- 不在 `app.js` 中继续堆叠同名覆盖式实现。
+- 每次清理后运行 `npm.cmd run verify:desktop`。
 
 ### 重复规则
 

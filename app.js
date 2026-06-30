@@ -240,21 +240,6 @@
     el.innerHTML = renderWorkoutDay(state.plan.days[index] || state.plan.days[0], index, true);
   }
 
-  function renderExerciseLogSelect() {
-    const select = $("#exercise-log-exercise");
-    if (!select) return;
-    if (!state.plan?.days?.length) {
-      select.innerHTML = `<option value="">暂无计划动作</option>`;
-      return;
-    }
-    const dayIndex = Number($("#today-plan-day-select").value || 0);
-    const day = state.plan.days[dayIndex] || state.plan.days[0];
-    select.innerHTML = day.exercises.map((row) => {
-      const ex = getExercise(row.exerciseId);
-      return `<option value="${esc(row.exerciseId)}">${esc(ex?.name || row.exerciseId)}</option>`;
-    }).join("");
-  }
-
   function renderGoalsList() {
     $("#goals-list").innerHTML = state.goals.length ? `<div class="item-list">${state.goals.map((g) => `
       <article class="list-item"><div class="list-item-header"><div>
@@ -492,40 +477,6 @@
     saveState();
     renderAll();
     toast("动作级反馈已保存，并生成动作建议。");
-  }
-
-  function saveNutritionLog(event) {
-    event.preventDefault();
-    const rawText = $("#nutrition-text").value.trim();
-    if (!rawText) return toast("请先输入饮食描述。");
-    const analysis = P.parseNutritionLog(rawText, currentGoal());
-    const log = {
-      id: uid("nutrition"),
-      date: $("#nutrition-date").value || todayIso(),
-      createdAt: nowLabel(),
-      rawText,
-      goalId: currentGoal()?.id || null,
-      analysis
-    };
-    state.nutritionLogs = state.nutritionLogs || [];
-    state.nutritionLogs.unshift(log);
-    state.advice.unshift({
-      id: uid("advice"),
-      createdAt: nowLabel(),
-      title: `${log.date} 饮食建议`,
-      body: analysis.recommendations.join(" "),
-      tags: ["饮食", analysis.confidence, ...(analysis.tags || []).slice(0, 4)],
-      priority: analysis.priority,
-      priorityLabel: analysis.priorityLabel,
-      evidence: analysis.evidence || [],
-      recommendationItems: analysis.recommendationItems || []
-    });
-    $("#nutrition-form").reset();
-    $("#nutrition-date").value = todayIso();
-    saveState();
-    renderAll();
-    switchView("nutrition");
-    toast("饮食记录已保存，并生成饮食建议。");
   }
 
   function deleteExerciseLog(id) {

@@ -29,7 +29,7 @@ Phase 7：AI 结构化解析与多端扩展
 ## 当前阶段边界
 
 当前阶段已经引入最小 npm / TypeScript 检查链，仅用于 core 类型检查和生成 JS 兼容输出。
-当前阶段仍然不引入 Tauri。
+当前阶段已接入最小 Tauri 壳。
 当前阶段仍然不引入 SQLite。
 当前阶段仍然不破坏 `index.html` 双击运行。
 
@@ -38,7 +38,7 @@ Phase 7：AI 结构化解析与多端扩展
 - 收紧已迁移 core 模块的 TypeScript 类型。
 - 持续维护 `WorkoutSession`、`SetLog`、`schemaVersion` 迁移和 JSON 导入导出稳定性。
 - 保持规则 smoke 测试和人工 smoke checklist 可运行。
-- 在进入 Tauri / SQLite 前保留静态 Web fallback。
+- 在进入 SQLite 前保留静态 Web fallback 和 JSON 回退路径。
 
 ## Phase 0：现状冻结与行为保护
 
