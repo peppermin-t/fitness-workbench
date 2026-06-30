@@ -1,6 +1,6 @@
 # 当前功能清单
 
-本文档按当前代码实际实现梳理功能边界，主要依据 `README.md`、`docs/PRODUCT_VISION.md`、`index.html`、`data.js`、`src/core/rules/*`、`src/core/models/index.d.ts`、`planner.js`、`app.js` 和 `styles.css`。当前应用仍可直接双击运行：静态 Web 通过 `index.html` 加载 `data.js`、`src/core/rules/*.js`、`planner.js`、`app.js`，运行数据存放在浏览器 `localStorage`。Tauri 环境下会额外通过 `src/app/storage/desktop-sqlite.js` 同步到 SQLite。Phase 4 后，`src/core/rules/*.ts` 和 `src/app/storage/*.ts` 是 core / storage 源文件，同名 `.js` 是浏览器兼容输出。
+本文档按当前代码实际实现梳理功能边界，主要依据 `README.md`、`docs/PRODUCT_VISION.md`、`index.html`、`data.js`、`src/core/rules/*`、`src/core/models/index.d.ts`、`planner.js`、`app.js` 和 `styles.css`。当前应用仍可直接双击运行：静态 Web 通过 `index.html` 加载 `data.js`、`src/core/rules/*.js`、`src/core/rules/facade.js`、`planner.js`、`app.js`，运行数据存放在浏览器 `localStorage`。Tauri 环境下会额外通过 `src/app/storage/desktop-sqlite.js` 同步到 SQLite。Phase 4 后，`src/core/rules/*.ts` 和 `src/app/storage/*.ts` 是 core / storage 源文件，同名 `.js` 是浏览器兼容输出；`window.FitnessCore.Rules` 是当前 UI 使用的规则 facade，`planner.js` 仅保留 `window.FitnessPlanner` 旧入口兼容。
 
 ## 1. 今日训练
 
@@ -21,7 +21,8 @@
 - `app.js`：`renderTodayAdvice`、`renderTrainingReminders`、`renderTodayPlanSelect`、`renderTodayWorkout`、`saveExerciseLog`、`saveSessionFeedback`。
 - `src/core/rules/exercise-feedback-analyzer.js`：动作级反馈分析。
 - `src/core/rules/integrated-signals.js`：`buildLinkedTodayInsights`、`buildTrainingReminders`、`buildIntegratedSignals`。
-- `planner.js`：兼容导出 `window.FitnessPlanner.analyzeExerciseFeedback`、`window.FitnessPlanner.buildTrainingReminders`、`window.FitnessPlanner.buildLinkedTodayInsights`，并保留 `createAdviceFromSession`。
+- `src/core/rules/facade.js`：汇总 core 规则为 `window.FitnessCore.Rules`，供 `app.js` 使用。
+- `planner.js`：兼容导出 `window.FitnessPlanner.analyzeExerciseFeedback`、`window.FitnessPlanner.buildTrainingReminders`、`window.FitnessPlanner.buildLinkedTodayInsights` 等旧入口。
 
 ### 依赖的数据状态
 
@@ -228,9 +229,10 @@
 
 - `index.html`：`session-form`。
 - `app.js`：`saveSessionFeedback`、`renderCoach`、`renderWeeklyReview`。
-- `src/core/rules/weekly-review.js`：`buildWeeklyReview`、`revision`。
+- `src/core/rules/advice-engine.js`：`createAdviceFromSession`、`revision`、建议结构和优先级 helper。
+- `src/core/rules/weekly-review.js`：`buildWeeklyReview`。
 - `src/core/rules/integrated-signals.js`：`buildIntegratedSignals`。
-- `planner.js`：`createAdviceFromSession`，并兼容导出周复盘和联动 API。
+- `planner.js`：兼容导出周复盘、联动和训练反馈建议 API。
 
 ### 依赖的数据状态
 
@@ -390,7 +392,8 @@
 - `src/core/rules/nutrition-parser.js`：饮食长期画像、饮食趋势和饮食提醒。
 - `src/core/rules/integrated-signals.js`：训练、饮食、身体指标的联动建议和今日提醒。
 - `src/core/rules/weekly-review.js`：周复盘和计划调整候选。
-- `planner.js`：兼容导出 `window.FitnessPlanner.analyzeExerciseFeedback`、`window.FitnessPlanner.buildExerciseProfiles`、`window.FitnessPlanner.buildNutritionProfile`、`window.FitnessPlanner.buildIntegratedSignals`、`window.FitnessPlanner.buildWeeklyReview` 等 API，并保留 `createAdviceFromSession`。
+- `src/core/rules/facade.js`：汇总智能教练所需规则入口。
+- `planner.js`：兼容导出 `window.FitnessPlanner.analyzeExerciseFeedback`、`window.FitnessPlanner.buildExerciseProfiles`、`window.FitnessPlanner.buildNutritionProfile`、`window.FitnessPlanner.buildIntegratedSignals`、`window.FitnessPlanner.buildWeeklyReview`、`window.FitnessPlanner.createAdviceFromSession` 等旧 API。
 
 ### 依赖的数据状态
 

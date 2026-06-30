@@ -8,6 +8,7 @@ interface FitnessCoreNamespace {
   NutritionParser?: any;
   IntegratedSignals?: any;
   WeeklyReview?: any;
+  Rules?: any;
   StateNormalizer?: any;
   DesktopStorage?: any;
 }

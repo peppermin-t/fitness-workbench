@@ -21,7 +21,7 @@ Phase 7：AI 结构化解析与多端扩展
 
 - Phase 0：文档、人工 smoke checklist、规则 smoke、样例 JSON 基线和 git 基线已具备。
 - Phase 1：JS 模块边界已收敛到 `src/core/rules` 与 `src/app/storage`，浏览器全局兼容层仍保留。
-- Phase 2：核心规则拆分已收口。`planner.js` 现在主要承担兼容导出和少量尚未单独成模块的训练整体反馈建议函数；无依赖规则 smoke 已覆盖 12 个核心用例。
+- Phase 2：核心规则拆分已收口。`planner.js` 已收窄为 `window.FitnessPlanner -> window.FitnessCore.Rules` 的兼容别名；`app.js` 当前直接使用 `window.FitnessCore.Rules`。无依赖规则 smoke 已覆盖 12 个核心用例。
 - Phase 3：已完成第一版：`SetLog` 可选记录、`WorkoutSession` 状态与动作日志关联、基础训练容量统计、`schemaVersion: 2`、JSON 导入稳定性和当前状态规范化已经具备。
 - Phase 4：已完成最小迁移：新增 TypeScript 配置、模型声明、全局声明，核心规则和状态规范化已有 `.ts` 源文件，并继续生成 `.js` 兼容输出。
 - Phase 5：最小 Tauri 壳已接入，桌面前端资源由 `npm.cmd run prepare:desktop` 生成。
@@ -39,7 +39,7 @@ Phase 7：AI 结构化解析与多端扩展
 - 收紧已迁移 core 模块的 TypeScript 类型。
 - 持续维护 `WorkoutSession`、`SetLog`、`schemaVersion` 迁移和 JSON 导入导出稳定性。
 - 保持规则 smoke 测试和人工 smoke checklist 可运行。
-- 在进入 SQLite 前保留静态 Web fallback 和 JSON 回退路径。
+- 在继续移除兼容层前保留静态 Web fallback、localStorage 和 JSON 回退路径。
 
 ## Phase 0：现状冻结与行为保护
 
@@ -366,9 +366,9 @@ Phase 1 不应改页面结构和交互。即使内部开始拆模块，也要保
 
 #### 8. `advice-engine`
 
-状态：已完成本轮 helper 拆分；`createAdviceFromSession` 暂留 `planner.js`，后续可在拆训练整体反馈或建议流时再处理。
+状态：已完成 helper 拆分与第一轮清理；`createAdviceFromSession` 已并入 `src/core/rules/advice-engine.js`，`planner.js` 不再保留业务规则实现。
 
-说明：`recommendationItem`、`buildAdviceEntry`、`sortRecommendationItems`、`highestPriority`、`priorityScore`、`priorityLabel`、`uniqueStrings` 已拆到 `src/core/rules/advice-engine.js`，并通过 `planner.js` 保持现有行为。已拆出的动作反馈、饮食、联动、周复盘等规则继续通过 `window.FitnessCore.AdviceEngine` 使用这些 helper。
+说明：`recommendationItem`、`buildAdviceEntry`、`sortRecommendationItems`、`highestPriority`、`priorityScore`、`priorityLabel`、`uniqueStrings`、`revision`、`createAdviceFromSession` 已拆到 `src/core/rules/advice-engine.js`。`src/core/rules/facade.js` 汇总为 `window.FitnessCore.Rules`，`planner.js` 只保留 `window.FitnessPlanner` 兼容别名。
 
 来源函数：
 
@@ -380,6 +380,7 @@ Phase 1 不应改页面结构和交互。即使内部开始拆模块，也要保
 - `priorityScore`
 - `priorityLabel`
 - `uniqueStrings`
+- `revision`
 
 职责：
 
@@ -395,8 +396,8 @@ Phase 1 不应改页面结构和交互。即使内部开始拆模块，也要保
 
 ### Phase 2 验收标准
 
-- `planner.js` 已变薄，主要作为兼容导出层，并保留 `createAdviceFromSession` 这类训练整体反馈建议入口。
-- 拆出的函数通过 `window.FitnessCore.*` 暴露，同时继续通过 `window.FitnessPlanner.*` 保持兼容。
+- `planner.js` 已变薄为兼容别名，不再保留业务规则实现。
+- 拆出的函数通过 `window.FitnessCore.*` 暴露，并由 `window.FitnessCore.Rules` 提供统一 core facade；`window.FitnessPlanner.*` 继续保持旧入口兼容。
 - 无依赖规则 smoke 已覆盖 12 个核心用例，包括目标解析、计划生成、动作反馈、饮食解析、指标趋势、训练容量统计、周复盘、联动建议、训练前提醒和饮食前提醒。
 - `index.html` 仍按静态脚本顺序加载，不需要构建链，不改变 UI 行为。
 
@@ -547,7 +548,7 @@ Phase 4 是长期技术路线的一部分。当前执行方式是最小迁移：
    - `integrated-signals`
    - `weekly-review`
    - `advice-engine`
-4. 保留 JS 兼容入口，避免一次性改坏 `app.js`。已完成：`index.html` 仍加载 `.js`。
+4. 保留 JS 兼容入口，避免一次性改坏运行方式。已完成：`index.html` 仍加载 `.js`，`app.js` 已从 `window.FitnessPlanner` 切到 `window.FitnessCore.Rules`。
 5. 后续逐个模块移除过渡性的 `// @ts-nocheck`，补充更精确的输入输出类型。
 6. 等 core 稳定后再考虑 UI 层迁移。
 
@@ -559,13 +560,14 @@ Phase 4 是长期技术路线的一部分。当前执行方式是最小迁移：
 - `src/core/models/index.d.ts`
 - `src/core/types/globals.d.ts`
 - `src/core/rules/*.ts`
+- `src/core/rules/facade.ts`
 - `src/app/storage/state-normalizer.ts`
 - 同名 `.js` 兼容输出，继续供 `index.html` 直接加载。
 
 ### 当前限制
 
 - 已迁移的规则 `.ts` 文件仍使用 `// @ts-nocheck` 作为过渡措施，确保本阶段只迁移源形态和构建链，不混入规则改写。
-- `window.FitnessPlanner` 兼容 API 仍是当前 UI 唯一依赖入口。
+- `window.FitnessPlanner` 兼容 API 仍保留给旧入口和 smoke 兼容；当前 UI 入口已改为 `window.FitnessCore.Rules`。
 - Phase 4 完成不代表可以立即进入 SQLite；数据库迁移仍必须等 Tauri 壳、模型和迁移保护进一步稳定。
 
 ### 非目标
@@ -721,4 +723,4 @@ Phase 7 放在 TypeScript core、Tauri 和 SQLite 稳定之后。AI、手机端�
 
 ## 正式重构的建议第一步
 
-第一步不要先改 UI，也不要先上框架。Phase 2 的核心规则拆分已经收口：`goal-parser`、`plan-generator`、`metric-analyzer`、`advice-engine`、`exercise-feedback-analyzer`、`nutrition-parser`、`integrated-signals`、`weekly-review` 都已拆出，并通过 `window.FitnessPlanner` 保持兼容。Phase 3 数据底座已完成第一版，Phase 4 TypeScript core 已完成最小迁移，Phase 5 前准备检查已落地。下一步可以进入 Tauri 桌面端封装设计，但必须保留静态 Web fallback，且不在 Phase 5 同步迁移 SQLite。
+第一步不要先改 UI，也不要先上框架。Phase 2 的核心规则拆分已经收口：`goal-parser`、`plan-generator`、`metric-analyzer`、`advice-engine`、`exercise-feedback-analyzer`、`nutrition-parser`、`integrated-signals`、`weekly-review` 都已拆出，并通过 `window.FitnessCore.Rules` 汇总；`window.FitnessPlanner` 仅作为旧入口兼容别名。Phase 3 数据底座、Phase 4 TypeScript core、Phase 5 Tauri 壳和 Phase 6 SQLite 存储桥接已经落地。下一步应继续收紧 core 类型、补充 SQLite 读写 smoke，并逐步把 UI / 存储职责从 `app.js` 拆出，同时保留静态 Web fallback。

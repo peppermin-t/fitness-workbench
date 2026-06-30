@@ -1,7 +1,7 @@
 // @ts-nocheck
 (function () {
     "use strict";
-    const { uniqueStrings } = window.FitnessCore.AdviceEngine;
+    const { uniqueStrings, revision } = window.FitnessCore.AdviceEngine;
     const { sortedMetrics, metricTrend } = window.FitnessCore.MetricAnalyzer;
     const { buildExerciseProfiles } = window.FitnessCore.ExerciseFeedbackAnalyzer;
     const { buildNutritionProfile } = window.FitnessCore.NutritionParser;
@@ -143,17 +143,6 @@
             highlights: uniqueStrings(highlights),
             nextActions: uniqueStrings(nextActions),
             candidates: dedupeCandidates(candidates)
-        };
-    }
-    function revision(uid, nowLabel, summary, reason, tags, patch) {
-        return {
-            id: uid("rev"),
-            createdAt: nowLabel(),
-            status: "pending",
-            summary,
-            reason,
-            tags,
-            patch
         };
     }
     function withinDays(items, days) {

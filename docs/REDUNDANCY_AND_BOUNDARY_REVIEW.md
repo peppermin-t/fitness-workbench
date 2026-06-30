@@ -78,7 +78,7 @@
 ### 当前分散点
 
 - 计划生成会写入一条 `advice`。
-- 训练整体反馈会通过 `planner.createAdviceFromSession` 写入 `advice` 和 `revisions`。
+- 训练整体反馈会通过 `window.FitnessCore.Rules.createAdviceFromSession` 写入 `advice` 和 `revisions`；`window.FitnessPlanner.createAdviceFromSession` 仅作为旧入口兼容。
 - 动作级反馈在 `app.js` 中直接构造 `advice`。
 - 饮食记录在 `app.js` 中直接构造 `advice`。
 - 今日页通过 `planner.buildLinkedTodayInsights` 和 `buildTrainingReminders` 展示即时建议。
@@ -125,7 +125,7 @@
 - 文件仍然过大，当前承担 UI 渲染、事件处理、状态协调和展示映射。
 - Phase 3 / Phase 5 之间已经清理过旧同名函数覆盖问题；当前脚本检查未发现 `app.js` 中仍存在同名函数重复定义。
 - `app.js` 仍然既是 UI 层又是应用服务层，还包含一部分展示数据字典。
-- `planner.js` 和 `src/core/rules/*.js` 当前是兼容层 / 运行输出，不应作为“无用冗余”删除。
+- `planner.js` 当前已收窄为旧入口兼容别名；`src/core/rules/*.js` 是 `index.html` 直接运行所需的兼容输出，不应作为“无用冗余”删除。
 
 ### 建议拆分方向
 
@@ -142,9 +142,10 @@
 
 `planner.js` 当前主要承担：
 
-- `window.FitnessPlanner` 兼容导出。
-- 训练整体反馈建议 `createAdviceFromSession`。
-- 对已拆分 `window.FitnessCore.*` 规则模块的聚合。
+- `window.FitnessPlanner` 旧入口兼容别名。
+- 指向 `window.FitnessCore.Rules`，不再保留业务规则实现。
+
+规则聚合已经前移到 `src/core/rules/facade.js`。
 
 ### 应拆分的函数组
 
@@ -159,8 +160,8 @@
 
 ### 风险
 
-- `planner.js` 仍是 `app.js` 唯一稳定规则入口，不能在 UI 层迁移前删除。
-- `createAdviceFromSession` 仍留在 `planner.js`，后续可以拆入 advice / session feedback 模块。
+- `planner.js` 不再是 `app.js` 的规则入口，但仍是 smoke 测试和旧调用方的兼容 API，不能在确认所有外部入口迁移前删除。
+- `createAdviceFromSession` 已并入 `src/core/rules/advice-engine.js`。
 - 规则 `.ts` 文件仍保留过渡性的 `// @ts-nocheck`，类型债需要逐模块偿还。
 
 ## 7. `data.js` 是否混合静态主数据和业务语义
@@ -209,7 +210,7 @@ Phase 5 清理后，`app.js` 当前未发现同名函数重复定义。此前遗
 - 饮食画像、联动信号和周复盘都会基于 `nutritionLogs` 产生相似结论。
 - 训练整体反馈和周复盘都会产生 `Revision`。
 
-建议用统一 advice engine 和 revision patch schema 收口。
+已通过 `src/core/rules/advice-engine.js` 初步统一 advice helper 和 `revision` 结构。后续还需要把 `app.js` 中直接拼装建议的入口继续收口到 advice engine。
 
 ### 字段命名不一致
 

@@ -76,3 +76,5 @@ npm.cmd run verify:phase5
 ## 下一步
 
 Phase 6 SQLite 存储桥接已接入。可运行 `npm.cmd run verify:desktop` 验证前端保护层和桌面资源准备，运行 `npm.cmd run desktop:build:app` 验证 Tauri + SQLite 可编译出 exe。`npm.cmd run desktop:build` 会继续生成安装包，首次可能下载 WiX。仓库本身很轻，主要本地体量来自被忽略的 `src-tauri/target` 构建产物。
+
+进入下一轮清理前，建议同时运行 `cargo test --manifest-path src-tauri/Cargo.toml`，确认 SQLite 保存 / 读取和镜像表写入仍可用。当前 `app.js` 已使用 `window.FitnessCore.Rules`，`planner.js` 仅保留旧入口兼容。

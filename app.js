@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "fitness-coach-workbench-v1";
   const D = window.FitnessData;
-  const P = window.FitnessPlanner;
+  const P = window.FitnessCore.Rules;
   const M = window.FitnessCore.StateNormalizer;
   const DesktopStorage = window.FitnessCore.DesktopStorage;
   const $ = (s) => document.querySelector(s);

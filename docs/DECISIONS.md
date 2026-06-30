@@ -111,7 +111,7 @@ AI 或规则只能生成候选建议，不能静默修改训练计划。
 ### 同步要求
 
 - 同时补最小测试或示例用例。
-- 保持 `window.FitnessPlanner` 对现有 `app.js` 的兼容导出，直到 UI 层完成迁移。
+- 保持 `window.FitnessPlanner` 旧入口兼容导出；`app.js` 已迁移为使用 `window.FitnessCore.Rules`。
 - 不改变页面结构和交互行为。
 
 ### 原因

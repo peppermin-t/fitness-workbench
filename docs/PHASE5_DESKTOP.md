@@ -7,7 +7,7 @@
 - 新增 `src-tauri/`，作为 Tauri v2 桌面壳。
 - 新增 `scripts/prepare-tauri-frontend.js`，把当前静态 Web 运行所需文件复制到 `dist/desktop`。
 - `src-tauri/tauri.conf.json` 的 `frontendDist` 指向 `../dist/desktop`，避免直接把仓库根目录或 `node_modules` 作为桌面前端资源。
-- 桌面壳加载的仍是现有 `index.html`、`data.js`、`src/core/rules/*.js`、`planner.js`、`app.js`。
+- 桌面壳加载的仍是现有 `index.html`、`data.js`、`src/core/rules/*.js`、`src/core/rules/facade.js`、`planner.js`、`app.js`。
 - `index.html` 双击运行仍然保留，静态 Web 版本仍是 fallback。
 
 ## 命令
@@ -36,7 +36,7 @@ npm.cmd run desktop:build
 
 以下内容不是冗余，Phase 5 仍必须保留：
 
-- `planner.js`：继续作为 `window.FitnessPlanner` 兼容导出层，供 `app.js` 和 smoke 测试使用。
+- `planner.js`：继续作为 `window.FitnessPlanner` 旧入口兼容层；`app.js` 当前使用 `window.FitnessCore.Rules`，smoke 测试仍覆盖旧入口。
 - `src/core/rules/*.js`：浏览器和 Tauri 当前实际加载的 JS 输出。
 - `index.html` 双击运行路径：作为桌面壳之外的 fallback。
 - JSON 导入导出：作为当前主备份和迁移格式。

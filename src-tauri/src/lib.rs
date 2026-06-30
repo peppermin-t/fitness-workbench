@@ -9,7 +9,17 @@ const DB_FILE_NAME: &str = "fitness-workbench.sqlite3";
 #[tauri::command]
 fn load_app_state(app: AppHandle) -> Result<Option<String>, String> {
     let conn = open_database(&app)?;
-    init_schema(&conn)?;
+    load_state_from_connection(&conn)
+}
+
+#[tauri::command]
+fn save_app_state(app: AppHandle, state_json: String) -> Result<(), String> {
+    let mut conn = open_database(&app)?;
+    save_state_to_connection(&mut conn, &state_json)
+}
+
+fn load_state_from_connection(conn: &Connection) -> Result<Option<String>, String> {
+    init_schema(conn)?;
     conn.query_row(
         "SELECT value FROM app_meta WHERE key = 'app_state'",
         [],
@@ -19,11 +29,9 @@ fn load_app_state(app: AppHandle) -> Result<Option<String>, String> {
     .map_err(|error| error.to_string())
 }
 
-#[tauri::command]
-fn save_app_state(app: AppHandle, state_json: String) -> Result<(), String> {
-    let state: Value = serde_json::from_str(&state_json).map_err(|error| error.to_string())?;
-    let mut conn = open_database(&app)?;
-    init_schema(&conn)?;
+fn save_state_to_connection(conn: &mut Connection, state_json: &str) -> Result<(), String> {
+    let state: Value = serde_json::from_str(state_json).map_err(|error| error.to_string())?;
+    init_schema(conn)?;
     let tx = conn.transaction().map_err(|error| error.to_string())?;
 
     tx.execute(
@@ -248,4 +256,78 @@ fn json_id(value: &Value, prefix: &str, index: usize) -> String {
         .and_then(Value::as_str)
         .map(ToOwned::to_owned)
         .unwrap_or_else(|| format!("{prefix}_{index}"))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn save_state_round_trips_and_mirrors_rows() {
+        let state = json!({
+            "goals": [{ "id": "goal-1", "text": "减脂保持力量" }],
+            "gyms": [
+                { "id": "gym-full", "name": "完整健身房" },
+                { "id": "gym-hotel", "name": "酒店健身房" }
+            ],
+            "exercises": [{ "id": "ex-row", "name": "坐姿划船" }],
+            "plan": {
+                "id": "plan-1",
+                "days": [
+                    {
+                        "id": "day-1",
+                        "focus": "拉",
+                        "exercises": [
+                            { "id": "planned-1", "exerciseId": "ex-row", "sets": 3 }
+                        ]
+                    }
+                ]
+            },
+            "sessions": [{ "id": "session-1", "completion": 90, "rpe": 8 }],
+            "exerciseLogs": [
+                {
+                    "id": "elog-1",
+                    "exerciseId": "ex-row",
+                    "sets": [
+                        { "id": "set-1", "weight": 40, "reps": 10 },
+                        { "id": "set-2", "weight": 42.5, "reps": 8 }
+                    ]
+                }
+            ],
+            "metrics": [{ "id": "metric-1", "weight": 78 }],
+            "nutritionLogs": [{ "id": "nutrition-1", "text": "牛肉火锅" }],
+            "advice": [{ "id": "advice-1", "title": "先稳住正餐" }],
+            "revisions": [{ "id": "rev-1", "status": "pending" }]
+        });
+        let state_json = state.to_string();
+        let mut conn = Connection::open_in_memory().expect("open in-memory sqlite");
+
+        save_state_to_connection(&mut conn, &state_json).expect("save state");
+
+        let loaded_json = load_state_from_connection(&conn)
+            .expect("load state")
+            .expect("stored app_state");
+        let loaded: Value = serde_json::from_str(&loaded_json).expect("parse loaded state");
+        assert_eq!(loaded, state);
+
+        assert_eq!(row_count(&conn, "goals"), 1);
+        assert_eq!(row_count(&conn, "gyms"), 2);
+        assert_eq!(row_count(&conn, "exercises"), 1);
+        assert_eq!(row_count(&conn, "training_plans"), 1);
+        assert_eq!(row_count(&conn, "workout_days"), 1);
+        assert_eq!(row_count(&conn, "planned_exercises"), 1);
+        assert_eq!(row_count(&conn, "workout_sessions"), 1);
+        assert_eq!(row_count(&conn, "exercise_logs"), 1);
+        assert_eq!(row_count(&conn, "set_logs"), 2);
+        assert_eq!(row_count(&conn, "body_metrics"), 1);
+        assert_eq!(row_count(&conn, "nutrition_logs"), 1);
+        assert_eq!(row_count(&conn, "advice"), 1);
+        assert_eq!(row_count(&conn, "revisions"), 1);
+    }
+
+    fn row_count(conn: &Connection, table: &str) -> i64 {
+        conn.query_row(&format!("SELECT COUNT(*) FROM {table}"), [], |row| row.get(0))
+            .expect("count table")
+    }
 }

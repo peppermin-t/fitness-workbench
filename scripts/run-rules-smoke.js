@@ -53,6 +53,7 @@ const runtimeScripts = [
   "src/core/rules/nutrition-parser.js",
   "src/core/rules/integrated-signals.js",
   "src/core/rules/weekly-review.js",
+  "src/core/rules/facade.js",
   "planner.js",
   "src/app/storage/state-normalizer.js",
   "src/app/storage/desktop-sqlite.js"
