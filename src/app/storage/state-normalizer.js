@@ -1,4 +1,3 @@
-// @ts-nocheck
 (function () {
     "use strict";
     const CURRENT_SCHEMA_VERSION = 2;

@@ -1,4 +1,3 @@
-// @ts-nocheck
 (function () {
     "use strict";
     const { recommendationItem, sortRecommendationItems, uniqueStrings } = window.FitnessCore.AdviceEngine;

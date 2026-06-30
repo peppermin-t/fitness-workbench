@@ -1,4 +1,3 @@
-// @ts-nocheck
 (function () {
     "use strict";
     const parseGoal = window.FitnessCore.GoalParser.parseGoal;
@@ -123,7 +122,7 @@
         const sub = availableSubstitutes(fallback, gym, exercises)[0];
         if (sub)
             return { ...sub, available: true };
-        return { ...fallback, available: false };
+        return { ...(fallback || {}), available: false };
     }
     function buildPlanContext(gym, goal, parsed, metrics) {
         const latest = sortedMetrics(metrics).at(-1);
@@ -159,6 +158,12 @@
     }
     function fmtNum(value, unit) {
         return Number.isFinite(value) ? `${round1(value)}${unit}` : "-";
+    }
+    function fmt(value, unit) {
+        return Number.isFinite(Number(value)) ? `${Number(value)}${unit}` : "-";
+    }
+    function round1(value) {
+        return Math.round(Number(value) * 10) / 10;
     }
     function clamp(value, min, max) {
         if (!Number.isFinite(value))

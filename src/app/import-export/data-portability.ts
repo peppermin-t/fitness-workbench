@@ -1,4 +1,3 @@
-// @ts-nocheck
 (function () {
   "use strict";
 
@@ -61,7 +60,7 @@
 
   function csvCell(value) {
     const text = String(value ?? "");
-    return /[",\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
+    return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
   }
 
   window.FitnessApp = window.FitnessApp || {};

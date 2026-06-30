@@ -1,4 +1,3 @@
-// @ts-nocheck
 (function () {
     "use strict";
     function create({ equipment = [] } = {}) {
@@ -53,7 +52,7 @@
         function adviceSortScore(priority) {
             return { high: 300, medium: 200, low: 100, info: 50 }[priority] || 0;
         }
-        function advicePriorityLabel(priority, fallback) {
+        function advicePriorityLabel(priority, fallback = "") {
             return fallback || { high: "高优先级", medium: "中优先级", low: "低优先级", info: "观察" }[priority] || "观察";
         }
         function renderEvidenceList(items) {
@@ -280,11 +279,11 @@
     }
     function esc(value) {
         return String(value ?? "")
-            .replaceAll("&", "&amp;")
-            .replaceAll("<", "&lt;")
-            .replaceAll(">", "&gt;")
-            .replaceAll('"', "&quot;")
-            .replaceAll("'", "&#039;");
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
     }
     window.FitnessApp = window.FitnessApp || {};
     window.FitnessApp.DisplayFormatters = {

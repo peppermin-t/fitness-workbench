@@ -124,7 +124,7 @@
 - 文件仍然过大，当前承担复杂 UI 渲染、事件处理、状态协调和展示格式化调用。
 - Phase 3 / Phase 5 之间已经清理过旧同名函数覆盖问题；当前脚本检查未发现 `app.js` 中仍存在同名函数重复定义。
 - `app.js` 仍然既是 UI 层又是应用服务层；状态存储 helper、导入导出 helper、浏览器文件 I/O helper、通用图表 helper、展示格式化 helper、视图模板 helper 和主要业务状态动作已拆出。当前剩余问题主要是 DOM 事件、表单读取、保存后刷新和 toast 协调仍集中在一个文件内。
-- `planner.js` 当前已收窄为旧入口兼容别名；`src/core/rules/*.js` 是 `index.html` 直接运行所需的兼容输出，不应作为“无用冗余”删除。
+- `planner.js` 当前已收窄为旧入口兼容别名；`src/core/rules/*.js` 是 Tauri 前端当前实际加载的输出，不应作为“无用冗余”删除。
 
 ### 建议拆分方向
 
@@ -162,7 +162,7 @@
 
 - `planner.js` 不再是 `app.js` 的规则入口，但仍是 smoke 测试和旧调用方的兼容 API，不能在确认所有外部入口迁移前删除。
 - `createAdviceFromSession` 已并入 `src/core/rules/advice-engine.js`。
-- 规则 `.ts` 文件仍保留过渡性的 `// @ts-nocheck`，类型债需要逐模块偿还。
+- `// @ts-nocheck` 过渡措施已移除；类型债从“遮蔽检查”转为继续补充更精确的模型和规则类型。
 
 ## 7. `data.js` 是否混合静态主数据和业务语义
 

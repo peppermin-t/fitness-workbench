@@ -209,7 +209,7 @@
 - `metricTrend`
 - `calculateVolumeLoad` / `calculateHardSets` / `detectSimplePr`
 
-测试不应改变应用运行方式，`index.html` 仍要能双击运行。
+测试不应改变应用运行方式；当前运行入口为 Tauri 桌面端。
 
 ### 7. TypeScript core 的准备工作
 
@@ -262,7 +262,7 @@
 
 ### 10. 不立即接入 Python FastAPI
 
-当前应用是零依赖静态页面。v0.2 不引入后端服务，避免破坏双击打开。
+当前应用仍不引入后端服务；桌面端通过 Tauri 加载本地前端资源。
 
 ### 11. 不立即做 Tauri / SQLite
 
@@ -274,7 +274,7 @@
 
 ## v0.2 验收口径
 
-- 双击 `index.html` 仍可运行。
+- `npm.cmd run desktop:dev` 可运行桌面端。
 - 当前所有页面可打开，已有核心记录功能不回退。
 - JSON 导出 / 导入仍可用。
 - CSV 计划导入 / 导出仍可用。

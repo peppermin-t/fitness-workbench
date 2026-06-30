@@ -1,4 +1,3 @@
-// @ts-nocheck
 (function () {
     "use strict";
     function buildPlanCsv(plan, getExerciseName) {
@@ -54,7 +53,7 @@
     }
     function csvCell(value) {
         const text = String(value ?? "");
-        return /[",\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
+        return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
     }
     window.FitnessApp = window.FitnessApp || {};
     window.FitnessApp.DataPortability = {

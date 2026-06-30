@@ -1,4 +1,3 @@
-// @ts-nocheck
 (function () {
     "use strict";
     const { recommendationItem, buildAdviceEntry, sortRecommendationItems, highestPriority, priorityLabel, uniqueStrings } = window.FitnessCore.AdviceEngine;
@@ -269,7 +268,7 @@
             return "medium";
         return "medium_low";
     }
-    function buildNutritionRecommendationItems({ tags, goal, totals, target, confidence, dayStatus }) {
+    function buildNutritionRecommendationItems({ tags, goal, totals, target, confidence, dayStatus, mealDistribution }) {
         const items = [];
         const primary = goal?.primaryGoal || "general_fitness";
         if (tags.includes("missed_meal") || tags.includes("processed_snack")) {
@@ -345,7 +344,7 @@
             if (log.analysis?.estimates?.total)
                 totals.push({ date: log.date, ...log.analysis.estimates.total });
         });
-        const topTags = Object.entries(tagCounts).sort((a, b) => b[1] - a[1]).slice(0, 6);
+        const topTags = Object.entries(tagCounts).sort((a, b) => Number(b[1]) - Number(a[1])).slice(0, 6);
         const averages = averageNutritionTotals(totals);
         const trend = nutritionTrendSummary(totals);
         const advice = inferNutritionProfileAdvice(topTags, goal?.parsed, {

@@ -1,4 +1,3 @@
-// @ts-nocheck
 (function () {
   "use strict";
 
@@ -122,7 +121,7 @@ function parseNutritionLog(rawText, goal, latestMetric) {
 
 function splitMeals(text) {
     if (!text) return [];
-    const markers = [
+    const markers: any[] = [
       ["breakfast", /早上|早餐|早饭/],
       ["lunch", /中午|午餐|午饭/],
       ["dinner", /晚上|晚餐|晚饭/],
@@ -241,7 +240,7 @@ function summarizeMealDistribution(meals) {
 
 
 
-function evaluateNutritionDay({ totals, goal, target, mealDistribution }) {
+function evaluateNutritionDay({ totals, goal, target, mealDistribution }: any) {
     const tags = [];
     const primary = goal?.primaryGoal || "general_fitness";
     if (totals.protein < target.protein * 0.7) tags.push("daily_protein_gap");
@@ -275,7 +274,7 @@ function nutritionConfidence(text, meals) {
 
 
 
-function buildNutritionRecommendationItems({ tags, goal, totals, target, confidence, dayStatus }) {
+function buildNutritionRecommendationItems({ tags, goal, totals, target, confidence, dayStatus, mealDistribution }: any) {
     const items = [];
     const primary = goal?.primaryGoal || "general_fitness";
     if (tags.includes("missed_meal") || tags.includes("processed_snack")) {
@@ -313,7 +312,7 @@ function buildNutritionRecommendationItems({ tags, goal, totals, target, confide
 
 
 
-function buildNutritionEvidence({ tags, totals, target, confidence, mealResults }) {
+function buildNutritionEvidence({ tags, totals, target, confidence, mealResults }: any) {
     return uniqueStrings([
       `热量 ${Math.round(totals.calories)}kcal / 目标 ${target.caloriesLower}-${target.caloriesUpper}kcal`,
       `蛋白 ${Math.round(totals.protein)}g / 目标 ${target.protein}g`,
@@ -356,7 +355,7 @@ function buildNutritionProfile(logs, goal) {
       if (log.analysis?.confidence !== "high") uncertainDays += 1;
       if (log.analysis?.estimates?.total) totals.push({ date: log.date, ...log.analysis.estimates.total });
     });
-    const topTags = Object.entries(tagCounts).sort((a, b) => b[1] - a[1]).slice(0, 6);
+    const topTags = Object.entries(tagCounts).sort((a, b) => Number(b[1]) - Number(a[1])).slice(0, 6);
     const averages = averageNutritionTotals(totals);
     const trend = nutritionTrendSummary(totals);
     const advice = inferNutritionProfileAdvice(topTags, goal?.parsed, {

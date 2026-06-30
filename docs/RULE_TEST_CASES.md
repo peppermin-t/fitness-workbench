@@ -1,6 +1,6 @@
 # 核心规则测试用例
 
-本文档用于拆分 `planner.js` 前后固定核心规则的输入输出样例。本轮只定义用例，不引入测试框架、不新增构建链、不改变 `index.html` 运行方式。
+本文档用于拆分 `planner.js` 前后固定核心规则的输入输出样例。本轮只定义用例，不引入测试框架，不改变桌面端运行方式。
 
 当前已有无依赖浏览器 smoke 测试：[../tests/rules-smoke.html](../tests/rules-smoke.html)。函数入口继续通过 `window.FitnessPlanner` 验证；`parseGoal` 的实际实现已拆到 `src/core/rules/goal-parser.js`，`generatePlan` / 动作可用性逻辑已拆到 `src/core/rules/plan-generator.js`，`sortedMetrics` / `metricTrend` 已拆到 `src/core/rules/metric-analyzer.js`，建议 helper 已拆到 `src/core/rules/advice-engine.js`，动作反馈分析和动作画像已拆到 `src/core/rules/exercise-feedback-analyzer.js`，饮食解析和饮食画像已拆到 `src/core/rules/nutrition-parser.js`，联动建议已拆到 `src/core/rules/integrated-signals.js`，周复盘已拆到 `src/core/rules/weekly-review.js`，但兼容 API 仍通过 `window.FitnessPlanner` 暴露。
 

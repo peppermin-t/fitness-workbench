@@ -1,4 +1,3 @@
-// @ts-nocheck
 (function () {
     "use strict";
     const { recommendationItem, sortRecommendationItems, highestPriority, priorityLabel, uniqueStrings } = window.FitnessCore.AdviceEngine;
@@ -120,7 +119,7 @@
             });
         });
         return Array.from(groups.values()).map((profile) => {
-            const topTags = Object.entries(profile.tagCounts).sort((a, b) => b[1] - a[1]).slice(0, 3);
+            const topTags = Object.entries(profile.tagCounts).sort((a, b) => Number(b[1]) - Number(a[1])).slice(0, 3);
             const priority = computeExercisePriority(topTags, profile);
             const advice = inferExerciseProfileAdvice(topTags, profile);
             return {

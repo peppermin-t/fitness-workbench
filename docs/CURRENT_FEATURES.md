@@ -1,6 +1,6 @@
 # 当前功能清单
 
-本文档按当前代码实际实现梳理功能边界，主要依据 `README.md`、`docs/PRODUCT_VISION.md`、`index.html`、`data.js`、`src/core/rules/*`、`src/app/storage/*`、`src/app/import-export/*`、`src/app/io/*`、`src/app/charts/*`、`src/app/presenters/*`、`src/app/render/*`、`src/app/state/*`、`src/core/models/index.d.ts`、`planner.js`、`app.js` 和 `styles.css`。当前应用仍可直接双击运行：静态 Web 通过 `index.html` 加载 `data.js`、`src/core/rules/*.js`、`src/core/rules/facade.js`、`planner.js`、`src/app/storage/*.js`、`src/app/import-export/*.js`、`src/app/io/*.js`、`src/app/charts/*.js`、`src/app/presenters/*.js`、`src/app/render/*.js`、`src/app/state/*.js`、`app.js`，运行数据存放在浏览器 `localStorage`。Tauri 环境下会额外通过 `src/app/storage/desktop-sqlite.js` 同步到 SQLite。Phase 4 后，`src/core/rules/*.ts`、`src/app/storage/*.ts`、`src/app/import-export/*.ts`、`src/app/io/*.ts`、`src/app/charts/*.ts`、`src/app/presenters/*.ts`、`src/app/render/*.ts` 和 `src/app/state/*.ts` 是 core / app helper 源文件，同名 `.js` 是浏览器兼容输出；`window.FitnessCore.Rules` 是当前 UI 使用的规则 facade，`planner.js` 仅保留 `window.FitnessPlanner` 旧入口兼容。
+本文档按当前代码实际实现梳理功能边界，主要依据 `README.md`、`docs/PRODUCT_VISION.md`、`src/app/index.html`、`data.js`、`src/core/rules/*`、`src/app/storage/*`、`src/app/import-export/*`、`src/app/io/*`、`src/app/charts/*`、`src/app/presenters/*`、`src/app/render/*`、`src/app/state/*`、`src/core/models/index.d.ts`、`planner.js`、`app.js` 和 `styles.css`。当前应用以 Tauri 桌面端为运行入口：`scripts/prepare-tauri-frontend.js` 会把 `src/app/index.html` 复制为 `dist/desktop/index.html`，并连同 `data.js`、`src/core/rules/*.js`、`src/core/rules/facade.js`、`planner.js`、`src/app/storage/*.js`、`src/app/import-export/*.js`、`src/app/io/*.js`、`src/app/charts/*.js`、`src/app/presenters/*.js`、`src/app/render/*.js`、`src/app/state/*.js`、`app.js` 一起交给 Tauri 加载。Tauri 环境下会通过 `src/app/storage/desktop-sqlite.js` 同步到 SQLite，并保留 JSON 备份 / 恢复。Phase 4 后，`src/core/rules/*.ts`、`src/app/storage/*.ts`、`src/app/import-export/*.ts`、`src/app/io/*.ts`、`src/app/charts/*.ts`、`src/app/presenters/*.ts`、`src/app/render/*.ts` 和 `src/app/state/*.ts` 是 core / app helper 源文件，同名 `.js` 是桌面前端加载输出；`window.FitnessCore.Rules` 是当前 UI 使用的规则 facade，`planner.js` 仅保留 `window.FitnessPlanner` 旧入口兼容。
 
 ## 1. 今日训练
 
@@ -17,7 +17,7 @@
 
 ### 主要代码位置
 
-- `index.html`：`view-today` 区域，包括当前场地、今日建议、今日训练、动作级反馈、训练反馈表单。
+- `src/app/index.html`：`view-today` 区域，包括当前场地、今日建议、今日训练、动作级反馈、训练反馈表单。
 - `app.js`：`renderTodayAdvice`、`renderTrainingReminders`、`renderTodayPlanSelect`、`renderTodayWorkout`、`saveExerciseLog`、`saveSessionFeedback` 的表单读取和页面反馈。
 - `src/app/state/workbench-actions.js`：训练整体反馈和动作级反馈的状态写入、session 关联、advice / revision 写入。
 - `src/core/rules/exercise-feedback-analyzer.js`：动作级反馈分析。
@@ -69,7 +69,7 @@
 
 ### 主要代码位置
 
-- `index.html`：`view-goals`、目标输入、解析按钮、保存按钮、目标列表容器。
+- `src/app/index.html`：`view-goals`、目标输入、解析按钮、保存按钮、目标列表容器。
 - `app.js`：`saveGoal` 的表单读取和页面反馈、`renderParsedGoal`、`renderGoalsList`、`currentGoal`。
 - `src/app/state/workbench-actions.js`：目标保存、当前目标切换和目标删除。
 - `src/core/rules/goal-parser.js`：目标解析逻辑。
@@ -108,7 +108,7 @@
 ### 主要代码位置
 
 - `data.js`：`equipment`、`defaultGyms`。
-- `index.html`：`view-gyms`、健身房表单、器械 checklist、器械图例。
+- `src/app/index.html`：`view-gyms`、健身房表单、器械 checklist、器械图例。
 - `app.js`：`renderGymSelect`、`renderCurrentGymSummary`、`renderEquipmentChecklist`、`renderEquipmentLibrary`、`renderGymList`、`saveGym` / `deleteGym` 的表单读取和页面反馈、`currentGym`。
 - `src/app/state/workbench-actions.js`：场地保存、当前场地切换和场地删除保护。
 - `src/core/rules/plan-generator.js`：`isAvailable`、`availableSubstitutes`、`pickAvailableExercise`。
@@ -146,7 +146,7 @@
 ### 主要代码位置
 
 - `data.js`：`exercises` 静态主数据。
-- `index.html`：`view-exercises`。
+- `src/app/index.html`：`view-exercises`。
 - `app.js`：`renderExerciseList`、`renderPlanRow`、`findOrCreateExercise` 的兼容包装。
 - `src/app/state/workbench-actions.js`：CSV 导入时创建极简自定义动作。
 - `src/app/presenters/display-formatters.js`：中英双语动作名、器械展示文案、器械分类文案、标签、证据列表和推荐项展示格式化。
@@ -189,7 +189,7 @@
 
 ### 主要代码位置
 
-- `index.html`：`view-plan`、生成计划、导出 CSV、导入 CSV。
+- `src/app/index.html`：`view-plan`、生成计划、导出 CSV、导入 CSV。
 - `app.js`：`generatePlan`、`renderPlan`、`renderWorkoutDay`、`renderPlanRow`、`replaceExercise`、`exportPlanCsv`、`importPlanCsv` 的 UI 事件和页面反馈。
 - `src/app/state/workbench-actions.js`：计划生成、CSV 导入后写入当前计划、手动替换动作和 revision 记录。
 - `src/app/import-export/data-portability.js`：训练计划 CSV 构造和解析 helper。
@@ -235,7 +235,7 @@
 
 ### 主要代码位置
 
-- `index.html`：`session-form`。
+- `src/app/index.html`：`session-form`。
 - `app.js`：`saveSessionFeedback` 的表单读取和页面反馈、`renderCoach`、`renderWeeklyReview`。
 - `src/app/state/workbench-actions.js`：训练整体反馈保存、`WorkoutSession` 更新、`feedback` 兼容写入、建议和 revision 写入。
 - `src/core/rules/advice-engine.js`：`createAdviceFromSession`、`revision`、建议结构和优先级 helper。
@@ -277,7 +277,7 @@
 
 ### 主要代码位置
 
-- `index.html`：`exercise-log-form`、动作历史筛选区域。
+- `src/app/index.html`：`exercise-log-form`、动作历史筛选区域。
 - `app.js`：`saveExerciseLog` 的表单读取和页面反馈、`renderExerciseLogSelect`、`renderExerciseLogList`、`renderExerciseHistoryFilter`、`renderExerciseHistory`、`buildExerciseHistorySummary`。
 - `src/app/state/workbench-actions.js`：动作日志写入、`SetLog` 解析、训练容量 / 有效组 / 简单 PR 统计、动作建议写入。
 - `src/core/rules/exercise-feedback-analyzer.js`：动作反馈分析、动作长期画像、动作反馈建议。
@@ -319,7 +319,7 @@
 
 ### 主要代码位置
 
-- `index.html`：`view-metrics`、`metric-form`、`metric-chart`、`metric-list`。
+- `src/app/index.html`：`view-metrics`、`metric-form`、`metric-chart`、`metric-list`。
 - `app.js`：`saveMetric` / `deleteMetric` 的表单读取和页面反馈、`renderMetrics`、`drawMetricChart`、`latestMetric`。
 - `src/app/state/workbench-actions.js`：身体指标保存、排序和删除。
 - `src/app/charts/line-chart.js`：通用 canvas 折线图绘制 helper。
@@ -360,7 +360,7 @@
 
 ### 主要代码位置
 
-- `index.html`：`view-nutrition`、`nutrition-form`、`nutrition-chart`。
+- `src/app/index.html`：`view-nutrition`、`nutrition-form`、`nutrition-chart`。
 - `app.js`：`saveNutritionLog` 的表单读取和页面反馈、`renderNutritionList`、`drawNutritionChart`、`renderNutritionReminders`。
 - `src/app/state/workbench-actions.js`：饮食记录写入和饮食 advice 写入。
 - `src/app/charts/line-chart.js`：饮食趋势图使用的通用 canvas 折线图绘制 helper。
@@ -399,7 +399,7 @@
 
 ### 主要代码位置
 
-- `index.html`：`view-coach`。
+- `src/app/index.html`：`view-coach`。
 - `app.js`：`renderCoach`、`renderWeeklyReview`、`applyReviewCandidate` / `applyRevision` 的页面反馈、`renderProfiles`、`renderExerciseHistory`。
 - `src/app/state/workbench-actions.js`：周复盘候选转 revision、revision 应用到当前计划。
 - `src/core/rules/advice-engine.js`：建议结构、推荐项、优先级和去重 helper。
@@ -444,7 +444,7 @@
 
 ### 主要代码位置
 
-- `index.html`：智能教练页中的周复盘区域。
+- `src/app/index.html`：智能教练页中的周复盘区域。
 - `app.js`：`renderWeeklyReview`、`applyReviewCandidate` 的页面反馈、`findMatchingRevision` 兼容包装。
 - `src/app/state/workbench-actions.js`：`findMatchingRevision`、周复盘候选转 pending revision、revision 应用。
 - `src/core/rules/weekly-review.js`：`buildWeeklyReview`、`revision`、`dedupeCandidates`、`findConditioningDayIndex`。
@@ -520,7 +520,7 @@
 
 ### 主要代码位置
 
-- `index.html`：`view-data` 和计划页 CSV 导入导出。
+- `src/app/index.html`：`view-data` 和计划页 CSV 导入导出。
 - `app.js`：`exportJson`、`importJson`、`resetData`、`exportPlanCsv`、`importPlanCsv`、`renderDataSummary` 的 UI 事件和状态写入。
 - `src/app/import-export/data-portability.js`：JSON 备份序列化 / 解析、CSV 构造 / 解析 helper。
 - `src/app/io/browser-file-io.js`：浏览器文件读取、文本下载和恢复初始数据确认 helper。
@@ -557,7 +557,7 @@
 
 ### 主要代码位置
 
-- `index.html`
+- `src/app/index.html`
 - `styles.css`
 - `app.js`
 - `src/app/storage/app-state-store.js`

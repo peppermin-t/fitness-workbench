@@ -7,7 +7,6 @@ const root = path.resolve(__dirname, "..");
 const outDir = path.join(root, "dist", "desktop");
 
 const files = [
-  "index.html",
   "styles.css",
   "data.js",
   "planner.js",
@@ -29,6 +28,8 @@ const directories = [
 removeDir(outDir);
 fs.mkdirSync(outDir, { recursive: true });
 
+copyFileAs(path.join("src", "app", "index.html"), "index.html");
+
 for (const file of files) {
   copyFile(file);
 }
@@ -40,8 +41,12 @@ for (const directory of directories) {
 console.log(`tauri-frontend: prepared ${path.relative(root, outDir)}`);
 
 function copyFile(relativePath) {
-  const source = path.join(root, relativePath);
-  const target = path.join(outDir, relativePath);
+  copyFileAs(relativePath, relativePath);
+}
+
+function copyFileAs(sourceRelativePath, targetRelativePath) {
+  const source = path.join(root, sourceRelativePath);
+  const target = path.join(outDir, targetRelativePath);
   fs.mkdirSync(path.dirname(target), { recursive: true });
   fs.copyFileSync(source, target);
 }

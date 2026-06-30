@@ -1,4 +1,3 @@
-// @ts-nocheck
 (function () {
   "use strict";
 
@@ -26,7 +25,7 @@
     const builtInExercises = context.fitnessData.exercises || [];
     const byId = new Map(builtInExercises.map((item) => [item.id, item]));
     (Array.isArray(data?.exercises) ? data.exercises : []).forEach((item) => {
-      byId.set(item.id, { ...byId.get(item.id), ...item });
+      byId.set(item.id, { ...((byId.get(item.id) as any) || {}), ...item });
     });
     const next = { ...base, ...(data || {}), exercises: Array.from(byId.values()) };
     return normalizeState(next, context);
@@ -53,6 +52,7 @@
   }
 
   async function hydrateDesktopState(currentState, context, callbacks = {}) {
+    const callbackHandlers = callbacks as any;
     const storage = context.desktopStorage;
     if (!storage?.isAvailable()) return;
     try {
@@ -60,22 +60,23 @@
       if (desktopState) {
         const next = prepareState(desktopState, context);
         localStorage.setItem(context.storageKey, JSON.stringify(next));
-        callbacks.onHydrated?.(next);
+        callbackHandlers.onHydrated?.(next);
       } else {
         persistDesktopState(currentState, context, {
-          onError: callbacks.onPersistError || callbacks.onError
+          onError: callbackHandlers.onPersistError || callbackHandlers.onError
         });
       }
     } catch (error) {
-      callbacks.onError?.(error);
+      callbackHandlers.onError?.(error);
     }
   }
 
   function persistDesktopState(state, context, callbacks = {}) {
+    const callbackHandlers = callbacks as any;
     const storage = context.desktopStorage;
     if (!storage?.isAvailable()) return;
     storage.saveAppState(state).catch((error) => {
-      callbacks.onError?.(error);
+      callbackHandlers.onError?.(error);
     });
   }
 

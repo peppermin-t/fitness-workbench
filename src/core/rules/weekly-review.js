@@ -1,4 +1,3 @@
-// @ts-nocheck
 (function () {
     "use strict";
     const { uniqueStrings, revision } = window.FitnessCore.AdviceEngine;

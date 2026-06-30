@@ -2,14 +2,15 @@
 
 本文档记录重构前已经明确的架构和产品决策。后续如果改变这些决策，需要新增决策记录说明原因和影响。
 
-## 决策 1：当前阶段保持静态 Web
+## 决策 1：当前阶段以 Tauri 桌面端作为运行入口
 
 ### 决策
 
-当前阶段继续保持零运行时依赖的静态 Web 应用，通过 `index.html` 直接双击运行。Phase 4 已加入最小 TypeScript core 检查链，但不改变浏览器运行方式。
+当前阶段已经从“根目录 `index.html` 双击运行”推进为“Tauri 桌面端运行”。由于软件尚未对外发布，不再需要保留旧的根目录静态入口。`src/app/index.html` 仅作为桌面前端源文件，由 `scripts/prepare-tauri-frontend.js` 复制到 `dist/desktop/index.html` 后交给 Tauri 加载。
 
 ### 明确不做
 
+- 不再把根目录 `index.html` 作为用户入口。
 - Phase 5 之前不引入 Tauri；当前已进入 Phase 5，最小 Tauri 壳已接入。
 - Phase 6 起已接入 Tauri 环境下的 SQLite 存储桥接。
 - 当前不引入 FastAPI。
@@ -18,13 +19,13 @@
 
 ### 原因
 
-当前最重要的是稳定功能边界、数据模型、规则边界和验收清单。过早引入桌面壳、数据库、后端服务或前端框架，会把问题从“业务边界不清”转移成“技术迁移复杂”，增加功能回退风险。TypeScript core 迁移只用于收紧模型和规则，不应迫使用户改变打开应用的方式。
+当前最重要的是稳定功能边界、数据模型、规则边界和验收清单。Tauri 和 SQLite 已完成最小接入，后续应继续收紧类型和数据迁移，而不是继续维护未发布过的旧静态入口。
 
 ### 影响
 
-- `index.html` 双击运行必须保留。
-- 数据继续保存在浏览器 localStorage。
-- 重构优先拆纯函数和文档化模型。
+- 用户入口统一为 Tauri 桌面端。
+- `src/app/index.html` 是前端源文件，不是直接打开的交付入口。
+- 重构优先收紧 TypeScript 类型、数据迁移和桌面端验证。
 
 ## 决策 2：v0.2 以本地优先训练工作台为目标
 
@@ -174,7 +175,7 @@ AI 或规则只能生成候选建议，不能静默修改训练计划。
 
 ### 决策
 
-长期技术路线不是永远停留在纯 HTML / JS。当前阶段保持静态 Web 运行入口，是为了降低重构风险；长期目标是逐步形成 TypeScript core、Tauri 桌面端和 SQLite 本地数据库。
+长期技术路线不是永远停留在纯 HTML / JS。当前已经进入 TypeScript core、Tauri 桌面端和 SQLite 本地数据库路线。
 
 ### 路线
 
@@ -195,10 +196,10 @@ AI 或规则只能生成候选建议，不能静默修改训练计划。
 
 ### 当前阶段边界
 
-- 当前仍保持 `index.html` 双击运行。
+- 当前不再保留根目录 `index.html` 双击入口。
 - 当前已引入最小 npm / TypeScript 检查链，但只用于 core 构建和类型检查。
-- 当前已接入最小 Tauri 壳，但仍保持 `index.html` 双击运行。
-- 当前已接入 Tauri 环境下的 SQLite 存储桥接，但仍保持 localStorage fallback 和 JSON 备份。
+- 当前已接入最小 Tauri 壳。
+- 当前已接入 Tauri 环境下的 SQLite 存储桥接，并继续保留 JSON 备份。
 
 ### 原因
 
@@ -209,8 +210,8 @@ AI 或规则只能生成候选建议，不能静默修改训练计划。
 - `src/core/models/index.d.ts` 提供核心模型声明。
 - `src/core/types/globals.d.ts` 固定浏览器全局对象声明。
 - `src/core/rules/*.ts` 和 `src/app/storage/state-normalizer.ts` 作为 TypeScript core 源文件。
-- 同名 `.js` 文件仍作为浏览器运行入口，`index.html` 不直接加载 `.ts`。
-- 规则 `.ts` 文件中的 `// @ts-nocheck` 是过渡措施，后续应逐模块移除并收紧类型。
+- 同名 `.js` 文件仍作为 Tauri 前端实际加载的浏览器脚本输出，`src/app/index.html` 不直接加载 `.ts`。
+- `// @ts-nocheck` 过渡措施已移除；当前 `npm.cmd run check:core` 会直接检查 TypeScript 源文件。
 
 ### Phase 5 当前结果
 

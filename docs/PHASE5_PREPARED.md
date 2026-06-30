@@ -4,7 +4,7 @@
 
 ## 当前结论
 
-当前仓库已达到进入 Phase 5 前的 prepared 状态，并且已进一步完成最小 Tauri 壳接入。后续正式运行或打包桌面端前，仍应先确认静态 Web fallback 和验证命令都通过。
+当前仓库已达到进入 Phase 5 前的 prepared 状态，并且已进一步完成最小 Tauri 壳接入。后续正式运行或打包桌面端前，仍应先确认桌面前端资源准备和验证命令都通过。
 
 ## 已具备条件
 
@@ -13,7 +13,7 @@
 - Phase 2 核心规则拆分已完成：`planner.js` 主要承担兼容导出。
 - Phase 3 数据底座已完成第一版：`WorkoutSession`、`ExerciseLog.sessionId`、可选 `SetLog`、基础训练容量统计、`schemaVersion: 2` 和导入规范化已具备。
 - Phase 4 TypeScript core 最小迁移已完成：核心规则和状态规范化已有 `.ts` 源文件，模型声明位于 `src/core/models/index.d.ts`。
-- `index.html` 仍可直接双击运行，浏览器入口继续加载 `.js`。
+- `src/app/index.html` 作为桌面前端源文件存在，由 `prepare:desktop` 复制到 `dist/desktop/index.html`。
 - `docs/sample-data/manual-smoke-baseline.json` 仍作为人工验收样例数据。
 - `phase4-baseline` 已作为 Phase 4 可回退 git 标签。
 - `src-tauri/` 已作为 Phase 5 最小桌面壳落地。
@@ -39,7 +39,7 @@ npm.cmd run verify:desktop
 
 ## 仍需人工确认
 
-- 双击 `index.html` 后应用可打开。
+- `npm.cmd run desktop:dev` 后应用可打开。
 - 可导入 `docs/sample-data/manual-smoke-baseline.json`。
 - 重点页面按 `docs/SMOKE_CHECKLIST.md` 跑通。
 - JSON 导入 / 导出仍可用。
@@ -51,7 +51,7 @@ npm.cmd run verify:desktop
 - 先加载现有静态前端页面。
 - 保留 localStorage / JSON 作为初期数据路径。
 - 增加桌面端文件读取 / 保存能力时，必须保持 JSON 备份路径。
-- 保留静态 Web 版本作为 fallback。
+- 保留 JSON 备份 / 恢复作为数据 fallback。
 
 ## Phase 5 暂不做什么
 
@@ -64,6 +64,5 @@ npm.cmd run verify:desktop
 
 ## 已知技术债
 
-- 规则 `.ts` 文件仍保留过渡性的 `// @ts-nocheck`。这是 Phase 4 为保持行为不变而接受的技术债。
-- 后续应优先从 `metric-analyzer`、`training-stats`、`goal-parser` 这类小模块开始移除 `// @ts-nocheck` 并收紧类型。
+- `// @ts-nocheck` 过渡措施已移除；后续技术债转为继续补充更精确的模型和规则类型。
 - `app.js` 仍是大型 UI / 状态协调文件，Phase 5 不应借桌面封装顺手重写它。

@@ -1,4 +1,3 @@
-// @ts-nocheck
 (function () {
   "use strict";
 
@@ -123,11 +122,11 @@ function pickAvailableExercise(candidates, gym, exercises) {
     const byId = new Map(exercises.map((item) => [item.id, item]));
     const resolved = candidates.map((id) => byId.get(id)).filter(Boolean);
     const available = resolved.find((item) => isAvailable(item, gym));
-    if (available) return { ...available, available: true };
+    if (available) return { ...(available as any), available: true };
     const fallback = resolved[0] || exercises[0];
     const sub = availableSubstitutes(fallback, gym, exercises)[0];
-    if (sub) return { ...sub, available: true };
-    return { ...fallback, available: false };
+    if (sub) return { ...(sub as any), available: true };
+    return { ...((fallback as any) || {}), available: false };
   }
 
 
@@ -170,6 +169,14 @@ function availableSubstitutes(exercise, gym, exercises) {
 
 function fmtNum(value, unit) {
     return Number.isFinite(value) ? `${round1(value)}${unit}` : "-";
+  }
+
+  function fmt(value, unit) {
+    return Number.isFinite(Number(value)) ? `${Number(value)}${unit}` : "-";
+  }
+
+  function round1(value) {
+    return Math.round(Number(value) * 10) / 10;
   }
 
 

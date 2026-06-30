@@ -1,4 +1,3 @@
-// @ts-nocheck
 (function () {
   "use strict";
 
@@ -119,7 +118,7 @@
   }
 
   function relinkSessionExerciseLogs(sessions, exerciseLogs) {
-    const byId = new Map(sessions.map((session) => [session.id, session]));
+    const byId = new Map<any, any>(sessions.map((session) => [session.id, session as any]));
     exerciseLogs.forEach((log) => {
       if (!log.sessionId || !byId.has(log.sessionId)) return;
       const session = byId.get(log.sessionId);

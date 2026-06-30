@@ -2,15 +2,25 @@
 
 这是一个本地电脑端训练与饮食工作台，用来替代教练用 Excel 管理训练计划的方式，并逐步补上动作级反馈、饮食自然语言记录、身体指标跟踪和计划优化建议。
 
-当前仍是本地优先工作台，静态 Web 版本继续作为 fallback。本阶段不引入 React / Vue / FastAPI，不破坏 `index.html` 双击运行；Phase 5 已接入最小 Tauri 壳，Phase 6 已接入 Tauri 环境下的 SQLite 存储路径。
+当前仍是本地优先工作台，Tauri 桌面端是当前运行入口。本阶段不引入 React / Vue / FastAPI；Phase 5 已接入最小 Tauri 壳，Phase 6 已接入 Tauri 环境下的 SQLite 存储路径。
 
-长期技术路线是 TypeScript core + Tauri 桌面端 + SQLite 本地数据库；当前已经完成 TypeScript core 最小迁移、Phase 5 最小 Tauri 壳接入和 Phase 6 SQLite 存储桥接，但运行入口仍然保留静态 JS 与 localStorage fallback。
+长期技术路线是 TypeScript core + Tauri 桌面端 + SQLite 本地数据库；当前已经完成 TypeScript core 最小迁移、Phase 5 最小 Tauri 壳接入和 Phase 6 SQLite 存储桥接。由于软件尚未发布，旧的根目录 `index.html` 双击入口已移除，`src/app/index.html` 仅作为桌面前端源文件，由 `prepare:desktop` 复制到 `dist/desktop/index.html`。
 
 ## 运行方式
 
-直接双击打开 `index.html` 即可使用。
+开发运行桌面端：
 
-静态 Web 版本数据保存在浏览器本地存储中。Tauri 桌面环境会额外同步到 SQLite 本地数据库。两种运行方式都应定期在“导入导出”页导出 JSON 备份。
+```text
+npm.cmd run desktop:dev
+```
+
+构建桌面 exe：
+
+```text
+npm.cmd run desktop:build:app
+```
+
+Tauri 桌面环境会同步到 SQLite 本地数据库。仍建议定期在“导入导出”页导出 JSON 备份。
 
 如需检查 TypeScript core，可在命令行运行：
 
@@ -20,7 +30,7 @@ npm.cmd run build:core
 npm.cmd run verify:phase5
 ```
 
-构建只用于生成和检查 core 的 JS 兼容输出，不改变 `index.html` 的双击运行方式。`verify:phase5` 用于进入 Tauri 封装前的本地准备检查。
+构建用于生成和检查 core / app helper 的 JS 输出，并准备 Tauri 桌面前端资源。`verify:desktop` 用于桌面构建前的本地准备检查。
 
 ## 文档导航
 

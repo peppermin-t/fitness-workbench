@@ -1,9 +1,8 @@
-// @ts-nocheck
 (function () {
   "use strict";
 
   function tauriInvoke() {
-    const tauri = window.__TAURI__;
+    const tauri = (window as any).__TAURI__;
     return tauri?.core?.invoke || tauri?.tauri?.invoke || null;
   }
 

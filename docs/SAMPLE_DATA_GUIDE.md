@@ -14,7 +14,7 @@
 docs/sample-data/manual-smoke-baseline.json
 ```
 
-使用方式：打开 `index.html`，进入“导入导出”页，选择“导入 JSON”，导入该文件。导入后应用会刷新并从浏览器 localStorage 读取样例数据。当前真实 localStorage key 是 `fitness-coach-workbench-v1`，当前样例使用 `schemaVersion: 2`，不要为了样例数据修改运行中的存储 key。
+使用方式：运行 `npm.cmd run desktop:dev` 打开桌面端，进入“导入导出”页，选择“导入 JSON”，导入该文件。导入后应用会刷新并同步到桌面端存储。当前真实 localStorage key 仍是 `fitness-coach-workbench-v1`，当前样例使用 `schemaVersion: 2`，不要为了样例数据修改运行中的存储 key。
 
 ## 最小数据要求
 
@@ -168,7 +168,7 @@ docs/sample-data/manual-smoke-baseline.json
 
 ## 制作流程建议
 
-1. 打开 `index.html`。
+1. 运行 `npm.cmd run desktop:dev` 打开桌面端。
 2. 如需干净环境，先在“导入导出”页恢复初始数据。
 3. 按本文档录入目标、健身房、指标、计划、训练反馈、动作反馈和饮食记录。
 4. 在“导入导出”页导出完整 JSON。

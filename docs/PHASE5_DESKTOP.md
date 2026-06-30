@@ -1,14 +1,14 @@
 # Phase 5：Tauri 桌面端封装
 
-本文档记录 Phase 5 的实现状态。Phase 5 的目标是把已经稳定的静态 Web 工作台封装为桌面端应用，而不是在同一阶段重写 UI 或改变业务规则；SQLite 已在后续 Phase 6 单独接入。
+本文档记录 Phase 5 的实现状态。Phase 5 的目标是把已经稳定的工作台前端封装为桌面端应用，而不是在同一阶段重写 UI 或改变业务规则；SQLite 已在后续 Phase 6 单独接入。
 
 ## 当前实现
 
 - 新增 `src-tauri/`，作为 Tauri v2 桌面壳。
-- 新增 `scripts/prepare-tauri-frontend.js`，把当前静态 Web 运行所需文件复制到 `dist/desktop`。
+- 新增 `scripts/prepare-tauri-frontend.js`，把桌面前端源文件和运行所需脚本复制到 `dist/desktop`。
 - `src-tauri/tauri.conf.json` 的 `frontendDist` 指向 `../dist/desktop`，避免直接把仓库根目录或 `node_modules` 作为桌面前端资源。
-- 桌面壳加载的仍是现有 `index.html`、`data.js`、`src/core/rules/*.js`、`src/core/rules/facade.js`、`planner.js`、`app.js`。
-- `index.html` 双击运行仍然保留，静态 Web 版本仍是 fallback。
+- 桌面壳加载的是由 `src/app/index.html` 生成的 `dist/desktop/index.html`，以及 `data.js`、`src/core/rules/*.js`、`src/core/rules/facade.js`、`planner.js`、`app.js`。
+- 根目录 `index.html` 双击入口已移除；当前运行入口统一为 Tauri 桌面端。
 
 ## 命令
 
@@ -38,7 +38,7 @@ npm.cmd run desktop:build
 
 - `planner.js`：继续作为 `window.FitnessPlanner` 旧入口兼容层；`app.js` 当前使用 `window.FitnessCore.Rules`，smoke 测试仍覆盖旧入口。
 - `src/core/rules/*.js`：浏览器和 Tauri 当前实际加载的 JS 输出。
-- `index.html` 双击运行路径：作为桌面壳之外的 fallback。
+- `src/app/index.html`：桌面前端源文件，不作为交付入口。
 - JSON 导入导出：作为当前主备份和迁移格式。
 
 ## 明确不做

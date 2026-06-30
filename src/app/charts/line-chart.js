@@ -1,4 +1,3 @@
-// @ts-nocheck
 (function () {
     "use strict";
     function draw(canvas, { data, emptyText, emptyY = 150, gridStep = 50, series = [] }) {

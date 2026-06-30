@@ -163,9 +163,9 @@
 当前阶段继续坚持：
 
 - 本地优先。
-- 静态 Web 可直接运行。
-- v0.2 阶段不引入 React / Vue / Tauri / SQLite / FastAPI；Phase 5 起已开始最小 Tauri 壳接入，但仍不改变静态 Web fallback。
-- 不破坏 `index.html` 双击运行。
+- Tauri 桌面端是当前运行入口。
+- v0.2 阶段不引入 React / Vue / FastAPI；Phase 5 起已开始最小 Tauri 壳接入，Phase 6 起已开始 SQLite 存储桥接。
+- `src/app/index.html` 是桌面前端源文件，由构建脚本复制到 `dist/desktop/index.html`。
 - 不删除现有功能。
 - 不让 AI 或规则静默修改计划。
 - 重构前先冻结功能、模型、验收清单和规则用例。
