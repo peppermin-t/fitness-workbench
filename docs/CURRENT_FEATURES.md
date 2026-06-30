@@ -521,6 +521,7 @@
 
 - `schemaVersion` 当前为 `2`。
 - `src/app/storage/state-normalizer.js`：当前状态规范化、默认字段补齐、导入保护。
+- `src/app/storage/app-state-store.js`：默认状态、localStorage 读写、Tauri SQLite hydration / persist 协调。
 - JSON 导入会先解析和迁移，成功后才覆盖 localStorage；坏 JSON 不应覆盖旧数据。
 - JSON 导入没有 schema 校验。
 - CSV 导入解析简单，不支持复杂逗号、换行、引号边界。
@@ -532,7 +533,7 @@
 
 - 单页静态应用，无构建步骤。
 - 侧边栏切换视图。
-- localStorage 保存数据。
+- localStorage 保存数据；Tauri 环境下额外同步 SQLite。
 - canvas 绘制身体指标和饮食趋势。
 - 样式集中在 `styles.css`，使用桌面工作台布局。
 
@@ -541,9 +542,10 @@
 - `index.html`
 - `styles.css`
 - `app.js`
+- `src/app/storage/app-state-store.js`
 
 ### 当前缺口
 
 - `body` 设置 `min-width: 1100px`，当前定位更偏桌面端，不适合手机端。
 - `app.js` 直接拼接 HTML，缺少组件边界。
-- 旧同名渲染 / 保存函数覆盖问题已清理；当前仍需控制 `app.js` 继续膨胀。
+- 默认状态和存储协调已从 `app.js` 拆出；旧同名渲染 / 保存函数覆盖问题已清理；当前仍需继续拆导入导出、图表和 presenter。

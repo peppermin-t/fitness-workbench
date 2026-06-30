@@ -20,7 +20,7 @@ Phase 7：AI 结构化解析与多端扩展
 ## 当前阶段状态
 
 - Phase 0：文档、人工 smoke checklist、规则 smoke、样例 JSON 基线和 git 基线已具备。
-- Phase 1：JS 模块边界已收敛到 `src/core/rules` 与 `src/app/storage`，浏览器全局兼容层仍保留。
+- Phase 1：JS 模块边界已收敛到 `src/core/rules` 与 `src/app/storage`，浏览器全局兼容层仍保留。第一轮应用侧清理已把默认状态、localStorage 读写和 Tauri SQLite hydration helper 收到 `src/app/storage/app-state-store.js`。
 - Phase 2：核心规则拆分已收口。`planner.js` 已收窄为 `window.FitnessPlanner -> window.FitnessCore.Rules` 的兼容别名；`app.js` 当前直接使用 `window.FitnessCore.Rules`。无依赖规则 smoke 已覆盖 12 个核心用例。
 - Phase 3：已完成第一版：`SetLog` 可选记录、`WorkoutSession` 状态与动作日志关联、基础训练容量统计、`schemaVersion: 2`、JSON 导入稳定性和当前状态规范化已经具备。
 - Phase 4：已完成最小迁移：新增 TypeScript 配置、模型声明、全局声明，核心规则和状态规范化已有 `.ts` 源文件，并继续生成 `.js` 兼容输出。
@@ -40,6 +40,7 @@ Phase 7：AI 结构化解析与多端扩展
 - 持续维护 `WorkoutSession`、`SetLog`、`schemaVersion` 迁移和 JSON 导入导出稳定性。
 - 保持规则 smoke 测试和人工 smoke checklist 可运行。
 - 在继续移除兼容层前保留静态 Web fallback、localStorage 和 JSON 回退路径。
+- 继续把 `app.js` 中的导入导出、presenter 和图表职责分批拆出。
 
 ## Phase 0：现状冻结与行为保护
 
@@ -562,6 +563,7 @@ Phase 4 是长期技术路线的一部分。当前执行方式是最小迁移：
 - `src/core/rules/*.ts`
 - `src/core/rules/facade.ts`
 - `src/app/storage/state-normalizer.ts`
+- `src/app/storage/app-state-store.ts`
 - 同名 `.js` 兼容输出，继续供 `index.html` 直接加载。
 
 ### 当前限制

@@ -11,6 +11,7 @@ interface FitnessCoreNamespace {
   Rules?: any;
   StateNormalizer?: any;
   DesktopStorage?: any;
+  AppStateStore?: any;
 }
 
 interface Window {

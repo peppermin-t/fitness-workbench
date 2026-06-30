@@ -6,11 +6,18 @@
   const P = window.FitnessCore.Rules;
   const M = window.FitnessCore.StateNormalizer;
   const DesktopStorage = window.FitnessCore.DesktopStorage;
+  const AppStateStore = window.FitnessCore.AppStateStore;
   const $ = (s) => document.querySelector(s);
   const $$ = (s) => Array.from(document.querySelectorAll(s));
   const clone = (v) => JSON.parse(JSON.stringify(v));
   let parsedGoalDraft = null;
   let weeklyReviewDraft = null;
+  const storeContext = {
+    storageKey: STORAGE_KEY,
+    fitnessData: D,
+    normalizer: M,
+    desktopStorage: DesktopStorage
+  };
   let state = loadState();
 
   const viewMeta = {
@@ -32,72 +39,46 @@
   });
 
   function defaultState() {
-    return {
-      schemaVersion: M.CURRENT_SCHEMA_VERSION,
-      currentGymId: "gym_default",
-      currentGoalId: null,
-      gyms: clone(D.defaultGyms),
-      exercises: clone(D.exercises),
-      goals: [],
-      metrics: [],
-      plan: null,
-      sessions: [],
-      exerciseLogs: [],
-      nutritionLogs: [],
-      feedback: [],
-      advice: [],
-      revisions: []
-    };
+    return AppStateStore.createDefaultState(storeContext);
   }
 
   function loadState() {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return defaultState();
-    try {
-      return prepareState(JSON.parse(raw));
-    } catch {
-      return defaultState();
-    }
+    return AppStateStore.loadLocalState(storeContext);
   }
 
   function prepareState(data) {
-    const base = defaultState();
-    const byId = new Map(D.exercises.map((x) => [x.id, x]));
-    (Array.isArray(data?.exercises) ? data.exercises : []).forEach((x) => byId.set(x.id, { ...byId.get(x.id), ...x }));
-    const next = { ...base, ...(data || {}), exercises: Array.from(byId.values()) };
-    return normalizeState(next);
+    return AppStateStore.prepareState(data, storeContext);
   }
 
   function normalizeState(next) {
-    return M.normalizeAppState(next, defaultState());
+    return AppStateStore.normalizeState(next, storeContext);
   }
 
   function saveState() {
-    state = normalizeState(state);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    state = AppStateStore.saveLocalState(state, storeContext);
     persistDesktopState();
   }
 
   async function hydrateDesktopState() {
-    if (!DesktopStorage?.isAvailable()) return;
-    try {
-      const desktopState = await DesktopStorage.loadAppState();
-      if (desktopState) {
-        state = prepareState(desktopState);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    await AppStateStore.hydrateDesktopState(state, storeContext, {
+      onHydrated(next) {
+        state = next;
         renderAll();
-      } else {
-        persistDesktopState();
+      },
+      onError(error) {
+        console.warn("Desktop SQLite load failed.", error);
+      },
+      onPersistError(error) {
+        console.warn("Desktop SQLite save failed.", error);
       }
-    } catch (error) {
-      console.warn("Desktop SQLite load failed.", error);
-    }
+    });
   }
 
   function persistDesktopState() {
-    if (!DesktopStorage?.isAvailable()) return;
-    DesktopStorage.saveAppState(state).catch((error) => {
-      console.warn("Desktop SQLite save failed.", error);
+    AppStateStore.persistDesktopState(state, storeContext, {
+      onError(error) {
+        console.warn("Desktop SQLite save failed.", error);
+      }
     });
   }
 

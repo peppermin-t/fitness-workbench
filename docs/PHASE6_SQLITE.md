@@ -10,6 +10,7 @@
 - 浏览器端新增 `src/app/storage/desktop-sqlite.js` / `.ts`：
   - 在 Tauri 环境中通过 `window.__TAURI__.core.invoke` 读写 SQLite。
   - 在普通浏览器 / 双击 `index.html` 时自动不可用，不影响 localStorage。
+- `src/app/storage/app-state-store.js` / `.ts` 负责默认状态、localStorage 读写，以及 Tauri SQLite 的 hydrate / persist 协调。
 - `app.js` 的状态保存路径变为：
   - 始终写入 localStorage。
   - 如果检测到 Tauri，则异步同步到 SQLite。
