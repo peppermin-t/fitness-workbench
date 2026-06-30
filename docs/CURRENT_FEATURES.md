@@ -1,6 +1,6 @@
 # 当前功能清单
 
-本文档按当前代码实际实现梳理功能边界，主要依据 `README.md`、`docs/PRODUCT_VISION.md`、`index.html`、`data.js`、`src/core/rules/*`、`src/app/storage/*`、`src/app/import-export/*`、`src/app/charts/*`、`src/app/presenters/*`、`src/core/models/index.d.ts`、`planner.js`、`app.js` 和 `styles.css`。当前应用仍可直接双击运行：静态 Web 通过 `index.html` 加载 `data.js`、`src/core/rules/*.js`、`src/core/rules/facade.js`、`planner.js`、`src/app/storage/*.js`、`src/app/import-export/*.js`、`src/app/charts/*.js`、`src/app/presenters/*.js`、`app.js`，运行数据存放在浏览器 `localStorage`。Tauri 环境下会额外通过 `src/app/storage/desktop-sqlite.js` 同步到 SQLite。Phase 4 后，`src/core/rules/*.ts`、`src/app/storage/*.ts`、`src/app/import-export/*.ts`、`src/app/charts/*.ts` 和 `src/app/presenters/*.ts` 是 core / app helper 源文件，同名 `.js` 是浏览器兼容输出；`window.FitnessCore.Rules` 是当前 UI 使用的规则 facade，`planner.js` 仅保留 `window.FitnessPlanner` 旧入口兼容。
+本文档按当前代码实际实现梳理功能边界，主要依据 `README.md`、`docs/PRODUCT_VISION.md`、`index.html`、`data.js`、`src/core/rules/*`、`src/app/storage/*`、`src/app/import-export/*`、`src/app/charts/*`、`src/app/presenters/*`、`src/app/state/*`、`src/core/models/index.d.ts`、`planner.js`、`app.js` 和 `styles.css`。当前应用仍可直接双击运行：静态 Web 通过 `index.html` 加载 `data.js`、`src/core/rules/*.js`、`src/core/rules/facade.js`、`planner.js`、`src/app/storage/*.js`、`src/app/import-export/*.js`、`src/app/charts/*.js`、`src/app/presenters/*.js`、`src/app/state/*.js`、`app.js`，运行数据存放在浏览器 `localStorage`。Tauri 环境下会额外通过 `src/app/storage/desktop-sqlite.js` 同步到 SQLite。Phase 4 后，`src/core/rules/*.ts`、`src/app/storage/*.ts`、`src/app/import-export/*.ts`、`src/app/charts/*.ts`、`src/app/presenters/*.ts` 和 `src/app/state/*.ts` 是 core / app helper 源文件，同名 `.js` 是浏览器兼容输出；`window.FitnessCore.Rules` 是当前 UI 使用的规则 facade，`planner.js` 仅保留 `window.FitnessPlanner` 旧入口兼容。
 
 ## 1. 今日训练
 
@@ -18,7 +18,8 @@
 ### 主要代码位置
 
 - `index.html`：`view-today` 区域，包括当前场地、今日建议、今日训练、动作级反馈、训练反馈表单。
-- `app.js`：`renderTodayAdvice`、`renderTrainingReminders`、`renderTodayPlanSelect`、`renderTodayWorkout`、`saveExerciseLog`、`saveSessionFeedback`。
+- `app.js`：`renderTodayAdvice`、`renderTrainingReminders`、`renderTodayPlanSelect`、`renderTodayWorkout`、`saveExerciseLog`、`saveSessionFeedback` 的表单读取和页面反馈。
+- `src/app/state/workbench-actions.js`：训练整体反馈和动作级反馈的状态写入、session 关联、advice / revision 写入。
 - `src/core/rules/exercise-feedback-analyzer.js`：动作级反馈分析。
 - `src/core/rules/integrated-signals.js`：`buildLinkedTodayInsights`、`buildTrainingReminders`、`buildIntegratedSignals`。
 - `src/core/rules/facade.js`：汇总 core 规则为 `window.FitnessCore.Rules`，供 `app.js` 使用。
@@ -230,7 +231,8 @@
 ### 主要代码位置
 
 - `index.html`：`session-form`。
-- `app.js`：`saveSessionFeedback`、`renderCoach`、`renderWeeklyReview`。
+- `app.js`：`saveSessionFeedback` 的表单读取和页面反馈、`renderCoach`、`renderWeeklyReview`。
+- `src/app/state/workbench-actions.js`：训练整体反馈保存、`WorkoutSession` 更新、`feedback` 兼容写入、建议和 revision 写入。
 - `src/core/rules/advice-engine.js`：`createAdviceFromSession`、`revision`、建议结构和优先级 helper。
 - `src/core/rules/weekly-review.js`：`buildWeeklyReview`。
 - `src/core/rules/integrated-signals.js`：`buildIntegratedSignals`。
@@ -271,7 +273,8 @@
 ### 主要代码位置
 
 - `index.html`：`exercise-log-form`、动作历史筛选区域。
-- `app.js`：`saveExerciseLog`、`renderExerciseLogSelect`、`renderExerciseLogList`、`renderExerciseHistoryFilter`、`renderExerciseHistory`、`buildExerciseHistorySummary`。
+- `app.js`：`saveExerciseLog` 的表单读取和页面反馈、`renderExerciseLogSelect`、`renderExerciseLogList`、`renderExerciseHistoryFilter`、`renderExerciseHistory`、`buildExerciseHistorySummary`。
+- `src/app/state/workbench-actions.js`：动作日志写入、`SetLog` 解析、训练容量 / 有效组 / 简单 PR 统计、动作建议写入。
 - `src/core/rules/exercise-feedback-analyzer.js`：动作反馈分析、动作长期画像、动作反馈建议。
 - `src/core/rules/training-stats.js`：训练容量、有效组数和简单 PR 判断。
 - `src/core/rules/integrated-signals.js`：训练前提醒会读取动作长期画像。
@@ -327,7 +330,7 @@
 ### 与其他模块的交互关系
 
 - 训练计划生成读取最近指标和体重趋势。
-- 饮食建议理论上可读取最近指标作为目标估算输入，但当前 `app.js` 调用 `parseNutritionLog(rawText, currentGoal())` 没有传入 `latestMetric`。
+- 饮食解析会读取当前目标和最近身体指标作为估算上下文。
 - 周复盘和首页联动读取身体指标趋势。
 
 ### 当前缺口
@@ -352,7 +355,8 @@
 ### 主要代码位置
 
 - `index.html`：`view-nutrition`、`nutrition-form`、`nutrition-chart`。
-- `app.js`：`saveNutritionLog`、`renderNutritionList`、`drawNutritionChart`、`renderNutritionReminders`。
+- `app.js`：`saveNutritionLog` 的表单读取和页面反馈、`renderNutritionList`、`drawNutritionChart`、`renderNutritionReminders`。
+- `src/app/state/workbench-actions.js`：饮食记录写入和饮食 advice 写入。
 - `src/app/charts/line-chart.js`：饮食趋势图使用的通用 canvas 折线图绘制 helper。
 - `src/core/rules/nutrition-parser.js`：`FOOD_LIBRARY`、`parseNutritionLog`、`splitMeals`、`extractFoodItems`、`nutritionTargets`、`buildNutritionRecommendationItems`、`buildNutritionProfile`、`buildNutritionTrend`、`buildNutritionReminders`。
 - `planner.js`：兼容导出 `window.FitnessPlanner.parseNutritionLog`、`window.FitnessPlanner.buildNutritionProfile`、`window.FitnessPlanner.buildNutritionTrend`、`window.FitnessPlanner.buildNutritionReminders`。
@@ -390,7 +394,8 @@
 ### 主要代码位置
 
 - `index.html`：`view-coach`。
-- `app.js`：`renderCoach`、`renderWeeklyReview`、`applyReviewCandidate`、`applyRevision`、`renderProfiles`、`renderExerciseHistory`。
+- `app.js`：`renderCoach`、`renderWeeklyReview`、`applyReviewCandidate` / `applyRevision` 的页面反馈、`renderProfiles`、`renderExerciseHistory`。
+- `src/app/state/workbench-actions.js`：周复盘候选转 revision、revision 应用到当前计划。
 - `src/core/rules/advice-engine.js`：建议结构、推荐项、优先级和去重 helper。
 - `src/core/rules/exercise-feedback-analyzer.js`：动作长期画像。
 - `src/core/rules/nutrition-parser.js`：饮食长期画像、饮食趋势和饮食提醒。
@@ -417,7 +422,7 @@
 
 ### 当前缺口
 
-- 建议来源分散，既在 `app.js` 中直接构造，也在 `planner.js` 中构造。
+- 建议来源仍分散在 core 规则和 `src/app/state/workbench-actions.js`，但已不再直接堆在 `app.js` 中。
 - `advice` 没有统一的状态流转，例如已读、忽略、已执行、过期。
 - 建议去重和生命周期管理较弱。
 
@@ -434,7 +439,8 @@
 ### 主要代码位置
 
 - `index.html`：智能教练页中的周复盘区域。
-- `app.js`：`renderWeeklyReview`、`applyReviewCandidate`、`findMatchingRevision`、`candidatePatchSignature`。
+- `app.js`：`renderWeeklyReview`、`applyReviewCandidate` 的页面反馈、`findMatchingRevision` 兼容包装。
+- `src/app/state/workbench-actions.js`：`findMatchingRevision`、周复盘候选转 pending revision、revision 应用。
 - `src/core/rules/weekly-review.js`：`buildWeeklyReview`、`revision`、`dedupeCandidates`、`findConditioningDayIndex`。
 - `planner.js`：兼容导出 `window.FitnessPlanner.buildWeeklyReview`。
 
@@ -551,9 +557,10 @@
 - `src/app/import-export/data-portability.js`
 - `src/app/charts/line-chart.js`
 - `src/app/presenters/display-formatters.js`
+- `src/app/state/workbench-actions.js`
 
 ### 当前缺口
 
 - `body` 设置 `min-width: 1100px`，当前定位更偏桌面端，不适合手机端。
 - `app.js` 直接拼接 HTML，缺少组件边界。
-- 默认状态、存储协调、CSV / JSON 构造解析 helper、通用 canvas 折线图 helper 和展示格式化 helper 已从 `app.js` 拆出；旧同名渲染 / 保存函数覆盖问题已清理；当前仍需继续拆复杂渲染模板和业务状态写入。
+- 默认状态、存储协调、CSV / JSON 构造解析 helper、通用 canvas 折线图 helper、展示格式化 helper，以及训练 / 饮食 / revision 第一批状态动作已从 `app.js` 拆出；旧同名渲染 / 保存函数覆盖问题已清理；当前仍需继续拆复杂渲染模板，以及目标 / 健身房 / 指标 / 导入导出等剩余状态写入。

@@ -10,6 +10,7 @@
   const DataPortability = window.FitnessApp.DataPortability;
   const LineChart = window.FitnessApp.LineChart;
   const DisplayFormatters = window.FitnessApp.DisplayFormatters.create({ equipment: D.equipment });
+  const WorkbenchActions = window.FitnessApp.WorkbenchActions.create({ rules: P, uid, nowLabel, todayIso });
   const {
     esc,
     equipmentLabel,
@@ -36,7 +37,6 @@
   } = DisplayFormatters;
   const $ = (s) => document.querySelector(s);
   const $$ = (s) => Array.from(document.querySelectorAll(s));
-  const clone = (v) => JSON.parse(JSON.stringify(v));
   let parsedGoalDraft = null;
   let weeklyReviewDraft = null;
   const storeContext = {
@@ -423,23 +423,21 @@
     if (!state.plan?.days?.length) return toast("请先生成训练计划。");
     const dayIndex = Number($("#today-plan-day-select").value || 0);
     const day = state.plan.days[dayIndex];
-    const session = getOrCreateWorkoutSession(dayIndex, day);
-    Object.assign(session, {
-      completedAt: nowLabel(),
-      status: "completed",
-      completion: clamp(Number($("#log-completion").value || 0), 0, 100),
-      rpe: clamp(Number($("#log-rpe").value || 0), 1, 10),
-      painScore: clamp(Number($("#log-pain-score").value || 0), 0, 5),
-      painArea: $("#log-pain-area").value.trim(),
-      sleep: clamp(Number($("#log-sleep").value || 0), 1, 5),
-      fatigue: clamp(Number($("#log-fatigue").value || 0), 1, 5),
-      notes: $("#log-notes").value.trim()
+    WorkbenchActions.saveSessionFeedback({
+      state,
+      dayIndex,
+      day,
+      currentGym: currentGym(),
+      input: {
+        completion: clamp(Number($("#log-completion").value || 0), 0, 100),
+        rpe: clamp(Number($("#log-rpe").value || 0), 1, 10),
+        painScore: clamp(Number($("#log-pain-score").value || 0), 0, 5),
+        painArea: $("#log-pain-area").value.trim(),
+        sleep: clamp(Number($("#log-sleep").value || 0), 1, 5),
+        fatigue: clamp(Number($("#log-fatigue").value || 0), 1, 5),
+        notes: $("#log-notes").value.trim()
+      }
     });
-    moveSessionToFront(session.id);
-    state.feedback.unshift({ ...session, type: "post_workout" });
-    const result = P.createAdviceFromSession({ session, day, nowLabel, uid });
-    state.advice.unshift(...result.advice);
-    state.revisions.unshift(...result.revisions);
     $("#session-form").reset();
     $("#log-completion").value = 100;
     $("#log-rpe").value = 7;
@@ -460,50 +458,27 @@
     const dayIndex = Number($("#today-plan-day-select").value || 0);
     const day = state.plan?.days?.[dayIndex];
     const plannedRow = day?.exercises?.find((row) => row.exerciseId === exerciseId);
-    const session = getOrCreateWorkoutSession(dayIndex, day);
-    const log = {
-      id: uid("exercise_log"),
-      date: todayIso(),
-      createdAt: nowLabel(),
-      sessionId: session.id,
-      exerciseId,
-      exerciseName: exercise.name,
+    WorkbenchActions.saveExerciseLog({
+      state,
       dayIndex,
-      focus: day?.focus || "",
-      plannedSets: plannedRow?.sets || "",
-      plannedReps: plannedRow?.reps || "",
-      plannedLoad: plannedRow?.load || "",
-      plannedRpe: plannedRow?.rpe || "",
-      actualLoad: $("#exercise-log-load").value.trim(),
-      actualReps: $("#exercise-log-reps").value.trim(),
-      rpe: clamp(Number($("#exercise-log-rpe").value || 0), 1, 10),
-      quality: $("#exercise-log-quality").value,
-      rangeOfMotion: $("#exercise-log-rom").value,
-      targetMuscleFeel: $("#exercise-log-target-feel").value,
-      limitingFactor: $("#exercise-log-limiter").value,
-      sideIssue: $("#exercise-log-side").value,
-      painScore: clamp(Number($("#exercise-log-pain-score").value || 0), 0, 5),
-      painArea: $("#exercise-log-pain-area").value.trim(),
-      freeText: $("#exercise-log-feedback").value.trim()
-    };
-    log.sets = parseSetLogs($("#exercise-log-sets")?.value, log.actualLoad, log.actualReps, log.rpe);
-    Object.assign(log, buildTrainingStatsForLog(log, state.exerciseLogs || []));
-    log.analysis = P.analyzeExerciseFeedback(log, exercise);
-    state.exerciseLogs = state.exerciseLogs || [];
-    state.exerciseLogs.unshift(log);
-    session.exerciseLogIds = Array.isArray(session.exerciseLogIds) ? session.exerciseLogIds : [];
-    if (!session.exerciseLogIds.includes(log.id)) session.exerciseLogIds.push(log.id);
-    moveSessionToFront(session.id);
-    state.advice.unshift({
-      id: uid("advice"),
-      createdAt: nowLabel(),
-      title: `${exercise.name} 动作反馈建议`,
-      body: log.analysis.recommendations.join(" "),
-      tags: log.analysis.tags.map((item) => item.tag),
-      priority: log.analysis.priority,
-      priorityLabel: log.analysis.priorityLabel,
-      evidence: log.analysis.evidence || [],
-      recommendationItems: log.analysis.recommendationItems || []
+      day,
+      exercise,
+      plannedRow,
+      input: {
+        currentGym: currentGym(),
+        actualLoad: $("#exercise-log-load").value.trim(),
+        actualReps: $("#exercise-log-reps").value.trim(),
+        rpe: clamp(Number($("#exercise-log-rpe").value || 0), 1, 10),
+        quality: $("#exercise-log-quality").value,
+        rangeOfMotion: $("#exercise-log-rom").value,
+        targetMuscleFeel: $("#exercise-log-target-feel").value,
+        limitingFactor: $("#exercise-log-limiter").value,
+        sideIssue: $("#exercise-log-side").value,
+        painScore: clamp(Number($("#exercise-log-pain-score").value || 0), 0, 5),
+        painArea: $("#exercise-log-pain-area").value.trim(),
+        freeText: $("#exercise-log-feedback").value.trim(),
+        setsText: $("#exercise-log-sets")?.value
+      }
     });
     $("#exercise-log-form").reset();
     $("#exercise-log-rpe").value = 7;
@@ -532,9 +507,14 @@
     const next = getExercise(exerciseId);
     if (!row || !next) return;
     const old = getExercise(row.exerciseId);
-    row.exerciseId = next.id;
-    row.notes = `已从 ${old?.name || "原动作"} 替换为 ${next.name}，以适配当前健身房器械。`;
-    state.revisions.unshift({ id: uid("rev"), createdAt: nowLabel(), status: "applied", summary: `替换动作：${old?.name || "原动作"} -> ${next.name}`, reason: `当前健身房器械条件更适合执行 ${next.name}。`, tags: ["动作替代", currentGym()?.name || "当前场地"], patch: { type: "manual_replace", dayIndex, rowIndex, exerciseId } });
+    WorkbenchActions.replaceExercise({
+      state,
+      dayIndex,
+      rowIndex,
+      nextExercise: next,
+      oldExercise: old,
+      currentGymName: currentGym()?.name || "当前场地"
+    });
     saveState();
     renderAll();
     toast("动作已替换并记录原因。");
@@ -827,27 +807,12 @@
     event.preventDefault();
     const rawText = $("#nutrition-text").value.trim();
     if (!rawText) return toast("请先输入饮食描述。");
-    const analysis = P.parseNutritionLog(rawText, currentGoal(), latestMetric());
-    const log = {
-      id: uid("nutrition"),
-      date: $("#nutrition-date").value || todayIso(),
-      createdAt: nowLabel(),
+    WorkbenchActions.saveNutritionLog({
+      state,
       rawText,
-      goalId: currentGoal()?.id || null,
-      analysis
-    };
-    state.nutritionLogs = state.nutritionLogs || [];
-    state.nutritionLogs.unshift(log);
-    state.advice.unshift({
-      id: uid("advice"),
-      createdAt: nowLabel(),
-      title: `${log.date} 饮食建议`,
-      body: analysis.recommendations.join(" "),
-      tags: ["饮食", analysis.confidence, ...(analysis.tags || []).slice(0, 4)],
-      priority: analysis.priority,
-      priorityLabel: analysis.priorityLabel,
-      evidence: analysis.evidence || [],
-      recommendationItems: analysis.recommendationItems || []
+      date: $("#nutrition-date").value || todayIso(),
+      goal: currentGoal(),
+      latestMetric: latestMetric()
     });
     $("#nutrition-form").reset();
     $("#nutrition-date").value = todayIso();
@@ -1133,168 +1098,28 @@
   function applyReviewCandidate(index) {
     const candidate = weeklyReviewDraft?.candidates?.[index];
     if (!candidate) return;
-    const matched = findMatchingRevision(candidate);
-    if (matched?.status === "applied") return toast("这个周复盘候选已经应用过了。");
-    if (matched?.status === "pending") return applyRevision(matched.id);
-
-    const revision = {
-      id: uid("rev"),
-      createdAt: nowLabel(),
-      status: "pending",
-      summary: candidate.summary,
-      reason: candidate.reason,
-      tags: candidate.tags || [],
-      patch: clone(candidate.patch)
-    };
-    state.revisions.unshift(revision);
-    applyRevision(revision.id);
+    const result = WorkbenchActions.applyReviewCandidate({ state, candidate, getExercise });
+    if (result.status === "already_applied") return toast("这个周复盘候选已经应用过了。");
+    if (result.status !== "applied") return;
+    saveState();
+    renderAll();
+    toast("计划调整已应用。");
   }
 
   function applyRevision(id) {
-    const rev = state.revisions.find((x) => x.id === id);
-    const day = state.plan?.days?.[rev?.patch?.dayIndex];
-    if (!rev || !day) return;
-
-    if (rev.patch.type === "reduce_day_volume") {
-      day.exercises.forEach((r) => {
-        if (Number(r.sets) > 1) r.sets = Math.max(2, Math.round(Number(r.sets) * rev.patch.factor));
-        r.notes = appendNote(r.notes, "已根据疼痛反馈降量。");
-      });
-    }
-
-    if (rev.patch.type === "trim_accessory" && day.exercises.length > 4) {
-      day.exercises = day.exercises.slice(0, Math.max(4, day.exercises.length - 2));
-      day.intent = `${day.intent} 已根据完成度反馈简化。`;
-    }
-
-    if (rev.patch.type === "add_progression_note") {
-      day.exercises.slice(0, 3).forEach((r) => {
-        r.notes = appendNote(r.notes, "下次可尝试加重 2.5%-5% 或增加 1-2 次。");
-      });
-    }
-
-    if (rev.patch.type === "increase_cardio_time") {
-      const minutes = Number(rev.patch.minutes || 10);
-      let targetRow = day.exercises.find((row) => /分钟|min/i.test(String(row.reps || "")));
-      if (!targetRow) {
-        targetRow = day.exercises.find((row) => /有氧/.test(String(getExercise(row.exerciseId)?.pattern || "")));
-      }
-      if (targetRow) {
-        targetRow.reps = bumpDurationText(String(targetRow.reps || ""), minutes);
-        targetRow.notes = appendNote(targetRow.notes, `已根据周复盘增加有氧 ${minutes} 分钟。`);
-      } else {
-        day.intent = appendNote(day.intent, `已根据周复盘增加有氧 ${minutes} 分钟。`);
-      }
-    }
-
-    rev.status = "applied";
-    rev.appliedAt = nowLabel();
+    const applied = WorkbenchActions.applyRevision({ state, revisionId: id, getExercise });
+    if (!applied) return;
     saveState();
     renderAll();
     toast("计划调整已应用。");
   }
 
   function findMatchingRevision(candidate) {
-    const signature = candidatePatchSignature(candidate?.patch);
-    return state.revisions.find((item) => candidatePatchSignature(item.patch) === signature) || null;
-  }
-
-  function getOrCreateWorkoutSession(dayIndex, day) {
-    state.sessions = state.sessions || [];
-    const date = todayIso();
-    const existing = state.sessions.find((session) =>
-      session.date === date
-      && Number(session.dayIndex) === Number(dayIndex)
-      && (!state.plan?.id || session.planId === state.plan.id)
-      && session.status !== "cancelled"
-    );
-    if (existing) {
-      existing.status = existing.status || "in_progress";
-      existing.exerciseLogIds = Array.isArray(existing.exerciseLogIds) ? existing.exerciseLogIds : [];
-      return existing;
-    }
-    const session = {
-      id: uid("session"),
-      date,
-      createdAt: nowLabel(),
-      startedAt: nowLabel(),
-      completedAt: null,
-      status: "in_progress",
-      gymId: state.currentGymId,
-      gymName: currentGym()?.name || "",
-      planId: state.plan?.id || null,
-      dayIndex,
-      focus: day?.focus || "",
-      completion: null,
-      rpe: null,
-      painScore: null,
-      painArea: "",
-      sleep: null,
-      fatigue: null,
-      notes: "",
-      exerciseLogIds: []
-    };
-    state.sessions.unshift(session);
-    return session;
-  }
-
-  function moveSessionToFront(sessionId) {
-    const index = (state.sessions || []).findIndex((session) => session.id === sessionId);
-    if (index <= 0) return;
-    const [session] = state.sessions.splice(index, 1);
-    state.sessions.unshift(session);
+    return WorkbenchActions.findMatchingRevision(state, candidate);
   }
 
   function latestCompletedSession() {
     return (state.sessions || []).find((session) => !session.status || session.status === "completed") || null;
-  }
-
-  function parseSetLogs(rawText, actualLoadText, actualRepsText, defaultRpe) {
-    const explicitLines = String(rawText || "")
-      .split(/[\n;；]+/)
-      .map((line) => line.trim())
-      .filter(Boolean);
-    if (explicitLines.length) {
-      return explicitLines.map((line, index) => parseSetLine(line, index, defaultRpe));
-    }
-
-    const loadKg = parseLoadKg(actualLoadText);
-    const reps = String(actualRepsText || "")
-      .split(/[\/,，\s]+/)
-      .map((item) => parseNumber(item))
-      .filter((value) => value != null && value > 0);
-    if (loadKg == null || !reps.length) return [];
-    return reps.map((rep, index) => ({
-      id: uid("set"),
-      setIndex: index + 1,
-      loadKg,
-      reps: rep,
-      rpe: Number.isFinite(defaultRpe) && defaultRpe > 0 ? defaultRpe : null,
-      completed: true,
-      note: "由实际重量和实际次数自动推导"
-    }));
-  }
-
-  function parseSetLine(line, index, defaultRpe) {
-    const loadMatch = line.match(/(\d+(?:\.\d+)?)\s*(?:kg|公斤)?/i);
-    const repsMatch = line.match(/[x×]\s*(\d+(?:\.\d+)?)/i) || line.match(/(\d+(?:\.\d+)?)\s*(?:次|reps?)/i);
-    const rpeMatch = line.match(/(?:@|rpe\s*)(\d+(?:\.\d+)?)/i);
-    return {
-      id: uid("set"),
-      setIndex: index + 1,
-      loadKg: loadMatch ? Number(loadMatch[1]) : null,
-      reps: repsMatch ? Number(repsMatch[1]) : null,
-      rpe: rpeMatch ? Number(rpeMatch[1]) : (Number.isFinite(defaultRpe) && defaultRpe > 0 ? defaultRpe : null),
-      completed: true,
-      note: line
-    };
-  }
-
-  function buildTrainingStatsForLog(log, previousLogs) {
-    const volumeLoad = P.calculateVolumeLoad(log.sets || []);
-    const hardSets = P.calculateHardSets(log.sets || []);
-    const simplePr = P.detectSimplePr({ ...log, volumeLoad, hardSets }, previousLogs || []);
-    return { volumeLoad, hardSets, simplePr };
   }
 
   function trainingStatsLine(log) {
@@ -1302,16 +1127,6 @@
     if (!setCount) return "";
     const prText = log.simplePr?.isPr ? ` · ${log.simplePr.records.map((record) => record.label).join(" / ")}` : "";
     return `<p class="mini-text">每组 ${setCount} 组 · 容量 ${volumeLabel(log.volumeLoad)} · 有效组 ${Number(log.hardSets || 0)}${esc(prText)}</p>`;
-  }
-
-  function parseLoadKg(text) {
-    if (/自重|bodyweight/i.test(String(text || ""))) return null;
-    return parseNumber(text);
-  }
-
-  function parseNumber(text) {
-    const match = String(text || "").match(/-?\d+(?:\.\d+)?/);
-    return match ? Number(match[0]) : null;
   }
 
   function renderNutritionReminders() {
@@ -1332,37 +1147,11 @@
     `;
   }
 
-  function candidatePatchSignature(patch) {
-    if (!patch) return "";
-    return JSON.stringify({
-      type: patch.type || "",
-      dayIndex: Number.isFinite(Number(patch.dayIndex)) ? Number(patch.dayIndex) : null,
-      rowIndex: Number.isFinite(Number(patch.rowIndex)) ? Number(patch.rowIndex) : null,
-      exerciseId: patch.exerciseId || null,
-      minutes: Number.isFinite(Number(patch.minutes)) ? Number(patch.minutes) : null,
-      factor: Number.isFinite(Number(patch.factor)) ? Number(patch.factor) : null
-    });
-  }
-
-  function bumpDurationText(text, minutes) {
-    const source = String(text || "");
-    const rangeMatch = source.match(/(\d+)\s*-\s*(\d+)\s*(分钟|min)/i);
-    if (rangeMatch) {
-      const nextMin = Number(rangeMatch[1]) + minutes;
-      const nextMax = Number(rangeMatch[2]) + minutes;
-      return `${nextMin}-${nextMax} ${rangeMatch[3]}`;
-    }
-    const singleMatch = source.match(/(\d+)\s*(分钟|min)/i);
-    if (singleMatch) return `${Number(singleMatch[1]) + minutes} ${singleMatch[2]}`;
-    return `${source || "有氧"} +${minutes} 分钟`;
-  }
-
   function currentGym() { return state.gyms.find((x) => x.id === state.currentGymId) || state.gyms[0] || null; }
   function currentGoal() { return state.goals.find((x) => x.id === state.currentGoalId) || state.goals[0] || null; }
   function latestMetric() { return P.sortedMetrics(state.metrics).at(-1) || null; }
   function getExercise(id) { return state.exercises.find((x) => x.id === id); }
   function num(v) { return v === "" || v == null ? null : Number(v); }
-  function appendNote(a, b) { return a ? `${a} ${b}` : b; }
   function clamp(v, min, max) { return Number.isFinite(v) ? Math.min(max, Math.max(min, v)) : min; }
   function todayIso() { return new Date().toISOString().slice(0, 10); }
   function nowLabel() { const d = new Date(); return `${d.toLocaleDateString("zh-CN")} ${d.toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" })}`; }

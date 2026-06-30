@@ -15,7 +15,7 @@
 - 今日训练页也可以生成 / 刷新计划，训练计划页也可以生成计划，入口重复但还能接受。
 - 今日训练页展示建议，智能教练页也展示建议；“今日建议”“训练前提醒”“智能建议”三者口径接近。
 - 智能教练页不仅展示建议，还可以应用 revision 修改计划；这让它同时承担“分析中心”和“计划修改入口”。
-- 周复盘候选在智能教练页中可直接应用到计划，但实际修改逻辑在 `app.js`，与计划页边界交叉。
+- 周复盘候选在智能教练页中可直接应用到计划，实际修改逻辑已收敛到 `src/app/state/workbench-actions.js`，但入口仍在智能教练页，与计划页边界交叉。
 
 ### 建议边界
 
@@ -79,15 +79,15 @@
 
 - 计划生成会写入一条 `advice`。
 - 训练整体反馈会通过 `window.FitnessCore.Rules.createAdviceFromSession` 写入 `advice` 和 `revisions`；`window.FitnessPlanner.createAdviceFromSession` 仅作为旧入口兼容。
-- 动作级反馈在 `app.js` 中直接构造 `advice`。
-- 饮食记录在 `app.js` 中直接构造 `advice`。
+- 动作级反馈通过 `src/app/state/workbench-actions.js` 构造并写入 `advice`。
+- 饮食记录通过 `src/app/state/workbench-actions.js` 构造并写入 `advice`。
 - 今日页通过 `planner.buildLinkedTodayInsights` 和 `buildTrainingReminders` 展示即时建议。
 - 饮食页通过 `buildNutritionReminders` 展示饮食前提醒。
 - 智能教练页集中展示 `state.advice`。
 
 ### 风险
 
-- 建议生成逻辑分散在 `app.js` 和 `planner.js`，后续难以统一排序、去重和状态。
+- 建议生成逻辑分散在 core 规则和 `src/app/state/workbench-actions.js`，后续仍需要统一 advice 生命周期、排序、去重和状态。
 - 同一问题可能以今日建议、饮食提醒、智能教练建议多次出现。
 - `Advice` 结构不完全统一，有些有 `priority`、`evidence`、`recommendationItems`，有些没有。
 
@@ -107,11 +107,11 @@
 - DOM 查询和事件绑定。
 - 路由 / view 切换。
 - 状态协调调用；默认状态、读取 localStorage、保存 localStorage 已收敛到 `src/app/storage/app-state-store.js`。
-- 表单数据收集和状态写入。
+- 表单数据收集；训练反馈、动作日志、饮食记录、revision 应用等第一批状态写入已收敛到 `src/app/state/workbench-actions.js`。
 - HTML 字符串渲染。
 - 训练计划生成协调。
-- 训练反馈、动作反馈、饮食记录保存。
-- 建议和 revision 写入。
+- 训练反馈、动作反馈、饮食记录保存的 UI 协调。
+- 建议和 revision 写入的 UI 协调；第一批写入逻辑已收敛到 `src/app/state/workbench-actions.js`。
 - CSV 导入 / 导出的 UI 事件和状态写入；CSV 构造 / 解析 helper 已收敛到 `src/app/import-export/data-portability.js`。
 - JSON 导入 / 导出的 UI 事件和状态写入；JSON 序列化 / 解析 helper 已收敛到 `src/app/import-export/data-portability.js`。
 - canvas 图表入口和数据选择；通用折线图绘制 helper 已收敛到 `src/app/charts/line-chart.js`。
@@ -123,12 +123,12 @@
 
 - 文件仍然过大，当前承担 UI 渲染、事件处理、状态协调和展示格式化调用。
 - Phase 3 / Phase 5 之间已经清理过旧同名函数覆盖问题；当前脚本检查未发现 `app.js` 中仍存在同名函数重复定义。
-- `app.js` 仍然既是 UI 层又是应用服务层；状态存储 helper、导入导出 helper、通用图表 helper 和展示格式化 helper 已先拆出，但表单保存、复杂渲染模板和 revision 应用仍在文件内。
+- `app.js` 仍然既是 UI 层又是应用服务层；状态存储 helper、导入导出 helper、通用图表 helper、展示格式化 helper 和第一批业务状态动作已先拆出，但复杂渲染模板、目标 / 健身房 / 指标 / 导入导出等剩余状态写入仍在文件内。
 - `planner.js` 当前已收窄为旧入口兼容别名；`src/core/rules/*.js` 是 `index.html` 直接运行所需的兼容输出，不应作为“无用冗余”删除。
 
 ### 建议拆分方向
 
-- `app/state`：业务状态操作，例如训练反馈、计划调整、动作日志写入。
+- `app/state`：业务状态操作。已开始：`workbench-actions` 承担训练反馈、计划调整、动作日志、饮食日志和 revision 应用。
 - `app/storage`：localStorage、JSON、迁移。已开始：`app-state-store` 承担默认状态、本地读写和桌面 SQLite hydration。
 - `app/render`：页面渲染。
 - `app/charts`：canvas 图表。已开始：`line-chart` 承担身体指标和饮食趋势共用的折线图绘制。
@@ -209,7 +209,7 @@ Phase 5 清理后，`app.js` 当前未发现同名函数重复定义。此前遗
 - 饮食画像、联动信号和周复盘都会基于 `nutritionLogs` 产生相似结论。
 - 训练整体反馈和周复盘都会产生 `Revision`。
 
-已通过 `src/core/rules/advice-engine.js` 初步统一 advice helper 和 `revision` 结构。后续还需要把 `app.js` 中直接拼装建议的入口继续收口到 advice engine。
+已通过 `src/core/rules/advice-engine.js` 初步统一 advice helper 和 `revision` 结构，动作 / 饮食 advice 的写入已从 `app.js` 移到 `src/app/state/workbench-actions.js`。后续还需要继续统一 advice 生命周期、去重和展示状态。
 
 ### 字段命名不一致
 
