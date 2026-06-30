@@ -19,6 +19,7 @@ const directories = [
   path.join("src", "core", "rules"),
   path.join("src", "app", "storage"),
   path.join("src", "app", "import-export"),
+  path.join("src", "app", "io"),
   path.join("src", "app", "charts"),
   path.join("src", "app", "presenters"),
   path.join("src", "app", "render"),

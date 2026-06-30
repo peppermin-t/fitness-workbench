@@ -9,30 +9,15 @@
   const AppStateStore = window.FitnessCore.AppStateStore;
   const DataPortability = window.FitnessApp.DataPortability;
   const LineChart = window.FitnessApp.LineChart;
+  const BrowserFileIO = window.FitnessApp.BrowserFileIO;
   const DisplayFormatters = window.FitnessApp.DisplayFormatters.create({ equipment: D.equipment });
   const ViewRenderers = window.FitnessApp.ViewRenderers.create({ formatters: DisplayFormatters, rules: P });
   const WorkbenchActions = window.FitnessApp.WorkbenchActions.create({ rules: P, uid, nowLabel, todayIso });
   const {
     esc,
-    equipmentLabel,
     tag,
     fmt,
-    numUnit,
-    deltaLabel,
-    qualityLabel,
-    romLabel,
-    targetFeelLabel,
-    limiterLabel,
-    sideIssueLabel,
-    advicePriorityType,
-    adviceSortScore,
-    advicePriorityLabel,
-    renderEvidenceList,
-    renderRecommendationItems,
-    equipmentEnglishLabel,
-    exerciseEnglishName,
-    bilingualNameMarkup,
-    equipmentDisplayText
+    exerciseEnglishName
   } = DisplayFormatters;
   const $ = (s) => document.querySelector(s);
   const $$ = (s) => Array.from(document.querySelectorAll(s));
@@ -217,20 +202,14 @@
     if (trend && goal?.parsed.primaryGoal === "fat_loss" && trend.delta > 0.3) summary.push(`近 30 天体重上升 ${trend.delta.toFixed(1)}kg，减脂计划中建议增加有氧或检查饮食记录。`);
     if (session) summary.push(`最近训练完成度 ${session.completion}%、RPE ${session.rpe}、疼痛 ${session.painScore}/5。`);
     if (!state.plan) summary.push("还没有训练计划，可以先点击“生成/刷新计划”。");
-    $("#today-advice").innerHTML = `
-      <div class="context-box">
-        <div><strong>今日概况</strong></div>
-        ${renderEvidenceList(summary)}
-      </div>
-      ${linkedSignals.length ? `<div class="context-box" style="margin-top:14px;"><div><strong>联动信号</strong></div>${renderRecommendationItems(linkedSignals)}</div>` : ""}
-    `;
+    $("#today-advice").innerHTML = ViewRenderers.todayAdvice({ summary, linkedSignals });
   }
 
   function renderTrainingReminders() {
     const el = $("#training-reminders");
     if (!el) return;
     if (!state.plan?.days?.length) {
-      el.innerHTML = `<div class="context-box"><div><strong>训练前提醒</strong></div><div class="mini-text">生成计划后，这里会结合长期画像和联动判断给出训练前提醒。</div></div>`;
+      el.innerHTML = ViewRenderers.trainingReminders({ hasPlan: false, reminders: [] });
       return;
     }
     const dayIndex = Number($("#today-plan-day-select")?.value || 0);
@@ -243,25 +222,18 @@
       nutritionLogs: state.nutritionLogs || [],
       day
     });
-    el.innerHTML = `
-      <div class="context-box">
-        <div><strong>训练前提醒</strong></div>
-        ${reminders.length ? renderRecommendationItems(reminders.slice(0, 4)) : `<div class="mini-text" style="margin-top:8px;">当前没有额外的训练前提醒，按计划执行并继续记录即可。</div>`}
-      </div>
-    `;
+    el.innerHTML = ViewRenderers.trainingReminders({ hasPlan: true, reminders });
   }
 
   function renderTodayPlanSelect() {
     const select = $("#today-plan-day-select");
-    select.innerHTML = state.plan?.days?.length
-      ? state.plan.days.map((d, i) => `<option value="${i}">第 ${i + 1} 天：${esc(d.focus)}</option>`).join("")
-      : `<option value="">暂无计划</option>`;
+    select.innerHTML = ViewRenderers.todayPlanOptions(state.plan);
   }
 
   function renderTodayWorkout() {
     const el = $("#today-workout");
     if (!state.plan?.days?.length) {
-      el.innerHTML = `<div class="context-box empty">暂无计划。点击“生成/刷新计划”后，这里会显示今日训练。</div>`;
+      el.innerHTML = ViewRenderers.todayWorkoutEmpty();
       return;
     }
     const index = Number($("#today-plan-day-select").value || 0);
@@ -497,49 +469,45 @@
   function exportPlanCsv() {
     if (!state.plan) return toast("暂无计划可导出。");
     const csv = DataPortability.buildPlanCsv(state.plan, (exerciseId) => getExercise(exerciseId)?.name);
-    DataPortability.downloadFile(`training-plan-${todayIso()}.csv`, csv, "text/csv;charset=utf-8");
+    BrowserFileIO.downloadText(`training-plan-${todayIso()}.csv`, csv, "text/csv;charset=utf-8");
   }
 
-  function importPlanCsv(event) {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const days = DataPortability.parsePlanCsv(String(reader.result || ""), findOrCreateExercise);
+  async function importPlanCsv(event) {
+    const text = await BrowserFileIO.readInputFileText(event);
+    if (text == null) return;
+    try {
+      const days = DataPortability.parsePlanCsv(text, findOrCreateExercise);
       WorkbenchActions.importPlanCsv({ state, days, gym: currentGym(), goal: currentGoal() });
       saveState();
       renderAll();
-      event.target.value = "";
       toast("计划 CSV 已导入。");
-    };
-    reader.readAsText(file, "utf-8");
+    } finally {
+      BrowserFileIO.clearInput(event);
+    }
   }
 
   function exportJson() {
     state = normalizeState(state);
-    DataPortability.downloadFile(`fitness-workbench-backup-${todayIso()}.json`, DataPortability.buildBackupJson(state), "application/json;charset=utf-8");
+    BrowserFileIO.downloadText(`fitness-workbench-backup-${todayIso()}.json`, DataPortability.buildBackupJson(state), "application/json;charset=utf-8");
   }
 
-  function importJson(event) {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      try {
-        state = prepareState(DataPortability.parseBackupJson(reader.result));
-        saveState();
-        renderAll();
-        toast("JSON 备份已导入。");
-      } catch {
-        toast("JSON 解析失败，请检查文件。");
-      }
-      event.target.value = "";
-    };
-    reader.readAsText(file, "utf-8");
+  async function importJson(event) {
+    const text = await BrowserFileIO.readInputFileText(event);
+    if (text == null) return;
+    try {
+      state = prepareState(DataPortability.parseBackupJson(text));
+      saveState();
+      renderAll();
+      toast("JSON 备份已导入。");
+    } catch {
+      toast("JSON 解析失败，请检查文件。");
+    } finally {
+      BrowserFileIO.clearInput(event);
+    }
   }
 
   function resetData() {
-    if (!confirm("确认恢复初始数据？当前本地记录会被覆盖。")) return;
+    if (!BrowserFileIO.confirmResetData()) return;
     state = defaultState();
     parsedGoalDraft = null;
     saveState();
@@ -601,101 +569,22 @@
     if (!listEl) return;
     const logs = (state.nutritionLogs || []).slice();
     const profile = P.buildNutritionProfile(logs, currentGoal());
-    if (summaryEl) {
-      if (!logs.length) {
-        summaryEl.innerHTML = "";
-      } else {
-        summaryEl.innerHTML = `
-          <div class="metric-grid">
-            <div class="metric-pill"><span>近期待均热量</span><strong>${numUnit(profile.averages?.calories, "kcal")}</strong></div>
-            <div class="metric-pill"><span>近期待均蛋白</span><strong>${numUnit(profile.averages?.protein, "g")}</strong></div>
-            <div class="metric-pill"><span>蛋白缺口天数</span><strong>${profile.lowProteinDays || 0}/${profile.count || 0}</strong></div>
-            <div class="metric-pill"><span>漏餐天数</span><strong>${profile.missedMealDays || 0}/${profile.count || 0}</strong></div>
-          </div>
-          <div class="context-box" style="margin-top:14px;">
-            <div class="tag-row">${(profile.topTags || []).map(([issueTag, count]) => tag(`${issueTag} ×${count}`, "info")).join("")}</div>
-            <div>${esc((profile.advice || []).join(" "))}</div>
-          </div>
-        `;
-      }
-    }
-    if (!logs.length) {
-      listEl.innerHTML = `<p class="empty">暂无饮食记录。输入自然语言饮食描述后，这里会显示解析结果、估算和趋势。</p>`;
-      drawNutritionChart();
-      return;
-    }
-    const mealLabel = { breakfast: "早餐", lunch: "午餐", dinner: "晚餐", snack: "加餐", all_day: "全天" };
-    const recentLogs = logs.slice(0, 12);
-    listEl.innerHTML = `<div class="item-list">${recentLogs.map((log) => `
-      <article class="list-item">
-        <div class="list-item-header">
-          <div>
-            <h3>${esc(log.date)} 饮食记录</h3>
-            <p class="mini-text">置信度：${esc(log.analysis.confidence)} · ${esc(log.rawText)}</p>
-            <div class="metric-grid" style="margin-top:10px;">
-              <div class="metric-pill"><span>热量估算</span><strong>${numUnit(log.analysis.estimates?.total?.calories, "kcal")}</strong></div>
-              <div class="metric-pill"><span>蛋白估算</span><strong>${numUnit(log.analysis.estimates?.total?.protein, "g")}</strong></div>
-              <div class="metric-pill"><span>碳水估算</span><strong>${numUnit(log.analysis.estimates?.total?.carbs, "g")}</strong></div>
-              <div class="metric-pill"><span>脂肪估算</span><strong>${numUnit(log.analysis.estimates?.total?.fat, "g")}</strong></div>
-            </div>
-            <div class="tag-row">${tag(advicePriorityLabel(log.analysis.priority, log.analysis.priorityLabel), advicePriorityType(log.analysis.priority))}${(log.analysis.tags || []).map((item) => tag(item, "info")).join("")}</div>
-            ${(log.analysis.missingInfo || []).length ? `<p class="mini-text" style="margin-top:8px;">补充信息：${esc(log.analysis.missingInfo.join(" "))}</p>` : ""}
-            <div style="margin-top:10px;">
-              ${(log.analysis.meals || []).map((meal) => `
-                <div class="compact-list" style="margin-top:8px;">
-                  <strong>${esc(mealLabel[meal.meal] || meal.meal)}</strong>
-                  <div>${esc(meal.text)}</div>
-                  ${(meal.items || []).length ? `<div class="mini-text">食物项：${esc(meal.items.map((item) => `${item.label}${item.quantity ? ` ${item.quantity}${item.unit}` : ""}`).join("、"))}</div>` : ""}
-                  <div class="mini-text">估算：${numUnit(meal.estimates?.calories, "kcal")} · 蛋白 ${numUnit(meal.estimates?.protein, "g")} · 碳水 ${numUnit(meal.estimates?.carbs, "g")} · 脂肪 ${numUnit(meal.estimates?.fat, "g")}</div>
-                  <div class="tag-row">${(meal.tags || []).map((item) => tag(item)).join("")}</div>
-                </div>
-              `).join("")}
-            </div>
-            <p class="mini-text" style="margin-top:10px;">${esc((log.analysis.recommendations || []).join(" "))}</p>
-            ${log.analysis.evidence?.length ? `<div class="context-box" style="margin-top:10px;"><div><strong>依据</strong></div>${renderEvidenceList(log.analysis.evidence.slice(0, 6))}</div>` : ""}
-          </div>
-          <button class="button danger" data-action="delete-nutrition-log" data-id="${esc(log.id)}">删除</button>
-        </div>
-      </article>`).join("")}</div>`;
+    const rendered = ViewRenderers.nutritionList({ logs, profile });
+    if (summaryEl) summaryEl.innerHTML = rendered.summaryHtml;
+    listEl.innerHTML = rendered.listHtml;
     drawNutritionChart();
   }
 
   function renderProfiles() {
     const exerciseEl = $("#exercise-profiles");
     const nutritionEl = $("#nutrition-profiles");
-    if (exerciseEl) {
-      const profiles = P.buildExerciseProfiles(state.exerciseLogs || []).slice(0, 6);
-      exerciseEl.innerHTML = profiles.length ? `<div class="item-list">${profiles.map((profile) => `
-        <article class="list-item">
-          <div class="list-item-header">
-            <div>
-              <h3>${esc(profile.exerciseName)}</h3>
-              <p class="mini-text">反馈 ${profile.count} 次 · 动作质量差 ${profile.poorQualityCount} 次 · 疼痛风险 ${profile.painCount} 次</p>
-              <div class="tag-row">${profile.topTags.map(([issueTag, count]) => tag(`${issueTag} ×${count}`, "info")).join("")}</div>
-              <p class="mini-text" style="margin-top:8px;">${esc(profile.advice.join(" "))}</p>
-            </div>
-          </div>
-        </article>
-      `).join("")}</div>` : `<p class="empty">动作级反馈还不够多，继续记录后这里会形成长期画像。</p>`;
-    }
-    if (nutritionEl) {
-      const profile = P.buildNutritionProfile(state.nutritionLogs || [], currentGoal());
-      nutritionEl.innerHTML = profile.count ? `
-        <div class="item-list">
-          <article class="list-item">
-            <div class="list-item-header">
-              <div>
-                <h3>近期饮食模式</h3>
-                <p class="mini-text">已记录 ${profile.count} 天饮食 · 近期待均蛋白 ${numUnit(profile.averages?.protein, "g")} · 近期待均热量 ${numUnit(profile.averages?.calories, "kcal")}</p>
-                <div class="tag-row">${profile.topTags.map(([issueTag, count]) => tag(`${issueTag} ×${count}`, "info")).join("")}</div>
-                <p class="mini-text" style="margin-top:8px;">${esc(profile.advice.join(" "))}</p>
-                ${profile.trend ? `<p class="mini-text" style="margin-top:8px;">最近 4 次相比前 4 次：蛋白 ${deltaLabel(profile.trend.proteinDelta, "g")} · 热量 ${deltaLabel(profile.trend.caloriesDelta, "kcal")} · 纤维 ${deltaLabel(profile.trend.fiberDelta, "g")}</p>` : ""}
-              </div>
-            </div>
-          </article>
-        </div>
-      ` : `<p class="empty">饮食记录还不够多，继续记录后这里会形成长期画像。</p>`;
-    }
+    if (!exerciseEl && !nutritionEl) return;
+    const rendered = ViewRenderers.profiles({
+      exerciseProfiles: P.buildExerciseProfiles(state.exerciseLogs || []).slice(0, 6),
+      nutritionProfile: P.buildNutritionProfile(state.nutritionLogs || [], currentGoal())
+    });
+    if (exerciseEl) exerciseEl.innerHTML = rendered.exerciseHtml;
+    if (nutritionEl) nutritionEl.innerHTML = rendered.nutritionHtml;
   }
 
   function saveNutritionLog(event) {
@@ -761,18 +650,16 @@
     const gym = currentGym();
     const available = P.isAvailable(ex, gym);
     const subs = P.availableSubstitutes(ex, gym, state.exercises).slice(0, 4);
-    return `<tr><td><strong>${esc(ex.name)}</strong><div class="mini-text dual-name-english">${esc(exerciseEnglishName(ex.id))}</div><div class="mini-text">${esc(ex.pattern)} · ${esc(ex.muscles.join(" / "))}</div><div class="tag-row">${tag(available ? "当前场地可做" : "当前场地缺器械", available ? "success" : "warn")}${ex.equipment.map((id) => tag(equipmentDisplayText(id))).join("")}</div></td><td>${esc(row.sets)}</td><td>${esc(row.reps)}</td><td>${esc(row.load || "-")}</td><td>${esc(row.rpe)}</td><td>${esc(row.rest || "-")}</td><td><div class="mini-text">${esc(row.notes || ex.cue)}</div><div class="tag-row">${subs.map((s) => `<button class="button" data-action="replace-exercise" data-day="${dayIndex}" data-row="${rowIndex}" data-exercise-id="${esc(s.id)}">${esc(s.name)}</button>`).join("") || `<span class="mini-text">暂无适配替代</span>`}</div></td><td><div class="link-list">${ex.links.map((l) => `<a href="${esc(l.url)}" target="_blank" rel="noreferrer">${esc(l.label)}</a>`).join("")}</div></td></tr>`;
+    return ViewRenderers.planRow({ row, dayIndex, rowIndex, exercise: ex, available, substitutes: subs });
   }
 
   function renderExerciseList() {
-    const q = ($("#exercise-search").value || "").trim().toLowerCase();
-    const gym = currentGym();
-    const items = state.exercises.filter((x) => !q || [x.name, exerciseEnglishName(x.id), x.pattern, x.muscles.join(" "), x.equipment.map(equipmentDisplayText).join(" ")].join(" ").toLowerCase().includes(q));
-    $("#exercise-list").innerHTML = items.length ? `<div class="item-list">${items.map((x) => {
-      const available = P.isAvailable(x, gym);
-      const subs = P.availableSubstitutes(x, gym, state.exercises).slice(0, 5);
-      return `<article class="list-item"><div class="exercise-card-layout exercise-card-layout-text"><div><div class="dual-name">${bilingualNameMarkup(x.name, exerciseEnglishName(x.id), true)}</div><p class="mini-text">${esc(x.cue)}</p><p class="mini-text">注意：${esc(x.risk)}</p><div class="tag-row">${tag(available ? "当前场地可做" : "当前场地缺器械", available ? "success" : "warn")}${tag(x.pattern)}${x.muscles.map((m) => tag(m)).join("")}</div><div class="equipment-inline" style="margin-top:10px;">${x.equipment.map((id) => `<span class="equipment-chip equipment-chip-text"><span>${esc(equipmentLabel(id))}</span><span class="dual-name-english">${esc(equipmentEnglishLabel(id))}</span></span>`).join("")}</div><div class="link-list" style="margin-top:10px;">${x.links.map((l) => `<a href="${esc(l.url)}" target="_blank" rel="noreferrer">${esc(l.label)}</a>`).join("")}</div><p class="mini-text" style="margin-top:10px;">当前场地替代：${subs.map((s) => `${s.name} / ${exerciseEnglishName(s.id)}`).join("、") || "暂无"}</p></div></div></article>`;
-    }).join("")}</div>` : `<p class="empty">没有匹配的动作。</p>`;
+    $("#exercise-list").innerHTML = ViewRenderers.exerciseList({
+      exercises: state.exercises,
+      query: $("#exercise-search").value,
+      gym: currentGym(),
+      allExercises: state.exercises
+    });
   }
 
   function renderGymList() {
@@ -783,41 +670,16 @@
     const el = $("#exercise-log-list");
     if (!el) return;
     const logs = (state.exerciseLogs || []).slice(0, 6);
-    if (!logs.length) {
-      el.innerHTML = `<p class="empty">暂无动作级反馈。</p>`;
-      return;
-    }
-    el.innerHTML = `<div class="item-list">${logs.map((log) => `
-      <article class="list-item">
-        <div class="list-item-header">
-          <div>
-            <div class="dual-name">${bilingualNameMarkup(log.exerciseName, exerciseEnglishName(log.exerciseId), true)}</div>
-            <p class="mini-text">${esc(log.createdAt)} · ${esc(log.focus || "未记录训练日")} · 计划 ${esc(log.plannedSets || "-")} 组 / ${esc(log.plannedReps || "-")} · 实际 ${esc(log.actualLoad || "-")} / ${esc(log.actualReps || "-")} · RPE ${esc(log.rpe)}</p>
-            <p style="margin-top:8px;">${esc(log.freeText || "无自由反馈")}</p>
-            <div class="tag-row">${tag(advicePriorityLabel(log.analysis?.priority, log.analysis?.priorityLabel), advicePriorityType(log.analysis?.priority))}${(log.analysis?.tags || []).map((item) => tag(item.tag, "info")).join("")}</div>
-            <p class="mini-text" style="margin-top:8px;">${esc((log.analysis?.recommendations || []).join(" "))}</p>
-            ${trainingStatsLine(log)}
-            ${log.analysis?.evidence?.length ? `<div class="context-box" style="margin-top:10px;"><div><strong>依据</strong></div>${renderEvidenceList(log.analysis.evidence.slice(0, 5))}</div>` : ""}
-          </div>
-          <button class="button danger" data-action="delete-exercise-log" data-id="${esc(log.id)}">删除</button>
-        </div>
-      </article>`).join("")}</div>`;
+    el.innerHTML = ViewRenderers.exerciseLogList(logs);
   }
 
   function renderExerciseHistoryFilter() {
     const select = $("#exercise-history-filter");
     if (!select) return;
     const currentValue = select.value || "all";
-    const options = [];
-    const seen = new Set();
-    (state.exerciseLogs || []).forEach((log) => {
-      if (log.exerciseId && !seen.has(log.exerciseId)) {
-        seen.add(log.exerciseId);
-        options.push({ value: log.exerciseId, label: `${log.exerciseName || log.exerciseId} / ${exerciseEnglishName(log.exerciseId)}` });
-      }
-    });
-    select.innerHTML = [`<option value="all">全部动作</option>`, ...options.map((item) => `<option value="${esc(item.value)}">${esc(item.label)}</option>`)].join("");
-    select.value = options.some((item) => item.value === currentValue) || currentValue === "all" ? currentValue : "all";
+    const result = ViewRenderers.exerciseHistoryFilterOptions({ logs: state.exerciseLogs || [], currentValue });
+    select.innerHTML = result.html;
+    select.value = result.value;
   }
 
   function renderExerciseHistory() {
@@ -825,48 +687,12 @@
     const listEl = $("#exercise-history-list");
     const logs = state.exerciseLogs || [];
     if (!summaryEl || !listEl) return;
-    if (!logs.length) {
-      summaryEl.innerHTML = "";
-      listEl.innerHTML = `<p class="empty">暂无动作反馈历史。</p>`;
-      return;
-    }
     const filterValue = $("#exercise-history-filter")?.value || "all";
     const filtered = filterValue === "all" ? logs.slice() : logs.filter((log) => log.exerciseId === filterValue);
     const summary = buildExerciseHistorySummary(filtered);
-    summaryEl.innerHTML = `
-      <div class="metric-grid">
-        <div class="metric-pill"><span>反馈次数</span><strong>${summary.count}</strong></div>
-        <div class="metric-pill"><span>平均 RPE</span><strong>${summary.avgRpe}</strong></div>
-        <div class="metric-pill"><span>动作质量差</span><strong>${summary.poorCount}</strong></div>
-        <div class="metric-pill"><span>疼痛风险</span><strong>${summary.painCount}</strong></div>
-      </div>
-      <div class="context-box" style="margin-top: 14px;">
-        <div><strong>阶段 1 结论：</strong>${esc(summary.stage1Conclusion)}</div>
-        <div class="tag-row">${summary.topTags.map(([issueTag, count]) => tag(`${issueTag} ×${count}`, "info")).join("")}</div>
-      </div>
-    `;
-    listEl.innerHTML = `<div class="item-list">${filtered.map((log) => `
-      <article class="list-item">
-        <div class="list-item-header">
-          <div>
-            <div class="dual-name">${bilingualNameMarkup(log.exerciseName, exerciseEnglishName(log.exerciseId), true)}</div>
-            <p class="mini-text">${esc(log.createdAt)} · ${esc(log.focus || "未记录训练日")}</p>
-            <p class="mini-text">计划：${esc(log.plannedSets || "-")} 组 · ${esc(log.plannedReps || "-")} · ${esc(log.plannedLoad || "-")} · 计划 RPE ${esc(log.plannedRpe || "-")}</p>
-            <p class="mini-text">实际：${esc(log.actualLoad || "-")} · ${esc(log.actualReps || "-")} · RPE ${esc(log.rpe)} · 动作质量 ${qualityLabel(log.quality)} · 幅度 ${romLabel(log.rangeOfMotion)}</p>
-            <div class="tag-row">
-              ${tag(`目标感觉 ${targetFeelLabel(log.targetMuscleFeel)}`)}
-              ${tag(`限制因素 ${limiterLabel(log.limitingFactor)}`)}
-              ${tag(`左右差 ${sideIssueLabel(log.sideIssue)}`)}
-              ${tag(`疼痛 ${log.painScore}/5`, Number(log.painScore) >= 3 ? "warn" : "")}
-            </div>
-            <p style="margin-top:8px;">${esc(log.freeText || "无自由反馈")}</p>
-            <div class="tag-row">${(log.analysis?.tags || []).map((item) => tag(item.tag, "info")).join("")}</div>
-            <p class="mini-text" style="margin-top:8px;">${esc((log.analysis?.recommendations || []).join(" "))}</p>
-            ${trainingStatsLine(log)}
-          </div>
-          <button class="button danger" data-action="delete-exercise-log" data-id="${esc(log.id)}">删除</button>
-        </div>
-      </article>`).join("")}</div>`;
+    const rendered = ViewRenderers.exerciseHistory({ logs: filtered, summary });
+    summaryEl.innerHTML = rendered.summaryHtml;
+    listEl.innerHTML = rendered.listHtml;
   }
 
   function handleClick(event) {
@@ -891,9 +717,8 @@
   }
 
   function renderCoach() {
-    const sortedAdvice = state.advice.slice().sort((a, b) => adviceSortScore(b.priority) - adviceSortScore(a.priority));
-    $("#coach-advice").innerHTML = sortedAdvice.length ? `<div class="item-list">${sortedAdvice.map((x) => `<article class="list-item"><div class="list-item-header"><div><h3>${esc(x.title)}</h3><p class="mini-text">${esc(x.createdAt)} · ${esc(x.status === "applied" ? "已应用" : "已记录")}</p><div class="tag-row" style="margin-top:8px;">${tag(advicePriorityLabel(x.priority, x.priorityLabel), advicePriorityType(x.priority))}${(x.tags || []).map((t) => tag(t, "info")).join("")}</div><p style="margin-top:8px;">${esc(x.body)}</p>${x.evidence?.length ? `<div class="context-box" style="margin-top:10px;"><div><strong>依据</strong></div>${renderEvidenceList(x.evidence)}</div>` : ""}${renderRecommendationItems(x.recommendationItems)}</div><button class="button danger" data-action="delete-advice" data-id="${esc(x.id)}">删除</button></div></article>`).join("")}</div>` : `<p class="empty">暂无建议。完成训练或饮食记录后，这里会生成计划和恢复建议。</p>`;
-    $("#revisions-list").innerHTML = state.revisions.length ? `<div class="item-list">${state.revisions.map((x) => `<article class="list-item"><div class="list-item-header"><div><h3>${esc(x.summary)}</h3><p class="mini-text">${esc(x.createdAt)} · ${esc(x.status === "applied" ? "已应用" : "待确认")}</p><p style="margin-top:8px;">${esc(x.reason)}</p><div class="tag-row">${(x.tags || []).map((t) => tag(t)).join("")}</div></div><div class="item-actions">${x.status === "pending" ? `<button class="button primary" data-action="apply-revision" data-id="${esc(x.id)}">应用</button>` : tag("已应用", "success")}</div></div></article>`).join("")}</div>` : `<p class="empty">暂无计划调整记录。</p>`;
+    $("#coach-advice").innerHTML = ViewRenderers.coachAdvice(state.advice);
+    $("#revisions-list").innerHTML = ViewRenderers.revisionsList(state.revisions);
     renderWeeklyReview();
     renderProfiles();
   }
@@ -912,62 +737,10 @@
       plan: state.plan
     });
 
-    const stats = weeklyReviewDraft.stats || {};
-    summaryEl.innerHTML = `
-      <div class="metric-grid">
-        <div class="metric-pill"><span>训练次数</span><strong>${stats.sessionCount || 0}</strong></div>
-        <div class="metric-pill"><span>平均完成度</span><strong>${Number.isFinite(stats.avgCompletion) ? `${stats.avgCompletion}%` : "-"}</strong></div>
-        <div class="metric-pill"><span>平均 RPE</span><strong>${Number.isFinite(stats.avgRpe) ? stats.avgRpe : "-"}</strong></div>
-        <div class="metric-pill"><span>平均疲劳</span><strong>${Number.isFinite(stats.avgFatigue) ? `${stats.avgFatigue}/5` : "-"}</strong></div>
-        <div class="metric-pill"><span>蛋白缺口天数</span><strong>${stats.lowProteinDays || 0}</strong></div>
-        <div class="metric-pill"><span>漏正餐天数</span><strong>${stats.missedMealDays || 0}</strong></div>
-        <div class="metric-pill"><span>近 30 天体重</span><strong>${deltaLabel(stats.weightDelta30, "kg")}</strong></div>
-      </div>
-      <div class="context-box" style="margin-top:14px;">
-        <div><strong>本周重点</strong></div>
-        <ul class="plain-list">${(weeklyReviewDraft.highlights || []).map((item) => `<li>${esc(item)}</li>`).join("") || "<li>最近 7 天的数据还不够，先继续记录。</li>"}</ul>
-      </div>
-      <div class="context-box" style="margin-top:14px;">
-        <div><strong>下周优先动作</strong></div>
-        <ul class="plain-list">${(weeklyReviewDraft.nextActions || []).map((item) => `<li>${esc(item)}</li>`).join("") || "<li>当前没有额外的优先处理项。</li>"}</ul>
-      </div>
-    `;
+    summaryEl.innerHTML = ViewRenderers.weeklyReviewSummary(weeklyReviewDraft);
 
     const candidates = weeklyReviewDraft.candidates || [];
-    if (!candidates.length) {
-      candidatesEl.innerHTML = `<p class="empty">当前还没有足够明确的周级计划调整候选。继续积累训练、饮食和身体指标后，这里会给出更稳的修改建议。</p>`;
-      return;
-    }
-
-    candidatesEl.innerHTML = `
-      <div class="section-heading" style="margin-bottom: 12px;">
-        <div>
-          <h3>调整候选</h3>
-          <p>这些建议还不会静默改计划，需要你确认后才会写入。</p>
-        </div>
-      </div>
-      <div class="item-list">${candidates.map((candidate, index) => {
-        const matched = findMatchingRevision(candidate);
-        return `
-          <article class="list-item">
-            <div class="list-item-header">
-              <div>
-                <h3>${esc(candidate.summary)}</h3>
-                <p style="margin-top:8px;">${esc(candidate.reason)}</p>
-                <div class="tag-row">${(candidate.tags || []).map((item) => tag(item)).join("")}</div>
-              </div>
-              <div class="item-actions">
-                ${matched?.status === "applied"
-                  ? tag("已应用", "success")
-                  : matched?.status === "pending"
-                    ? `<button class="button primary" data-action="apply-revision" data-id="${esc(matched.id)}">应用待确认项</button>`
-                    : `<button class="button primary" data-action="apply-review-candidate" data-index="${index}">应用到计划</button>`}
-              </div>
-            </div>
-          </article>
-        `;
-      }).join("")}</div>
-    `;
+    candidatesEl.innerHTML = ViewRenderers.weeklyReviewCandidates({ candidates, findMatchingRevision });
   }
 
   function applyReviewCandidate(index) {
@@ -1011,12 +784,7 @@
       exerciseLogs: state.exerciseLogs || [],
       nutritionLogs: state.nutritionLogs || []
     });
-    el.innerHTML = `
-      <div class="context-box">
-        <div><strong>饮食前提醒</strong></div>
-        ${reminders.length ? renderRecommendationItems(reminders.slice(0, 4)) : `<div class="mini-text" style="margin-top:8px;">当前没有额外的饮食前提醒，按正常方式记录即可。</div>`}
-      </div>
-    `;
+    el.innerHTML = ViewRenderers.nutritionReminders(reminders);
   }
 
   function currentGym() { return state.gyms.find((x) => x.id === state.currentGymId) || state.gyms[0] || null; }

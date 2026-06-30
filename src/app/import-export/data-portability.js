@@ -52,15 +52,6 @@
     function parseBackupJson(text) {
         return JSON.parse(String(text || "{}"));
     }
-    function downloadFile(name, content, type) {
-        const blob = new Blob([content], { type });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = name;
-        link.click();
-        URL.revokeObjectURL(url);
-    }
     function csvCell(value) {
         const text = String(value ?? "");
         return /[",\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
@@ -70,7 +61,6 @@
         buildPlanCsv,
         parsePlanCsv,
         buildBackupJson,
-        parseBackupJson,
-        downloadFile
+        parseBackupJson
     };
 })();

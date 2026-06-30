@@ -40,7 +40,7 @@ Phase 7：AI 结构化解析与多端扩展
 - 持续维护 `WorkoutSession`、`SetLog`、`schemaVersion` 迁移和 JSON 导入导出稳定性。
 - 保持规则 smoke 测试和人工 smoke checklist 可运行。
 - 在继续移除兼容层前保留静态 Web fallback、localStorage 和 JSON 回退路径。
-- 继续把 `app.js` 中的智能教练、饮食列表、动作历史等复杂渲染模板和浏览器 I/O 协调分批拆出。
+- 本轮已经把智能教练、饮食列表、动作历史、今日建议、周复盘等复杂渲染模板收敛到 `src/app/render/view-renderers`，并把浏览器文件读取 / 下载 / 确认弹窗收敛到 `src/app/io/browser-file-io`。下一步重点转为类型收紧、兼容层评估和 UI 事件边界梳理。
 
 ## Phase 0：现状冻结与行为保护
 
@@ -149,7 +149,7 @@ src/
 - 保存目标、健身房、指标、训练反馈、动作日志、饮食记录。
 - 调用 core 规则后合并结果。
 
-当前 `app.js` 中的 `defaultState`、`loadState`、`saveState` 已迁移到 `src/app/storage/app-state-store`；目标、健身房、指标、计划、训练反馈、动作日志、饮食日志和 revision 应用已迁移到 `src/app/state/workbench-actions`；低耦合视图模板已开始迁移到 `src/app/render/view-renderers`。后续重点是拆智能教练、饮食列表、动作历史等复杂渲染模板和浏览器文件 I/O 协调。
+当前 `app.js` 中的 `defaultState`、`loadState`、`saveState` 已迁移到 `src/app/storage/app-state-store`；目标、健身房、指标、计划、训练反馈、动作日志、饮食日志和 revision 应用已迁移到 `src/app/state/workbench-actions`；低耦合和复杂视图模板已迁移到 `src/app/render/view-renderers`；浏览器文件读取、下载和恢复确认已迁移到 `src/app/io/browser-file-io`。后续重点是收紧 TypeScript 类型、评估 `planner.js` 兼容层保留范围，并继续梳理 UI 事件边界。
 
 ### `src/app/storage`
 
@@ -161,7 +161,7 @@ src/
 - 数据迁移。
 - 导入校验。
 
-当前 `app.js` 中的 `loadState`、`saveState`、`exportJson`、`importJson`、`resetData` 可逐步迁移。
+当前 `app.js` 中的 `loadState`、`saveState` 已迁移到 `src/app/storage/app-state-store`；JSON 解析 / 序列化已迁移到 `src/app/import-export/data-portability`；浏览器文件读取、下载和恢复确认已迁移到 `src/app/io/browser-file-io`。`app.js` 仍保留导入成功后的状态覆盖、保存、渲染和 toast 协调。
 
 ### 保持 UI 行为不变
 
@@ -565,6 +565,7 @@ Phase 4 是长期技术路线的一部分。当前执行方式是最小迁移：
 - `src/app/storage/state-normalizer.ts`
 - `src/app/storage/app-state-store.ts`
 - `src/app/import-export/data-portability.ts`
+- `src/app/io/browser-file-io.ts`
 - `src/app/charts/line-chart.ts`
 - `src/app/presenters/display-formatters.ts`
 - `src/app/render/view-renderers.ts`
@@ -730,4 +731,4 @@ Phase 7 放在 TypeScript core、Tauri 和 SQLite 稳定之后。AI、手机端�
 
 ## 正式重构的建议第一步
 
-第一步不要先改 UI，也不要先上框架。Phase 2 的核心规则拆分已经收口：`goal-parser`、`plan-generator`、`metric-analyzer`、`advice-engine`、`exercise-feedback-analyzer`、`nutrition-parser`、`integrated-signals`、`weekly-review` 都已拆出，并通过 `window.FitnessCore.Rules` 汇总；`window.FitnessPlanner` 仅作为旧入口兼容别名。Phase 3 数据底座、Phase 4 TypeScript core、Phase 5 Tauri 壳和 Phase 6 SQLite 存储桥接已经落地。下一步应继续收紧 core 类型、补充 SQLite 读写 smoke，并逐步把 UI / 存储职责从 `app.js` 拆出，同时保留静态 Web fallback。
+第一步不要先改 UI，也不要先上框架。Phase 2 的核心规则拆分已经收口：`goal-parser`、`plan-generator`、`metric-analyzer`、`advice-engine`、`exercise-feedback-analyzer`、`nutrition-parser`、`integrated-signals`、`weekly-review` 都已拆出，并通过 `window.FitnessCore.Rules` 汇总；`window.FitnessPlanner` 仅作为旧入口兼容别名。Phase 3 数据底座、Phase 4 TypeScript core、Phase 5 Tauri 壳和 Phase 6 SQLite 存储桥接已经落地。应用侧默认状态、状态动作、导入导出 helper、浏览器文件 I/O、图表、展示格式化和主要视图模板也已拆出。下一步应继续收紧 core / app helper 类型、补充 SQLite 读写 smoke，并评估 `planner.js` 兼容层与静态 Web fallback 的保留边界。

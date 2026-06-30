@@ -1,6 +1,6 @@
 # 当前功能清单
 
-本文档按当前代码实际实现梳理功能边界，主要依据 `README.md`、`docs/PRODUCT_VISION.md`、`index.html`、`data.js`、`src/core/rules/*`、`src/app/storage/*`、`src/app/import-export/*`、`src/app/charts/*`、`src/app/presenters/*`、`src/app/render/*`、`src/app/state/*`、`src/core/models/index.d.ts`、`planner.js`、`app.js` 和 `styles.css`。当前应用仍可直接双击运行：静态 Web 通过 `index.html` 加载 `data.js`、`src/core/rules/*.js`、`src/core/rules/facade.js`、`planner.js`、`src/app/storage/*.js`、`src/app/import-export/*.js`、`src/app/charts/*.js`、`src/app/presenters/*.js`、`src/app/render/*.js`、`src/app/state/*.js`、`app.js`，运行数据存放在浏览器 `localStorage`。Tauri 环境下会额外通过 `src/app/storage/desktop-sqlite.js` 同步到 SQLite。Phase 4 后，`src/core/rules/*.ts`、`src/app/storage/*.ts`、`src/app/import-export/*.ts`、`src/app/charts/*.ts`、`src/app/presenters/*.ts`、`src/app/render/*.ts` 和 `src/app/state/*.ts` 是 core / app helper 源文件，同名 `.js` 是浏览器兼容输出；`window.FitnessCore.Rules` 是当前 UI 使用的规则 facade，`planner.js` 仅保留 `window.FitnessPlanner` 旧入口兼容。
+本文档按当前代码实际实现梳理功能边界，主要依据 `README.md`、`docs/PRODUCT_VISION.md`、`index.html`、`data.js`、`src/core/rules/*`、`src/app/storage/*`、`src/app/import-export/*`、`src/app/io/*`、`src/app/charts/*`、`src/app/presenters/*`、`src/app/render/*`、`src/app/state/*`、`src/core/models/index.d.ts`、`planner.js`、`app.js` 和 `styles.css`。当前应用仍可直接双击运行：静态 Web 通过 `index.html` 加载 `data.js`、`src/core/rules/*.js`、`src/core/rules/facade.js`、`planner.js`、`src/app/storage/*.js`、`src/app/import-export/*.js`、`src/app/io/*.js`、`src/app/charts/*.js`、`src/app/presenters/*.js`、`src/app/render/*.js`、`src/app/state/*.js`、`app.js`，运行数据存放在浏览器 `localStorage`。Tauri 环境下会额外通过 `src/app/storage/desktop-sqlite.js` 同步到 SQLite。Phase 4 后，`src/core/rules/*.ts`、`src/app/storage/*.ts`、`src/app/import-export/*.ts`、`src/app/io/*.ts`、`src/app/charts/*.ts`、`src/app/presenters/*.ts`、`src/app/render/*.ts` 和 `src/app/state/*.ts` 是 core / app helper 源文件，同名 `.js` 是浏览器兼容输出；`window.FitnessCore.Rules` 是当前 UI 使用的规则 facade，`planner.js` 仅保留 `window.FitnessPlanner` 旧入口兼容。
 
 ## 1. 今日训练
 
@@ -22,6 +22,7 @@
 - `src/app/state/workbench-actions.js`：训练整体反馈和动作级反馈的状态写入、session 关联、advice / revision 写入。
 - `src/core/rules/exercise-feedback-analyzer.js`：动作级反馈分析。
 - `src/core/rules/integrated-signals.js`：`buildLinkedTodayInsights`、`buildTrainingReminders`、`buildIntegratedSignals`。
+- `src/app/render/view-renderers.js`：今日建议、训练前提醒、今日训练空状态和训练日选择渲染。
 - `src/core/rules/facade.js`：汇总 core 规则为 `window.FitnessCore.Rules`，供 `app.js` 使用。
 - `planner.js`：兼容导出 `window.FitnessPlanner.analyzeExerciseFeedback`、`window.FitnessPlanner.buildTrainingReminders`、`window.FitnessPlanner.buildLinkedTodayInsights` 等旧入口。
 
@@ -521,7 +522,8 @@
 
 - `index.html`：`view-data` 和计划页 CSV 导入导出。
 - `app.js`：`exportJson`、`importJson`、`resetData`、`exportPlanCsv`、`importPlanCsv`、`renderDataSummary` 的 UI 事件和状态写入。
-- `src/app/import-export/data-portability.js`：JSON 备份序列化 / 解析、CSV 构造 / 解析和浏览器下载 helper。
+- `src/app/import-export/data-portability.js`：JSON 备份序列化 / 解析、CSV 构造 / 解析 helper。
+- `src/app/io/browser-file-io.js`：浏览器文件读取、文本下载和恢复初始数据确认 helper。
 
 ### 依赖的数据状态
 
@@ -547,7 +549,7 @@
 
 ### 当前已有能力
 
-- 单页静态应用，无构建步骤。
+- 静态入口仍可直接运行；开发侧已有最小 TypeScript / Tauri 构建链。
 - 侧边栏切换视图。
 - localStorage 保存数据；Tauri 环境下额外同步 SQLite。
 - canvas 绘制身体指标和饮食趋势。
@@ -560,6 +562,7 @@
 - `app.js`
 - `src/app/storage/app-state-store.js`
 - `src/app/import-export/data-portability.js`
+- `src/app/io/browser-file-io.js`
 - `src/app/charts/line-chart.js`
 - `src/app/presenters/display-formatters.js`
 - `src/app/render/view-renderers.js`
@@ -568,5 +571,5 @@
 ### 当前缺口
 
 - `body` 设置 `min-width: 1100px`，当前定位更偏桌面端，不适合手机端。
-- `app.js` 仍有部分复杂页面模板直接拼接 HTML，缺少完整组件边界。
-- 默认状态、存储协调、CSV / JSON 构造解析 helper、通用 canvas 折线图 helper、展示格式化 helper、低耦合视图模板 helper，以及目标 / 场地 / 指标 / 计划 / 训练 / 饮食 / revision 等主要状态动作已从 `app.js` 拆出；旧同名渲染 / 保存函数覆盖问题已清理；当前仍需继续拆智能教练、饮食列表、动作历史等复杂页面模板和浏览器 I/O 协调。
+- `app.js` 仍承担 DOM 查询、事件绑定、表单读取、渲染调度和保存后的页面刷新协调，尚未形成完整 UI 层边界。
+- 默认状态、存储协调、CSV / JSON 构造解析 helper、浏览器文件 I/O、通用 canvas 折线图 helper、展示格式化 helper、主要视图模板 helper，以及目标 / 场地 / 指标 / 计划 / 训练 / 饮食 / revision 等主要状态动作已从 `app.js` 拆出；旧同名渲染 / 保存函数覆盖问题已清理。当前剩余清理重点是类型收紧、兼容层评估和更清晰的 UI 事件边界，而不是继续堆大块业务模板。
