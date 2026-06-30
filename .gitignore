@@ -22,6 +22,7 @@ node_modules/
 dist/
 build/
 target/
+src-tauri/gen/
 .vite/
 
 # Future local app/database files

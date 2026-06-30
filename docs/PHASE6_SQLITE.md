@@ -52,17 +52,18 @@
 
 ## 当前限制
 
-- 当前仓库已写入 Rust / Tauri / SQLite 代码，但本机 `desktop:build` 仍需要成功访问 crates.io 下载 Rust 依赖。
-- 由于当前执行环境访问 crates.io 出现 SSL credential 错误，Phase 6 的 JS 保护层和前端资源准备已验证，Rust 编译需要在本机网络 / 证书环境恢复后执行。
+- `npm.cmd run desktop:build:app` 已可编译出桌面 exe，说明 Tauri + SQLite Rust 侧链路可用。
+- `npm.cmd run desktop:build` 会继续生成安装包，首次可能下载 WiX；这属于安装包工具链，不影响应用 exe 编译验证。
 
 ## 验证命令
 
 ```text
 npm.cmd run verify:desktop
+npm.cmd run desktop:build:app
 npm.cmd run desktop:build
 ```
 
-`verify:desktop` 不依赖 Rust crates，可验证 TypeScript core、JS 语法、规则 smoke 和桌面前端资源。`desktop:build` 用于验证 Tauri + SQLite Rust 侧编译和打包。
+`verify:desktop` 可验证 TypeScript core、JS 语法、规则 smoke 和桌面前端资源。`desktop:build:app` 用于验证 Tauri + SQLite Rust 侧可编译出 exe。`desktop:build` 用于继续生成安装包，首次可能下载 WiX。
 
 ## 后续清理条件
 

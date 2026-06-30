@@ -75,4 +75,4 @@ npm.cmd run verify:phase5
 
 ## 下一步
 
-Phase 6 SQLite 存储桥接已接入。可运行 `npm.cmd run verify:desktop` 验证前端保护层和桌面资源准备；`npm.cmd run desktop:build` 仍需要当前机器能正常访问 crates.io 以下载 Rust 依赖。下一步应先完成 Tauri + SQLite 的实际 build / dev 验证，再进入更细的 SQL 查询优化。
+Phase 6 SQLite 存储桥接已接入。可运行 `npm.cmd run verify:desktop` 验证前端保护层和桌面资源准备，运行 `npm.cmd run desktop:build:app` 验证 Tauri + SQLite 可编译出 exe。`npm.cmd run desktop:build` 会继续生成安装包，首次可能下载 WiX。仓库本身很轻，主要本地体量来自被忽略的 `src-tauri/target` 构建产物。

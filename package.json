@@ -12,6 +12,7 @@
     "verify:phase5": "npm run check:core && npm run build:core && npm run check:js && npm run smoke:rules",
     "verify:desktop": "npm run verify:phase5 && npm run prepare:desktop",
     "desktop:dev": "tauri dev",
+    "desktop:build:app": "tauri build --no-bundle",
     "desktop:build": "tauri build"
   },
   "devDependencies": {

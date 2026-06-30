@@ -16,6 +16,7 @@
 npm.cmd run prepare:desktop
 npm.cmd run verify:desktop
 npm.cmd run desktop:dev
+npm.cmd run desktop:build:app
 npm.cmd run desktop:build
 ```
 
@@ -24,7 +25,8 @@ npm.cmd run desktop:build
 - `prepare:desktop`：先构建 TypeScript core，再准备 `dist/desktop`。
 - `verify:desktop`：运行 Phase 5 前置检查，并确认桌面前端资源可生成。
 - `desktop:dev`：启动 Tauri 开发模式。
-- `desktop:build`：构建 Tauri 桌面应用。
+- `desktop:build:app`：构建 Tauri 桌面 exe，但跳过安装包打包。
+- `desktop:build`：构建 Tauri 桌面应用并生成安装包，首次可能下载 WiX。
 
 ## 本机前置条件
 

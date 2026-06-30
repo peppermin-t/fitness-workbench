@@ -661,8 +661,8 @@ revisions
 ### 当前限制
 
 - `npm.cmd run verify:desktop` 已通过。
-- 当前执行环境访问 crates.io 时出现 SSL credential 错误，导致 `npm.cmd run desktop:build` 暂时无法拉取 `rusqlite` 等 Rust 依赖完成编译。
-- 该限制属于本机 Rust registry / 证书访问问题，不改变仓库侧 Phase 6 代码路径。
+- `npm.cmd run desktop:build:app` 已可编译出桌面 exe。
+- `npm.cmd run desktop:build` 会继续生成安装包，首次可能下载 WiX；安装包工具链不应阻塞 SQLite 存储桥接的代码基线。
 
 ## Phase 7：AI 结构化解析与多端扩展
 
