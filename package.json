@@ -8,9 +8,14 @@
     "check:core": "tsc -p tsconfig.json --noEmit",
     "check:js": "node scripts/check-js-syntax.js",
     "smoke:rules": "node scripts/run-rules-smoke.js",
-    "verify:phase5": "npm run check:core && npm run build:core && npm run check:js && npm run smoke:rules"
+    "prepare:desktop": "npm run build:core && node scripts/prepare-tauri-frontend.js",
+    "verify:phase5": "npm run check:core && npm run build:core && npm run check:js && npm run smoke:rules",
+    "verify:desktop": "npm run verify:phase5 && npm run prepare:desktop",
+    "desktop:dev": "tauri dev",
+    "desktop:build": "tauri build"
   },
   "devDependencies": {
+    "@tauri-apps/cli": "^2.11.4",
     "typescript": "^5.5.0"
   }
 }

@@ -1,6 +1,6 @@
 # 后续重构计划
 
-本文档规划从当前静态 Web 工作台到长期桌面端应用的技术路线。长期目标明确是：TypeScript core + Tauri 桌面端 + SQLite 本地数据库。当前已经完成 TypeScript core 的最小迁移，但 v0.2 仍然保持 `index.html` 直接双击可用，不立即引入 Tauri、不立即引入 SQLite、不删除现有功能。
+本文档规划从当前静态 Web 工作台到长期桌面端应用的技术路线。长期目标明确是：TypeScript core + Tauri 桌面端 + SQLite 本地数据库。当前已经完成 TypeScript core 的最小迁移和 Phase 5 最小 Tauri 壳接入，但仍然保持 `index.html` 直接双击可用，不立即引入 SQLite、不删除现有功能。
 
 当前不立即上 Tauri / SQLite 的原因是，v0.2 的 `WorkoutSession`、`SetLog`、`schemaVersion` 迁移、数据导入导出稳定性、规则 smoke 测试和人工 smoke checklist 已完成第一版，但仍需要持续用这些保护层约束后续迁移。数据底座和行为保护没有固化之前，直接进入桌面壳或数据库迁移会放大回退风险。
 
@@ -24,7 +24,7 @@ Phase 7：AI 结构化解析与多端扩展
 - Phase 2：核心规则拆分已收口。`planner.js` 现在主要承担兼容导出和少量尚未单独成模块的训练整体反馈建议函数；无依赖规则 smoke 已覆盖 12 个核心用例。
 - Phase 3：已完成第一版：`SetLog` 可选记录、`WorkoutSession` 状态与动作日志关联、基础训练容量统计、`schemaVersion: 2`、JSON 导入稳定性和当前状态规范化已经具备。
 - Phase 4：已完成最小迁移：新增 TypeScript 配置、模型声明、全局声明，核心规则和状态规范化已有 `.ts` 源文件，并继续生成 `.js` 兼容输出。
-- Phase 5 前准备：已补齐 `npm.cmd run verify:phase5`，用于检查 TypeScript core、JS 语法和 12 个规则 smoke 用例。
+- Phase 5：最小 Tauri 壳已接入，桌面前端资源由 `npm.cmd run prepare:desktop` 生成；本机实际运行 / 打包需要 Rust / Cargo。
 
 ## 当前阶段边界
 
@@ -577,6 +577,8 @@ Phase 4 是长期技术路线的一部分。当前执行方式是最小迁移：
 
 ## Phase 5：Tauri 桌面端封装
 
+状态：已完成最小接入。Tauri 壳、前端资源准备脚本和 npm 命令已落地；当前环境缺少 Rust / Cargo，因此尚未在本机生成桌面二进制。
+
 Phase 5 的目标是桌面端封装，不是用桌面壳掩盖尚未稳定的数据模型。Tauri 是长期路线中的桌面端优先选择，但必须排在 TypeScript core 和迁移保护之后。
 
 ### 目标
@@ -599,6 +601,8 @@ Phase 5 的目标是桌面端封装，不是用桌面壳掩盖尚未稳定的数
 3. 保留本地 JSON 导入导出。
 4. 增加桌面端文件保存 / 读取能力。
 5. 再逐步考虑自动备份、配置目录、日志等桌面能力。
+
+当前已完成第 1-3 步的最小版本：`src-tauri/` 已存在，`dist/desktop` 由 `scripts/prepare-tauri-frontend.js` 生成，静态 Web fallback 保留。第 4-5 步应在确认 Tauri dev/build 可运行后再做。
 
 ### 非目标
 

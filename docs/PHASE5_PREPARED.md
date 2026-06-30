@@ -4,7 +4,7 @@
 
 ## 当前结论
 
-当前仓库已达到进入 Phase 5 前的 prepared 状态：可以开始设计 Tauri 壳，但正式引入 Tauri 前仍应先确认静态 Web fallback 和验证命令都通过。
+当前仓库已达到进入 Phase 5 前的 prepared 状态，并且已进一步完成最小 Tauri 壳接入。后续正式运行或打包桌面端前，仍应先确认静态 Web fallback 和验证命令都通过。
 
 ## 已具备条件
 
@@ -16,6 +16,8 @@
 - `index.html` 仍可直接双击运行，浏览器入口继续加载 `.js`。
 - `docs/sample-data/manual-smoke-baseline.json` 仍作为人工验收样例数据。
 - `phase4-baseline` 已作为 Phase 4 可回退 git 标签。
+- `src-tauri/` 已作为 Phase 5 最小桌面壳落地。
+- `npm.cmd run verify:desktop` 已作为进入 Tauri dev/build 前的仓库检查命令。
 
 ## 进入 Phase 5 前必须通过的命令
 
@@ -23,14 +25,17 @@
 
 ```text
 npm.cmd run verify:phase5
+npm.cmd run verify:desktop
 ```
 
-该命令会依次执行：
+`verify:phase5` 会依次执行：
 
 1. `npm run check:core`：TypeScript core 类型检查。
 2. `npm run build:core`：生成 `.js` 兼容输出。
 3. `npm run check:js`：检查当前浏览器会加载的 JS 文件语法。
 4. `npm run smoke:rules`：在 Node 中等价执行 `tests/rules-smoke.html` 的 12 个规则用例。
+
+`verify:desktop` 会在上述检查后执行 `prepare:desktop`，生成 Tauri 使用的 `dist/desktop` 前端资源。
 
 ## 仍需人工确认
 

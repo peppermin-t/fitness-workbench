@@ -10,7 +10,7 @@
 
 ### 明确不做
 
-- 当前不引入 Tauri。
+- Phase 5 之前不引入 Tauri；当前已进入 Phase 5，最小 Tauri 壳已接入。
 - 当前不引入 SQLite。
 - 当前不引入 FastAPI。
 - 当前不引入 React / Vue。
@@ -197,7 +197,7 @@ AI 或规则只能生成候选建议，不能静默修改训练计划。
 
 - 当前仍保持 `index.html` 双击运行。
 - 当前已引入最小 npm / TypeScript 检查链，但只用于 core 构建和类型检查。
-- 当前不引入 Tauri。
+- 当前已接入最小 Tauri 壳，但仍保持 `index.html` 双击运行。
 - 当前不引入 SQLite。
 
 ### 原因
@@ -212,8 +212,15 @@ AI 或规则只能生成候选建议，不能静默修改训练计划。
 - 同名 `.js` 文件仍作为浏览器运行入口，`index.html` 不直接加载 `.ts`。
 - 规则 `.ts` 文件中的 `// @ts-nocheck` 是过渡措施，后续应逐模块移除并收紧类型。
 
+### Phase 5 当前结果
+
+- `src-tauri/` 提供 Tauri v2 最小桌面壳。
+- `scripts/prepare-tauri-frontend.js` 负责生成 `dist/desktop`，避免把仓库根目录或 `node_modules` 直接作为桌面前端资源。
+- `desktop:dev` 和 `desktop:build` 已作为 npm 脚本存在。
+- 本机运行或打包 Tauri 仍需要 Rust / Cargo 和系统依赖。
+
 ### 影响
 
 - 后续路线文档应把 TypeScript core、Tauri 和 SQLite 写成长期路线中的明确阶段。
 - v0.2 讨论范围时，仍以 [V0_2_SCOPE.md](V0_2_SCOPE.md) 和 [REFACTOR_PLAN.md](REFACTOR_PLAN.md) 的当前阶段边界为准。
-- 任何 Tauri / SQLite 工作都必须以模型、迁移、测试和 JSON 回退路径稳定为前置条件。
+- SQLite 工作必须以模型、迁移、测试、JSON 回退路径和 Tauri 壳稳定为前置条件。

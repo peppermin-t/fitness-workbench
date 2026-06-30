@@ -2,9 +2,9 @@
 
 这是一个本地电脑端训练与饮食工作台，用来替代教练用 Excel 管理训练计划的方式，并逐步补上动作级反馈、饮食自然语言记录、身体指标跟踪和计划优化建议。
 
-当前仍是本地优先静态 Web 工作台。本阶段不引入 React / Vue / Tauri / SQLite / FastAPI，不破坏 `index.html` 双击运行；重构前先冻结功能和验收路径。
+当前仍是本地优先工作台，静态 Web 版本继续作为 fallback。本阶段不引入 React / Vue / SQLite / FastAPI，不破坏 `index.html` 双击运行；Phase 5 已接入最小 Tauri 壳。
 
-长期技术路线是 TypeScript core + Tauri 桌面端 + SQLite 本地数据库；当前已经完成 TypeScript core 的最小迁移，但运行入口仍然是静态 JS，Tauri 和 SQLite 仍不是当前阶段立即执行项。
+长期技术路线是 TypeScript core + Tauri 桌面端 + SQLite 本地数据库；当前已经完成 TypeScript core 的最小迁移和 Phase 5 最小 Tauri 壳接入，但运行入口仍然保留静态 JS，SQLite 仍不是当前阶段立即执行项。
 
 ## 运行方式
 
@@ -31,6 +31,7 @@ npm.cmd run verify:phase5
 - [docs/REDUNDANCY_AND_BOUNDARY_REVIEW.md](docs/REDUNDANCY_AND_BOUNDARY_REVIEW.md)：当前冗余、边界混乱和风险。
 - [docs/REFACTOR_PLAN.md](docs/REFACTOR_PLAN.md)：后续重构路线。
 - [docs/PHASE5_PREPARED.md](docs/PHASE5_PREPARED.md)：进入 Tauri 桌面端封装前的准备状态和检查命令。
+- [docs/PHASE5_DESKTOP.md](docs/PHASE5_DESKTOP.md)：Tauri 桌面端封装的当前实现和运行方式。
 - [docs/SMOKE_CHECKLIST.md](docs/SMOKE_CHECKLIST.md)：重构前后必须跑通的人工验收清单。
 - [docs/RULE_TEST_CASES.md](docs/RULE_TEST_CASES.md)：拆分规则逻辑前固定的核心输入输出样例。
 - [docs/DECISIONS.md](docs/DECISIONS.md)：关键架构和产品决策记录。
@@ -73,4 +74,4 @@ npm.cmd run verify:phase5
 
 ## 下一步
 
-Phase 4 TypeScript core 最小迁移已完成，仓库已补齐 Phase 5 前准备检查。下一步可以开始 Phase 5 Tauri 桌面端封装设计，但正式实施前应先运行 `npm.cmd run verify:phase5`，并按 `docs/PHASE5_PREPARED.md` 确认静态 Web fallback 可用。
+Phase 5 最小 Tauri 壳已接入。可运行 `npm.cmd run verify:desktop` 准备桌面端前端资源；运行 `npm.cmd run desktop:dev` 或 `npm.cmd run desktop:build` 需要本机先安装 Rust / Cargo。下一步建议先完成本机 Rust / Tauri 环境验证，再考虑桌面端文件保存 / 读取能力；不要在 Phase 5 同步迁移 SQLite。

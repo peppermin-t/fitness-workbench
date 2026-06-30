@@ -164,7 +164,7 @@
 
 - 本地优先。
 - 静态 Web 可直接运行。
-- 不引入 React / Vue / Tauri / SQLite / FastAPI。
+- v0.2 阶段不引入 React / Vue / Tauri / SQLite / FastAPI；Phase 5 起已开始最小 Tauri 壳接入，但仍不改变静态 Web fallback。
 - 不破坏 `index.html` 双击运行。
 - 不删除现有功能。
 - 不让 AI 或规则静默修改计划。
