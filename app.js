@@ -5,6 +5,7 @@
   const D = window.FitnessData;
   const P = window.FitnessPlanner;
   const M = window.FitnessCore.StateNormalizer;
+  const DesktopStorage = window.FitnessCore.DesktopStorage;
   const $ = (s) => document.querySelector(s);
   const $$ = (s) => Array.from(document.querySelectorAll(s));
   const clone = (v) => JSON.parse(JSON.stringify(v));
@@ -27,6 +28,7 @@
   document.addEventListener("DOMContentLoaded", () => {
     bindEvents();
     renderAll();
+    hydrateDesktopState();
   });
 
   function defaultState() {
@@ -73,6 +75,30 @@
   function saveState() {
     state = normalizeState(state);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    persistDesktopState();
+  }
+
+  async function hydrateDesktopState() {
+    if (!DesktopStorage?.isAvailable()) return;
+    try {
+      const desktopState = await DesktopStorage.loadAppState();
+      if (desktopState) {
+        state = prepareState(desktopState);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        renderAll();
+      } else {
+        persistDesktopState();
+      }
+    } catch (error) {
+      console.warn("Desktop SQLite load failed.", error);
+    }
+  }
+
+  function persistDesktopState() {
+    if (!DesktopStorage?.isAvailable()) return;
+    DesktopStorage.saveAppState(state).catch((error) => {
+      console.warn("Desktop SQLite save failed.", error);
+    });
   }
 
   function bindEvents() {

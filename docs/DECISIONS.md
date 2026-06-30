@@ -11,7 +11,7 @@
 ### 明确不做
 
 - Phase 5 之前不引入 Tauri；当前已进入 Phase 5，最小 Tauri 壳已接入。
-- 当前不引入 SQLite。
+- Phase 6 起已接入 Tauri 环境下的 SQLite 存储桥接。
 - 当前不引入 FastAPI。
 - 当前不引入 React / Vue。
 - 当前不把 TypeScript 构建链作为应用运行前置条件。
@@ -198,7 +198,7 @@ AI 或规则只能生成候选建议，不能静默修改训练计划。
 - 当前仍保持 `index.html` 双击运行。
 - 当前已引入最小 npm / TypeScript 检查链，但只用于 core 构建和类型检查。
 - 当前已接入最小 Tauri 壳，但仍保持 `index.html` 双击运行。
-- 当前不引入 SQLite。
+- 当前已接入 Tauri 环境下的 SQLite 存储桥接，但仍保持 localStorage fallback 和 JSON 备份。
 
 ### 原因
 
@@ -219,8 +219,15 @@ AI 或规则只能生成候选建议，不能静默修改训练计划。
 - `desktop:dev` 和 `desktop:build` 已作为 npm 脚本存在。
 - 本机运行或打包 Tauri 仍需要 Rust / Cargo 和系统依赖。
 
+### Phase 6 当前结果
+
+- Tauri Rust 侧新增 `load_app_state` / `save_app_state` 命令。
+- 桌面端状态会写入 SQLite 完整 JSON 快照，并镜像 `goals`、`gyms`、`exercises`、`training_plans`、`workout_sessions`、`exercise_logs`、`set_logs`、`body_metrics`、`nutrition_logs`、`advice`、`revisions` 等表。
+- 普通浏览器仍使用 localStorage。
+- JSON 仍是备份 / 导入导出和迁移格式。
+
 ### 影响
 
 - 后续路线文档应把 TypeScript core、Tauri 和 SQLite 写成长期路线中的明确阶段。
 - v0.2 讨论范围时，仍以 [V0_2_SCOPE.md](V0_2_SCOPE.md) 和 [REFACTOR_PLAN.md](REFACTOR_PLAN.md) 的当前阶段边界为准。
-- SQLite 工作必须以模型、迁移、测试、JSON 回退路径和 Tauri 壳稳定为前置条件。
+- 后续 SQLite 工作应先完成本机 `desktop:build` 验证，再逐步把读取逻辑从完整 JSON 快照迁移到细粒度 SQL 查询。

@@ -2,15 +2,15 @@
 
 这是一个本地电脑端训练与饮食工作台，用来替代教练用 Excel 管理训练计划的方式，并逐步补上动作级反馈、饮食自然语言记录、身体指标跟踪和计划优化建议。
 
-当前仍是本地优先工作台，静态 Web 版本继续作为 fallback。本阶段不引入 React / Vue / SQLite / FastAPI，不破坏 `index.html` 双击运行；Phase 5 已接入最小 Tauri 壳。
+当前仍是本地优先工作台，静态 Web 版本继续作为 fallback。本阶段不引入 React / Vue / FastAPI，不破坏 `index.html` 双击运行；Phase 5 已接入最小 Tauri 壳，Phase 6 已接入 Tauri 环境下的 SQLite 存储路径。
 
-长期技术路线是 TypeScript core + Tauri 桌面端 + SQLite 本地数据库；当前已经完成 TypeScript core 的最小迁移和 Phase 5 最小 Tauri 壳接入，但运行入口仍然保留静态 JS，SQLite 仍不是当前阶段立即执行项。
+长期技术路线是 TypeScript core + Tauri 桌面端 + SQLite 本地数据库；当前已经完成 TypeScript core 最小迁移、Phase 5 最小 Tauri 壳接入和 Phase 6 SQLite 存储桥接，但运行入口仍然保留静态 JS 与 localStorage fallback。
 
 ## 运行方式
 
 直接双击打开 `index.html` 即可使用。
 
-当前版本是零依赖静态应用，数据保存在浏览器本地存储中。建议定期在“导入导出”页导出 JSON 备份。
+静态 Web 版本数据保存在浏览器本地存储中。Tauri 桌面环境会额外同步到 SQLite 本地数据库。两种运行方式都应定期在“导入导出”页导出 JSON 备份。
 
 如需检查 TypeScript core，可在命令行运行：
 
@@ -32,6 +32,7 @@ npm.cmd run verify:phase5
 - [docs/REFACTOR_PLAN.md](docs/REFACTOR_PLAN.md)：后续重构路线。
 - [docs/PHASE5_PREPARED.md](docs/PHASE5_PREPARED.md)：进入 Tauri 桌面端封装前的准备状态和检查命令。
 - [docs/PHASE5_DESKTOP.md](docs/PHASE5_DESKTOP.md)：Tauri 桌面端封装的当前实现和运行方式。
+- [docs/PHASE6_SQLITE.md](docs/PHASE6_SQLITE.md)：SQLite 本地数据库迁移的当前实现和验证要求。
 - [docs/SMOKE_CHECKLIST.md](docs/SMOKE_CHECKLIST.md)：重构前后必须跑通的人工验收清单。
 - [docs/RULE_TEST_CASES.md](docs/RULE_TEST_CASES.md)：拆分规则逻辑前固定的核心输入输出样例。
 - [docs/DECISIONS.md](docs/DECISIONS.md)：关键架构和产品决策记录。
@@ -74,4 +75,4 @@ npm.cmd run verify:phase5
 
 ## 下一步
 
-Phase 5 最小 Tauri 壳已接入。可运行 `npm.cmd run verify:desktop` 准备桌面端前端资源；运行 `npm.cmd run desktop:dev` 或 `npm.cmd run desktop:build` 需要本机先安装 Rust / Cargo。下一步建议先完成本机 Rust / Tauri 环境验证，再考虑桌面端文件保存 / 读取能力；不要在 Phase 5 同步迁移 SQLite。
+Phase 6 SQLite 存储桥接已接入。可运行 `npm.cmd run verify:desktop` 验证前端保护层和桌面资源准备；`npm.cmd run desktop:build` 仍需要当前机器能正常访问 crates.io 以下载 Rust 依赖。下一步应先完成 Tauri + SQLite 的实际 build / dev 验证，再进入更细的 SQL 查询优化。

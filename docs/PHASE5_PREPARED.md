@@ -55,7 +55,7 @@ npm.cmd run verify:desktop
 
 ## Phase 5 暂不做什么
 
-- 不在刚进入 Phase 5 时迁移 SQLite。
+- SQLite 不属于 Phase 5 prepared 范围；已在后续 Phase 6 单独处理。
 - 不重写 UI。
 - 不引入 React / Vue。
 - 不做账号系统、云同步或多端同步。

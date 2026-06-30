@@ -9,6 +9,7 @@ interface FitnessCoreNamespace {
   IntegratedSignals?: any;
   WeeklyReview?: any;
   StateNormalizer?: any;
+  DesktopStorage?: any;
 }
 
 interface Window {

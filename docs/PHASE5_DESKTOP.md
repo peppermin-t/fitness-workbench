@@ -1,6 +1,6 @@
 # Phase 5：Tauri 桌面端封装
 
-本文档记录 Phase 5 的当前实现状态。Phase 5 的目标是把已经稳定的静态 Web 工作台封装为桌面端应用，而不是在同一阶段重写 UI、迁移 SQLite 或改变业务规则。
+本文档记录 Phase 5 的实现状态。Phase 5 的目标是把已经稳定的静态 Web 工作台封装为桌面端应用，而不是在同一阶段重写 UI 或改变业务规则；SQLite 已在后续 Phase 6 单独接入。
 
 ## 当前实现
 
@@ -41,7 +41,7 @@ npm.cmd run desktop:build
 
 ## 明确不做
 
-- 不在 Phase 5 迁移 SQLite。
+- SQLite 已在 Phase 6 单独接入，不回填到 Phase 5 范围。
 - 不重写 `app.js`。
 - 不引入 React / Vue。
 - 不改变 localStorage key。

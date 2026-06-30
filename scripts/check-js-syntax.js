@@ -9,7 +9,9 @@ const files = [
   "app.js",
   "planner.js",
   "data.js",
-  "src/app/storage/state-normalizer.js",
+  ...fs.readdirSync(path.join(root, "src", "app", "storage"))
+    .filter((name) => name.endsWith(".js"))
+    .map((name) => path.join("src", "app", "storage", name)),
   ...fs.readdirSync(path.join(root, "src", "core", "rules"))
     .filter((name) => name.endsWith(".js"))
     .map((name) => path.join("src", "core", "rules", name))

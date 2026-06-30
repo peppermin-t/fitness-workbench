@@ -54,7 +54,8 @@ const runtimeScripts = [
   "src/core/rules/integrated-signals.js",
   "src/core/rules/weekly-review.js",
   "planner.js",
-  "src/app/storage/state-normalizer.js"
+  "src/app/storage/state-normalizer.js",
+  "src/app/storage/desktop-sqlite.js"
 ];
 
 for (const file of runtimeScripts) {

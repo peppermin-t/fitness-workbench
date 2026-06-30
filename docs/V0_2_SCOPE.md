@@ -220,7 +220,7 @@
 - 在文档中冻结模型。
 - 将纯函数边界识别出来。
 - 后续再新建 `src/core/models`、`src/core/rules`、`src/app/state`、`src/app/storage`。
-- 不引入 React / Vue / Tauri / SQLite / FastAPI。
+- v0.2 阶段不引入 React / Vue / Tauri / SQLite / FastAPI；Phase 5 / Phase 6 的 Tauri 与 SQLite 接入不改变此处对 v0.2 的历史边界定义。
 
 ## 三、本阶段明确不做的功能
 

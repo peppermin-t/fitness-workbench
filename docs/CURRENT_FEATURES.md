@@ -1,6 +1,6 @@
 # 当前功能清单
 
-本文档按当前代码实际实现梳理功能边界，主要依据 `README.md`、`docs/PRODUCT_VISION.md`、`index.html`、`data.js`、`src/core/rules/*`、`src/core/models/index.d.ts`、`planner.js`、`app.js` 和 `styles.css`。当前应用仍是可直接双击运行的静态页面，通过 `index.html` 直接加载 `data.js`、`src/core/rules/*.js`、`planner.js`、`app.js`，运行数据存放在浏览器 `localStorage`。Phase 4 后，`src/core/rules/*.ts` 和 `src/app/storage/state-normalizer.ts` 是 core 源文件，同名 `.js` 是浏览器兼容输出。
+本文档按当前代码实际实现梳理功能边界，主要依据 `README.md`、`docs/PRODUCT_VISION.md`、`index.html`、`data.js`、`src/core/rules/*`、`src/core/models/index.d.ts`、`planner.js`、`app.js` 和 `styles.css`。当前应用仍可直接双击运行：静态 Web 通过 `index.html` 加载 `data.js`、`src/core/rules/*.js`、`planner.js`、`app.js`，运行数据存放在浏览器 `localStorage`。Tauri 环境下会额外通过 `src/app/storage/desktop-sqlite.js` 同步到 SQLite。Phase 4 后，`src/core/rules/*.ts` 和 `src/app/storage/*.ts` 是 core / storage 源文件，同名 `.js` 是浏览器兼容输出。
 
 ## 1. 今日训练
 

@@ -1,8 +1,8 @@
 # 后续重构计划
 
-本文档规划从当前静态 Web 工作台到长期桌面端应用的技术路线。长期目标明确是：TypeScript core + Tauri 桌面端 + SQLite 本地数据库。当前已经完成 TypeScript core 的最小迁移和 Phase 5 最小 Tauri 壳接入，但仍然保持 `index.html` 直接双击可用，不立即引入 SQLite、不删除现有功能。
+本文档规划从当前静态 Web 工作台到长期桌面端应用的技术路线。长期目标明确是：TypeScript core + Tauri 桌面端 + SQLite 本地数据库。当前已经完成 TypeScript core 最小迁移、Phase 5 最小 Tauri 壳接入和 Phase 6 SQLite 存储桥接，但仍然保持 `index.html` 直接双击可用，不删除现有功能。
 
-当前不立即上 Tauri / SQLite 的原因是，v0.2 的 `WorkoutSession`、`SetLog`、`schemaVersion` 迁移、数据导入导出稳定性、规则 smoke 测试和人工 smoke checklist 已完成第一版，但仍需要持续用这些保护层约束后续迁移。数据底座和行为保护没有固化之前，直接进入桌面壳或数据库迁移会放大回退风险。
+当前已经进入 Tauri / SQLite 路线，但仍不应继续扩大到细粒度 SQL 查询重写、云同步或多端同步。v0.2 的 `WorkoutSession`、`SetLog`、`schemaVersion` 迁移、数据导入导出稳定性、规则 smoke 测试和人工 smoke checklist 仍需要持续约束后续迁移。数据底座和行为保护没有完全固化之前，继续扩大技术面会放大回退风险。
 
 ## 总体路线
 
@@ -24,13 +24,14 @@ Phase 7：AI 结构化解析与多端扩展
 - Phase 2：核心规则拆分已收口。`planner.js` 现在主要承担兼容导出和少量尚未单独成模块的训练整体反馈建议函数；无依赖规则 smoke 已覆盖 12 个核心用例。
 - Phase 3：已完成第一版：`SetLog` 可选记录、`WorkoutSession` 状态与动作日志关联、基础训练容量统计、`schemaVersion: 2`、JSON 导入稳定性和当前状态规范化已经具备。
 - Phase 4：已完成最小迁移：新增 TypeScript 配置、模型声明、全局声明，核心规则和状态规范化已有 `.ts` 源文件，并继续生成 `.js` 兼容输出。
-- Phase 5：最小 Tauri 壳已接入，桌面前端资源由 `npm.cmd run prepare:desktop` 生成；本机实际运行 / 打包需要 Rust / Cargo。
+- Phase 5：最小 Tauri 壳已接入，桌面前端资源由 `npm.cmd run prepare:desktop` 生成。
+- Phase 6：SQLite 存储桥接已接入。Tauri 环境中会通过 SQLite 保存 / 读取完整状态快照，并镜像核心业务表；静态 Web fallback 继续使用 localStorage。
 
 ## 当前阶段边界
 
 当前阶段已经引入最小 npm / TypeScript 检查链，仅用于 core 类型检查和生成 JS 兼容输出。
 当前阶段已接入最小 Tauri 壳。
-当前阶段仍然不引入 SQLite。
+当前阶段已接入 SQLite 存储桥接，但保留 localStorage 和 JSON 回退路径。
 当前阶段仍然不破坏 `index.html` 双击运行。
 
 当前优先完成：
@@ -613,7 +614,9 @@ Phase 5 的目标是桌面端封装，不是用桌面壳掩盖尚未稳定的数
 
 ## Phase 6：SQLite 本地数据库迁移
 
-Phase 6 是长期本地数据存储路线，不是 v0.2 的立即执行项。SQLite 应在 Tauri 壳和数据迁移机制稳定后再进入。
+状态：已完成第一版桥接实现。SQLite 只在 Tauri 环境启用；普通浏览器和双击 `index.html` 继续使用 localStorage。
+
+Phase 6 是长期本地数据存储路线。当前实现采用“完整状态快照 + 结构化镜像表”的保守方案，先保证数据不丢和 JSON 回退路径不变，再逐步迁移到更细粒度的 SQL 查询。
 
 ### 目标
 
@@ -627,9 +630,9 @@ Phase 6 是长期本地数据存储路线，不是 v0.2 的立即执行项。SQL
 - JSON 备份仍然可导出。
 - 有从旧 JSON 导入 SQLite 的迁移路径。
 
-### 建议表
+### 已建表
 
-先规划，不立即实现：
+当前 `src-tauri/src/lib.rs` 会初始化：
 
 ```text
 goals
@@ -654,6 +657,12 @@ revisions
 - 老 JSON 必须可以迁移。
 - 迁移失败不能丢数据。
 - 每次 schema 变更都要有迁移记录。
+
+### 当前限制
+
+- `npm.cmd run verify:desktop` 已通过。
+- 当前执行环境访问 crates.io 时出现 SSL credential 错误，导致 `npm.cmd run desktop:build` 暂时无法拉取 `rusqlite` 等 Rust 依赖完成编译。
+- 该限制属于本机 Rust registry / 证书访问问题，不改变仓库侧 Phase 6 代码路径。
 
 ## Phase 7：AI 结构化解析与多端扩展
 
