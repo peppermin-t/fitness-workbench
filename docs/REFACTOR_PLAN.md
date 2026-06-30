@@ -40,7 +40,7 @@ Phase 7：AI 结构化解析与多端扩展
 - 持续维护 `WorkoutSession`、`SetLog`、`schemaVersion` 迁移和 JSON 导入导出稳定性。
 - 保持规则 smoke 测试和人工 smoke checklist 可运行。
 - 在继续移除兼容层前保留静态 Web fallback、localStorage 和 JSON 回退路径。
-- 继续把 `app.js` 中的复杂渲染模板，以及目标 / 健身房 / 指标 / 导入导出等剩余状态写入职责分批拆出。
+- 继续把 `app.js` 中的复杂渲染模板和浏览器 I/O 协调分批拆出。
 
 ## Phase 0：现状冻结与行为保护
 
@@ -149,7 +149,7 @@ src/
 - 保存目标、健身房、指标、训练反馈、动作日志、饮食记录。
 - 调用 core 规则后合并结果。
 
-当前 `app.js` 中的 `defaultState`、`loadState`、`saveState` 已迁移到 `src/app/storage/app-state-store`；训练反馈、动作日志、饮食日志和 revision 应用已开始迁移到 `src/app/state/workbench-actions`。后续还可以继续迁移目标、健身房、指标和导入导出相关状态动作。
+当前 `app.js` 中的 `defaultState`、`loadState`、`saveState` 已迁移到 `src/app/storage/app-state-store`；目标、健身房、指标、计划、训练反馈、动作日志、饮食日志和 revision 应用已迁移到 `src/app/state/workbench-actions`。后续重点是拆复杂渲染模板和浏览器文件 I/O 协调。
 
 ### `src/app/storage`
 

@@ -215,6 +215,65 @@
       return `${equipmentLabel(id)} / ${equipmentEnglishLabel(id)}`;
     }
 
+    function equipmentFamilyLabel(id) {
+      return {
+        free_weight: "自由重量",
+        rack_support: "支架 / 长椅",
+        cable_station: "绳索 / 滑轮",
+        fixed_machine: "固定器械",
+        bodyweight_station: "自重 / 辅助",
+        accessories: "附件 / 地面",
+        conditioning: "有氧 / 体能"
+      }[equipmentFamily(id)] || "通用器械";
+    }
+
+    function equipmentFamily(id) {
+      return {
+        barbell: "free_weight",
+        dumbbell: "free_weight",
+        kettlebell: "free_weight",
+        trap_bar: "free_weight",
+        squat_rack: "rack_support",
+        bench: "rack_support",
+        smith: "fixed_machine",
+        cable: "cable_station",
+        lat_pulldown: "cable_station",
+        seated_row_machine: "fixed_machine",
+        leg_press: "fixed_machine",
+        hack_squat: "fixed_machine",
+        leg_extension: "fixed_machine",
+        leg_curl: "fixed_machine",
+        calf_raise: "fixed_machine",
+        pec_deck: "fixed_machine",
+        chest_press_machine: "fixed_machine",
+        incline_press_machine: "fixed_machine",
+        shoulder_press_machine: "fixed_machine",
+        ez_bar: "free_weight",
+        bicep_curl_machine: "fixed_machine",
+        high_row_machine: "fixed_machine",
+        t_bar_row_station: "fixed_machine",
+        pullup_bar: "bodyweight_station",
+        dip_station: "bodyweight_station",
+        assisted_pullup: "bodyweight_station",
+        landmine: "rack_support",
+        glute_drive: "fixed_machine",
+        hip_abduction: "fixed_machine",
+        hip_adduction: "fixed_machine",
+        preacher_bench: "rack_support",
+        back_extension: "fixed_machine",
+        ab_machine: "fixed_machine",
+        bands: "accessories",
+        suspension_trainer: "accessories",
+        mat: "accessories",
+        treadmill: "conditioning",
+        elliptical: "conditioning",
+        stair_climber: "conditioning",
+        bike: "conditioning",
+        rower: "conditioning",
+        sled: "conditioning"
+      }[id] || "fixed_machine";
+    }
+
     return {
       esc,
       equipmentLabel,
@@ -237,7 +296,8 @@
       equipmentEnglishLabel,
       exerciseEnglishName,
       bilingualNameMarkup,
-      equipmentDisplayText
+      equipmentDisplayText,
+      equipmentFamilyLabel
     };
   }
 

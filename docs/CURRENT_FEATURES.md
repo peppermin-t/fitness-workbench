@@ -69,7 +69,8 @@
 ### 主要代码位置
 
 - `index.html`：`view-goals`、目标输入、解析按钮、保存按钮、目标列表容器。
-- `app.js`：`saveGoal`、`renderParsedGoal`、`renderGoalsList`、`currentGoal`。
+- `app.js`：`saveGoal` 的表单读取和页面反馈、`renderParsedGoal`、`renderGoalsList`、`currentGoal`。
+- `src/app/state/workbench-actions.js`：目标保存、当前目标切换和目标删除。
 - `src/core/rules/goal-parser.js`：目标解析逻辑。
 - `planner.js`：兼容导出 `window.FitnessPlanner.parseGoal`，并在计划、营养和联动规则中读取目标结构。
 
@@ -101,13 +102,14 @@
 - 可设置当前健身房。
 - 可删除非唯一健身房。
 - 当前健身房限制训练计划生成和替代动作推荐。
-- 有器械图例和中英双语展示的后续增强代码。
+- 有器械图例和中英双语展示。
 
 ### 主要代码位置
 
 - `data.js`：`equipment`、`defaultGyms`。
 - `index.html`：`view-gyms`、健身房表单、器械 checklist、器械图例。
-- `app.js`：`renderGymSelect`、`renderCurrentGymSummary`、`renderEquipmentChecklist`、`renderEquipmentLibrary`、`renderGymList`、`saveGym`、`deleteGym`、`currentGym`。
+- `app.js`：`renderGymSelect`、`renderCurrentGymSummary`、`renderEquipmentChecklist`、`renderEquipmentLibrary`、`renderGymList`、`saveGym` / `deleteGym` 的表单读取和页面反馈、`currentGym`。
+- `src/app/state/workbench-actions.js`：场地保存、当前场地切换和场地删除保护。
 - `src/core/rules/plan-generator.js`：`isAvailable`、`availableSubstitutes`、`pickAvailableExercise`。
 - `planner.js`：兼容导出 `window.FitnessPlanner.isAvailable`、`window.FitnessPlanner.availableSubstitutes`。
 
@@ -144,8 +146,9 @@
 
 - `data.js`：`exercises` 静态主数据。
 - `index.html`：`view-exercises`。
-- `app.js`：`renderExerciseList`、`renderPlanRow`、`findOrCreateExercise`。
-- `src/app/presenters/display-formatters.js`：中英双语动作名、器械展示文案、标签、证据列表和推荐项展示格式化。
+- `app.js`：`renderExerciseList`、`renderPlanRow`、`findOrCreateExercise` 的兼容包装。
+- `src/app/state/workbench-actions.js`：CSV 导入时创建极简自定义动作。
+- `src/app/presenters/display-formatters.js`：中英双语动作名、器械展示文案、器械分类文案、标签、证据列表和推荐项展示格式化。
 - `src/core/rules/plan-generator.js`：动作可用性和替代动作逻辑。
 - `planner.js`：兼容导出 `window.FitnessPlanner.availableSubstitutes`、`window.FitnessPlanner.isAvailable`。
 
@@ -186,7 +189,8 @@
 ### 主要代码位置
 
 - `index.html`：`view-plan`、生成计划、导出 CSV、导入 CSV。
-- `app.js`：`generatePlan`、`renderPlan`、`renderWorkoutDay`、`renderPlanRow`、`replaceExercise`、`exportPlanCsv`、`importPlanCsv` 的 UI 事件和状态写入。
+- `app.js`：`generatePlan`、`renderPlan`、`renderWorkoutDay`、`renderPlanRow`、`replaceExercise`、`exportPlanCsv`、`importPlanCsv` 的 UI 事件和页面反馈。
+- `src/app/state/workbench-actions.js`：计划生成、CSV 导入后写入当前计划、手动替换动作和 revision 记录。
 - `src/app/import-export/data-portability.js`：训练计划 CSV 构造和解析 helper。
 - `src/core/rules/plan-generator.js`：训练计划生成、训练日模板、动作可用性和替代动作逻辑。
 - `planner.js`：兼容导出 `window.FitnessPlanner.generatePlan`、`window.FitnessPlanner.isAvailable`、`window.FitnessPlanner.availableSubstitutes` 等 API。
@@ -315,7 +319,8 @@
 ### 主要代码位置
 
 - `index.html`：`view-metrics`、`metric-form`、`metric-chart`、`metric-list`。
-- `app.js`：`saveMetric`、`deleteMetric`、`renderMetrics`、`drawMetricChart`、`latestMetric`。
+- `app.js`：`saveMetric` / `deleteMetric` 的表单读取和页面反馈、`renderMetrics`、`drawMetricChart`、`latestMetric`。
+- `src/app/state/workbench-actions.js`：身体指标保存、排序和删除。
 - `src/app/charts/line-chart.js`：通用 canvas 折线图绘制 helper。
 - `src/core/rules/metric-analyzer.js`：`sortedMetrics`、`metricTrend`。
 - `src/core/rules/plan-generator.js`：`buildPlanContext` 读取最近指标和体重趋势。
@@ -563,4 +568,4 @@
 
 - `body` 设置 `min-width: 1100px`，当前定位更偏桌面端，不适合手机端。
 - `app.js` 直接拼接 HTML，缺少组件边界。
-- 默认状态、存储协调、CSV / JSON 构造解析 helper、通用 canvas 折线图 helper、展示格式化 helper，以及训练 / 饮食 / revision 第一批状态动作已从 `app.js` 拆出；旧同名渲染 / 保存函数覆盖问题已清理；当前仍需继续拆复杂渲染模板，以及目标 / 健身房 / 指标 / 导入导出等剩余状态写入。
+- 默认状态、存储协调、CSV / JSON 构造解析 helper、通用 canvas 折线图 helper、展示格式化 helper，以及目标 / 场地 / 指标 / 计划 / 训练 / 饮食 / revision 等主要状态动作已从 `app.js` 拆出；旧同名渲染 / 保存函数覆盖问题已清理；当前仍需继续拆复杂渲染模板和浏览器 I/O 协调。

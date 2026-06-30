@@ -33,7 +33,8 @@
     equipmentEnglishLabel,
     exerciseEnglishName,
     bilingualNameMarkup,
-    equipmentDisplayText
+    equipmentDisplayText,
+    equipmentFamilyLabel
   } = DisplayFormatters;
   const $ = (s) => document.querySelector(s);
   const $$ = (s) => Array.from(document.querySelectorAll(s));
@@ -112,7 +113,7 @@
   function bindEvents() {
     $$(".nav-button").forEach((b) => b.addEventListener("click", () => switchView(b.dataset.view)));
     $("#current-gym-select").addEventListener("change", (e) => {
-      state.currentGymId = e.target.value;
+      WorkbenchActions.setCurrentGym({ state, gymId: e.target.value });
       saveState();
       renderAll();
       toast("已切换当前健身房，动作替代范围已更新。");
@@ -338,9 +339,7 @@
     const text = $("#goal-text").value.trim();
     if (!text) return toast("请先输入目标描述。");
     const parsed = parsedGoalDraft?.rawText === text ? parsedGoalDraft : P.parseGoal(text);
-    const goal = { id: uid("goal"), text, parsed, createdAt: nowLabel() };
-    state.goals.unshift(goal);
-    state.currentGoalId = goal.id;
+    WorkbenchActions.saveGoal({ state, text, parsed });
     parsedGoalDraft = parsed;
     saveState();
     renderAll();
@@ -352,9 +351,7 @@
     const name = $("#gym-name").value.trim();
     if (!name) return toast("请填写健身房名称。");
     const equipment = $$("#equipment-checklist input:checked").map((x) => x.value);
-    const gym = { id: uid("gym"), name, location: $("#gym-location").value.trim(), equipment };
-    state.gyms.unshift(gym);
-    state.currentGymId = gym.id;
+    WorkbenchActions.saveGym({ state, name, location: $("#gym-location").value.trim(), equipment });
     $("#gym-form").reset();
     saveState();
     renderAll();
@@ -362,17 +359,14 @@
   }
 
   function deleteGym(id) {
-    if (state.gyms.length <= 1) return toast("至少保留一个健身房。");
-    state.gyms = state.gyms.filter((x) => x.id !== id);
-    if (state.currentGymId === id) state.currentGymId = state.gyms[0]?.id || null;
+    if (!WorkbenchActions.deleteGym({ state, gymId: id })) return toast("至少保留一个健身房。");
     saveState();
     renderAll();
     toast("健身房已删除。");
   }
 
   function deleteGoal(id) {
-    state.goals = state.goals.filter((x) => x.id !== id);
-    if (state.currentGoalId === id) state.currentGoalId = state.goals[0]?.id || null;
+    WorkbenchActions.deleteGoal({ state, goalId: id });
     saveState();
     renderAll();
     toast("目标已删除。");
@@ -381,18 +375,15 @@
   function saveMetric(event) {
     event.preventDefault();
     const metric = {
-      id: uid("metric"),
       date: $("#metric-date").value || todayIso(),
       weight: num($("#metric-weight").value),
       bodyFat: num($("#metric-bodyfat").value),
       skeletalMuscle: num($("#metric-muscle").value),
       waist: num($("#metric-waist").value),
-      notes: $("#metric-notes").value.trim(),
-      createdAt: nowLabel()
+      notes: $("#metric-notes").value.trim()
     };
     if ([metric.weight, metric.bodyFat, metric.skeletalMuscle, metric.waist].every((x) => x === null)) return toast("至少填写一个身体指标。");
-    state.metrics.push(metric);
-    state.metrics = P.sortedMetrics(state.metrics);
+    WorkbenchActions.saveMetric({ state, metric });
     $("#metric-form").reset();
     $("#metric-date").value = todayIso();
     saveState();
@@ -401,7 +392,7 @@
   }
 
   function deleteMetric(id) {
-    state.metrics = state.metrics.filter((x) => x.id !== id);
+    WorkbenchActions.deleteMetric({ state, metricId: id });
     saveState();
     renderAll();
     toast("身体指标已删除。");
@@ -411,8 +402,7 @@
     const gym = currentGym();
     if (!gym) return toast("请先添加并选择健身房。");
     const goal = currentGoal();
-    state.plan = P.generatePlan({ gym, goal, metrics: state.metrics, exercises: state.exercises, nowLabel, uid });
-    state.advice.unshift({ id: uid("advice"), createdAt: nowLabel(), title: "已生成训练计划", body: `计划已按“${state.plan.context.goalLabel}”、当前健身房“${state.plan.context.gymName}”和最近身体指标生成。替代动作会优先在当前器械范围内选择。`, tags: ["计划生成", state.plan.context.gymName, state.plan.context.goalLabel] });
+    WorkbenchActions.generatePlan({ state, gym, goal });
     saveState();
     renderAll();
     toast("训练计划已生成。");
@@ -489,14 +479,14 @@
   }
 
   function deleteExerciseLog(id) {
-    state.exerciseLogs = (state.exerciseLogs || []).filter((x) => x.id !== id);
+    WorkbenchActions.deleteExerciseLog({ state, logId: id });
     saveState();
     renderAll();
     toast("动作级反馈已删除。");
   }
 
   function deleteNutritionLog(id) {
-    state.nutritionLogs = (state.nutritionLogs || []).filter((x) => x.id !== id);
+    WorkbenchActions.deleteNutritionLog({ state, logId: id });
     saveState();
     renderAll();
     toast("饮食记录已删除。");
@@ -548,7 +538,7 @@
     const reader = new FileReader();
     reader.onload = () => {
       const days = DataPortability.parsePlanCsv(String(reader.result || ""), findOrCreateExercise);
-      state.plan = { id: uid("plan"), generatedAt: nowLabel(), context: P.generatePlan({ gym: currentGym(), goal: currentGoal(), metrics: state.metrics, exercises: state.exercises, nowLabel, uid }).context, days };
+      WorkbenchActions.importPlanCsv({ state, days, gym: currentGym(), goal: currentGoal() });
       saveState();
       renderAll();
       event.target.value = "";
@@ -590,70 +580,7 @@
   }
 
   function findOrCreateExercise(name) {
-    const found = state.exercises.find((x) => x.name === name);
-    if (found) return found.id;
-    const id = uid("custom_exercise");
-    state.exercises.push({ id, name, pattern: "自定义", muscles: ["待补充"], equipment: [], substitutes: [], cue: "从 CSV 导入的自定义动作，请后续补充器械依赖。", risk: "尚未录入注意事项。", links: [{ label: "YouTube 搜索", url: `https://www.youtube.com/results?search_query=${encodeURIComponent(name)}` }] });
-    return id;
-  }
-
-  function equipmentFamilyLabel(id) {
-    return {
-      free_weight: "自由重量",
-      rack_support: "支架 / 长椅",
-      cable_station: "绳索 / 滑轮",
-      fixed_machine: "固定器械",
-      bodyweight_station: "自重 / 辅助",
-      accessories: "附件 / 地面",
-      conditioning: "有氧 / 体能"
-    }[equipmentFamily(id)] || "通用器械";
-  }
-
-  function equipmentFamily(id) {
-    return {
-      barbell: "free_weight",
-      dumbbell: "free_weight",
-      kettlebell: "free_weight",
-      trap_bar: "free_weight",
-      squat_rack: "rack_support",
-      bench: "rack_support",
-      smith: "fixed_machine",
-      cable: "cable_station",
-      lat_pulldown: "cable_station",
-      seated_row_machine: "fixed_machine",
-      leg_press: "fixed_machine",
-      hack_squat: "fixed_machine",
-      leg_extension: "fixed_machine",
-      leg_curl: "fixed_machine",
-      calf_raise: "fixed_machine",
-      pec_deck: "fixed_machine",
-      chest_press_machine: "fixed_machine",
-      incline_press_machine: "fixed_machine",
-      shoulder_press_machine: "fixed_machine",
-      ez_bar: "free_weight",
-      bicep_curl_machine: "fixed_machine",
-      high_row_machine: "fixed_machine",
-      t_bar_row_station: "fixed_machine",
-      pullup_bar: "bodyweight_station",
-      dip_station: "bodyweight_station",
-      assisted_pullup: "bodyweight_station",
-      landmine: "rack_support",
-      glute_drive: "fixed_machine",
-      hip_abduction: "fixed_machine",
-      hip_adduction: "fixed_machine",
-      preacher_bench: "rack_support",
-      back_extension: "fixed_machine",
-      ab_machine: "fixed_machine",
-      bands: "accessories",
-      suspension_trainer: "accessories",
-      mat: "accessories",
-      treadmill: "conditioning",
-      elliptical: "conditioning",
-      stair_climber: "conditioning",
-      bike: "conditioning",
-      rower: "conditioning",
-      sled: "conditioning"
-    }[id] || "fixed_machine";
+    return WorkbenchActions.findOrCreateExercise({ state, name });
   }
 
   function buildExerciseHistorySummary(logs) {
@@ -998,14 +925,14 @@
     const t = event.target.closest("[data-action]");
     if (!t) return;
     const action = t.dataset.action;
-    if (action === "set-current-gym") state.currentGymId = t.dataset.id;
+    if (action === "set-current-gym") WorkbenchActions.setCurrentGym({ state, gymId: t.dataset.id });
     if (action === "delete-gym") deleteGym(t.dataset.id);
-    if (action === "set-goal") state.currentGoalId = t.dataset.id;
+    if (action === "set-goal") WorkbenchActions.setCurrentGoal({ state, goalId: t.dataset.id });
     if (action === "delete-goal") deleteGoal(t.dataset.id);
     if (action === "delete-metric") deleteMetric(t.dataset.id);
     if (action === "delete-exercise-log") deleteExerciseLog(t.dataset.id);
     if (action === "delete-nutrition-log") deleteNutritionLog(t.dataset.id);
-    if (action === "delete-advice") state.advice = state.advice.filter((x) => x.id !== t.dataset.id);
+    if (action === "delete-advice") WorkbenchActions.deleteAdvice({ state, adviceId: t.dataset.id });
     if (action === "apply-revision") applyRevision(t.dataset.id);
     if (action === "apply-review-candidate") applyReviewCandidate(Number(t.dataset.index));
     if (action === "replace-exercise") replaceExercise(Number(t.dataset.day), Number(t.dataset.row), t.dataset.exerciseId);

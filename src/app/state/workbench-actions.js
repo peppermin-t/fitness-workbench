@@ -1,6 +1,93 @@
 (function () {
     "use strict";
     function create({ rules, uid, nowLabel, todayIso }) {
+        function setCurrentGym({ state, gymId }) {
+            state.currentGymId = gymId;
+        }
+        function setCurrentGoal({ state, goalId }) {
+            state.currentGoalId = goalId;
+        }
+        function deleteAdvice({ state, adviceId }) {
+            state.advice = state.advice.filter((item) => item.id !== adviceId);
+        }
+        function saveGoal({ state, text, parsed }) {
+            const goal = { id: uid("goal"), text, parsed, createdAt: nowLabel() };
+            state.goals.unshift(goal);
+            state.currentGoalId = goal.id;
+            return goal;
+        }
+        function deleteGoal({ state, goalId }) {
+            state.goals = state.goals.filter((item) => item.id !== goalId);
+            if (state.currentGoalId === goalId)
+                state.currentGoalId = state.goals[0]?.id || null;
+        }
+        function saveGym({ state, name, location, equipment }) {
+            const gym = { id: uid("gym"), name, location, equipment };
+            state.gyms.unshift(gym);
+            state.currentGymId = gym.id;
+            return gym;
+        }
+        function deleteGym({ state, gymId }) {
+            if ((state.gyms || []).length <= 1)
+                return false;
+            state.gyms = state.gyms.filter((item) => item.id !== gymId);
+            if (state.currentGymId === gymId)
+                state.currentGymId = state.gyms[0]?.id || null;
+            return true;
+        }
+        function saveMetric({ state, metric }) {
+            const entry = {
+                id: uid("metric"),
+                ...metric,
+                createdAt: nowLabel()
+            };
+            state.metrics.push(entry);
+            state.metrics = rules.sortedMetrics(state.metrics);
+            return entry;
+        }
+        function deleteMetric({ state, metricId }) {
+            state.metrics = state.metrics.filter((item) => item.id !== metricId);
+        }
+        function generatePlan({ state, gym, goal }) {
+            state.plan = rules.generatePlan({ gym, goal, metrics: state.metrics, exercises: state.exercises, nowLabel, uid });
+            const advice = {
+                id: uid("advice"),
+                createdAt: nowLabel(),
+                title: "已生成训练计划",
+                body: `计划已按“${state.plan.context.goalLabel}”、当前健身房“${state.plan.context.gymName}”和最近身体指标生成。替代动作会优先在当前器械范围内选择。`,
+                tags: ["计划生成", state.plan.context.gymName, state.plan.context.goalLabel]
+            };
+            state.advice.unshift(advice);
+            return { plan: state.plan, advice };
+        }
+        function importPlanCsv({ state, days, gym, goal }) {
+            const contextPlan = rules.generatePlan({ gym, goal, metrics: state.metrics, exercises: state.exercises, nowLabel, uid });
+            state.plan = {
+                id: uid("plan"),
+                generatedAt: nowLabel(),
+                context: contextPlan.context,
+                days
+            };
+            return state.plan;
+        }
+        function findOrCreateExercise({ state, name }) {
+            const found = state.exercises.find((item) => item.name === name);
+            if (found)
+                return found.id;
+            const id = uid("custom_exercise");
+            state.exercises.push({
+                id,
+                name,
+                pattern: "自定义",
+                muscles: ["待补充"],
+                equipment: [],
+                substitutes: [],
+                cue: "从 CSV 导入的自定义动作，请后续补充器械依赖。",
+                risk: "尚未录入注意事项。",
+                links: [{ label: "YouTube 搜索", url: `https://www.youtube.com/results?search_query=${encodeURIComponent(name)}` }]
+            });
+            return id;
+        }
         function saveSessionFeedback({ state, dayIndex, day, currentGym, input }) {
             const session = getOrCreateWorkoutSession(state, dayIndex, day, currentGym);
             Object.assign(session, {
@@ -96,6 +183,12 @@
             };
             state.advice.unshift(advice);
             return { log, advice };
+        }
+        function deleteExerciseLog({ state, logId }) {
+            state.exerciseLogs = (state.exerciseLogs || []).filter((item) => item.id !== logId);
+        }
+        function deleteNutritionLog({ state, logId }) {
+            state.nutritionLogs = (state.nutritionLogs || []).filter((item) => item.id !== logId);
         }
         function replaceExercise({ state, dayIndex, rowIndex, nextExercise, oldExercise, currentGymName }) {
             const row = state.plan?.days?.[dayIndex]?.exercises?.[rowIndex];
@@ -216,9 +309,23 @@
             return session;
         }
         return {
+            setCurrentGym,
+            setCurrentGoal,
+            deleteAdvice,
+            saveGoal,
+            deleteGoal,
+            saveGym,
+            deleteGym,
+            saveMetric,
+            deleteMetric,
+            generatePlan,
+            importPlanCsv,
+            findOrCreateExercise,
             saveSessionFeedback,
             saveExerciseLog,
             saveNutritionLog,
+            deleteExerciseLog,
+            deleteNutritionLog,
             replaceExercise,
             applyReviewCandidate,
             applyRevision,
