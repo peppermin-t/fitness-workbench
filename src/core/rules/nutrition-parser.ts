@@ -1,6 +1,28 @@
 (function () {
   "use strict";
 
+  type MealMarker = [string, RegExp];
+  type NutritionTotals = {
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+    fiber: number;
+  };
+  type NutritionRuleContext = {
+    tags: string[];
+    goal?: GoalParsed;
+    totals: NutritionTotals;
+    target: Record<string, number>;
+    mealDistribution?: {
+      highestProteinShare?: number;
+      [key: string]: unknown;
+    };
+    confidence?: string;
+    dayStatus?: { tags: string[]; alignment: string };
+    mealResults?: unknown[];
+  };
+
   const {
     recommendationItem,
     buildAdviceEntry,
@@ -49,13 +71,13 @@ const FOOD_LIBRARY = [
 function parseNutritionLog(rawText, goal, latestMetric) {
     const text = (rawText || "").trim();
     const meals = splitMeals(text);
-    const allTags = new Set();
+    const allTags = new Set<string>();
     const totals = emptyNutritionTotals();
     const missingInfo = [];
     const mealResults = meals.map((meal) => {
       const items = extractFoodItems(meal.text);
       const mealTotals = emptyNutritionTotals();
-      const mealTags = new Set();
+      const mealTags = new Set<string>();
       items.forEach((item) => {
         addNutritionTotals(mealTotals, item.estimate);
         item.tags.forEach((tag) => mealTags.add(tag));
@@ -121,7 +143,7 @@ function parseNutritionLog(rawText, goal, latestMetric) {
 
 function splitMeals(text) {
     if (!text) return [];
-    const markers: any[] = [
+    const markers: MealMarker[] = [
       ["breakfast", /早上|早餐|早饭/],
       ["lunch", /中午|午餐|午饭/],
       ["dinner", /晚上|晚餐|晚饭/],
@@ -240,15 +262,15 @@ function summarizeMealDistribution(meals) {
 
 
 
-function evaluateNutritionDay({ totals, goal, target, mealDistribution }: any) {
-    const tags = [];
+function evaluateNutritionDay({ totals, goal, target, mealDistribution }: NutritionRuleContext) {
+    const tags: string[] = [];
     const primary = goal?.primaryGoal || "general_fitness";
     if (totals.protein < target.protein * 0.7) tags.push("daily_protein_gap");
     if (totals.fiber < target.fiber * 0.7) tags.push("daily_fiber_gap");
     if (totals.calories < target.caloriesLower * 0.75) tags.push("daily_energy_low");
     if (totals.calories > target.caloriesUpper * 1.1) tags.push("daily_energy_high");
     if ((primary === "strength" || primary === "muscle_gain") && totals.carbs < target.carbsLower * 0.75) tags.push("daily_carb_low");
-    if (mealDistribution.highestProteinShare >= 0.6) tags.push("protein_distribution_unbalanced");
+    if ((mealDistribution?.highestProteinShare || 0) >= 0.6) tags.push("protein_distribution_unbalanced");
     const alignment = tags.includes("daily_energy_high") && primary === "fat_loss"
       ? "off_track"
       : tags.includes("daily_energy_low") && primary === "muscle_gain"
@@ -274,7 +296,7 @@ function nutritionConfidence(text, meals) {
 
 
 
-function buildNutritionRecommendationItems({ tags, goal, totals, target, confidence, dayStatus, mealDistribution }: any) {
+function buildNutritionRecommendationItems({ tags, goal, totals, target, confidence, dayStatus, mealDistribution }: NutritionRuleContext) {
     const items = [];
     const primary = goal?.primaryGoal || "general_fitness";
     if (tags.includes("missed_meal") || tags.includes("processed_snack")) {
@@ -312,7 +334,7 @@ function buildNutritionRecommendationItems({ tags, goal, totals, target, confide
 
 
 
-function buildNutritionEvidence({ tags, totals, target, confidence, mealResults }: any) {
+function buildNutritionEvidence({ tags, totals, target, confidence, mealResults }: NutritionRuleContext) {
     return uniqueStrings([
       `热量 ${Math.round(totals.calories)}kcal / 目标 ${target.caloriesLower}-${target.caloriesUpper}kcal`,
       `蛋白 ${Math.round(totals.protein)}g / 目标 ${target.protein}g`,

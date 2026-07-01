@@ -8,7 +8,9 @@
     "checkJs": false,
     "allowJs": false,
     "noEmitOnError": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "rootDir": ".",
+    "outDir": "dist/generated"
   },
   "include": [
     "src/**/*.ts"

@@ -1,8 +1,15 @@
 (function () {
   "use strict";
 
+  type TauriWindow = Window & {
+    __TAURI__?: {
+      core?: { invoke?: (command: string, args?: Record<string, unknown>) => Promise<unknown> };
+      tauri?: { invoke?: (command: string, args?: Record<string, unknown>) => Promise<unknown> };
+    };
+  };
+
   function tauriInvoke() {
-    const tauri = (window as any).__TAURI__;
+    const tauri = (window as TauriWindow).__TAURI__;
     return tauri?.core?.invoke || tauri?.tauri?.invoke || null;
   }
 

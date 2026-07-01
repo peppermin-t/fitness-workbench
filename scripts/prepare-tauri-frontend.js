@@ -5,6 +5,7 @@ const path = require("path");
 
 const root = path.resolve(__dirname, "..");
 const outDir = path.join(root, "dist", "desktop");
+const generatedDir = path.join(root, "dist", "generated");
 
 const files = [
   "styles.css",
@@ -35,7 +36,7 @@ for (const file of files) {
 }
 
 for (const directory of directories) {
-  copyJsDirectory(directory);
+  copyGeneratedJsDirectory(directory);
 }
 
 console.log(`tauri-frontend: prepared ${path.relative(root, outDir)}`);
@@ -51,11 +52,11 @@ function copyFileAs(sourceRelativePath, targetRelativePath) {
   fs.copyFileSync(source, target);
 }
 
-function copyJsDirectory(relativePath) {
-  const sourceDir = path.join(root, relativePath);
+function copyGeneratedJsDirectory(relativePath) {
+  const sourceDir = path.join(generatedDir, relativePath);
   for (const entry of fs.readdirSync(sourceDir, { withFileTypes: true })) {
     if (!entry.isFile() || !entry.name.endsWith(".js")) continue;
-    copyFile(path.join(relativePath, entry.name));
+    copyFileAs(path.join("dist", "generated", relativePath, entry.name), path.join(relativePath, entry.name));
   }
 }
 

@@ -5,6 +5,7 @@ const path = require("path");
 const vm = require("vm");
 
 const root = path.resolve(__dirname, "..");
+const generatedRoot = path.join(root, "dist", "generated");
 const summaryNodes = {
   "#results": { innerHTML: "" },
   "#total": { textContent: "0" },
@@ -44,19 +45,19 @@ sandbox.window = sandbox;
 const context = vm.createContext(sandbox);
 const runtimeScripts = [
   "data.js",
-  "src/core/rules/goal-parser.js",
-  "src/core/rules/metric-analyzer.js",
-  "src/core/rules/training-stats.js",
-  "src/core/rules/advice-engine.js",
-  "src/core/rules/plan-generator.js",
-  "src/core/rules/exercise-feedback-analyzer.js",
-  "src/core/rules/nutrition-parser.js",
-  "src/core/rules/integrated-signals.js",
-  "src/core/rules/weekly-review.js",
-  "src/core/rules/facade.js",
+  ["generated", "src/core/rules/goal-parser.js"],
+  ["generated", "src/core/rules/metric-analyzer.js"],
+  ["generated", "src/core/rules/training-stats.js"],
+  ["generated", "src/core/rules/advice-engine.js"],
+  ["generated", "src/core/rules/plan-generator.js"],
+  ["generated", "src/core/rules/exercise-feedback-analyzer.js"],
+  ["generated", "src/core/rules/nutrition-parser.js"],
+  ["generated", "src/core/rules/integrated-signals.js"],
+  ["generated", "src/core/rules/weekly-review.js"],
+  ["generated", "src/core/rules/facade.js"],
   "planner.js",
-  "src/app/storage/state-normalizer.js",
-  "src/app/storage/desktop-sqlite.js"
+  ["generated", "src/app/storage/state-normalizer.js"],
+  ["generated", "src/app/storage/desktop-sqlite.js"]
 ];
 
 for (const file of runtimeScripts) {
@@ -88,7 +89,10 @@ if (result.total !== 12 || result.passed !== 12 || result.failed !== 0) {
 }
 
 function runFile(file) {
-  vm.runInContext(fs.readFileSync(path.join(root, file), "utf8"), context, {
-    filename: file
+  const isGenerated = Array.isArray(file);
+  const relativePath = isGenerated ? file[1] : file;
+  const fullPath = isGenerated ? path.join(generatedRoot, relativePath) : path.join(root, relativePath);
+  vm.runInContext(fs.readFileSync(fullPath, "utf8"), context, {
+    filename: relativePath
   });
 }

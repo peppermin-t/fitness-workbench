@@ -1,6 +1,10 @@
 (function () {
   "use strict";
 
+  type ExerciseLike = Exercise & {
+    available?: boolean;
+  };
+
   const parseGoal = window.FitnessCore.GoalParser.parseGoal;
   const { sortedMetrics, metricTrend } = window.FitnessCore.MetricAnalyzer;
 
@@ -122,11 +126,11 @@ function pickAvailableExercise(candidates, gym, exercises) {
     const byId = new Map(exercises.map((item) => [item.id, item]));
     const resolved = candidates.map((id) => byId.get(id)).filter(Boolean);
     const available = resolved.find((item) => isAvailable(item, gym));
-    if (available) return { ...(available as any), available: true };
+    if (available) return { ...(available as ExerciseLike), available: true };
     const fallback = resolved[0] || exercises[0];
     const sub = availableSubstitutes(fallback, gym, exercises)[0];
-    if (sub) return { ...(sub as any), available: true };
-    return { ...((fallback as any) || {}), available: false };
+    if (sub) return { ...(sub as ExerciseLike), available: true };
+    return { ...((fallback as ExerciseLike) || {}), available: false };
   }
 
 

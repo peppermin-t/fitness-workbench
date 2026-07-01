@@ -1,6 +1,15 @@
 (function () {
   "use strict";
 
+  type ExerciseProfileSummary = {
+    exerciseId: string;
+    exerciseName: string;
+    count: number;
+    painCount: number;
+    poorQualityCount: number;
+    topTags: Array<[string, number]>;
+  };
+
   const { recommendationItem, sortRecommendationItems, uniqueStrings } = window.FitnessCore.AdviceEngine;
   const { sortedMetrics, metricTrend } = window.FitnessCore.MetricAnalyzer;
   const { buildExerciseProfiles } = window.FitnessCore.ExerciseFeedbackAnalyzer;
@@ -72,12 +81,12 @@ function buildIntegratedSignals({ goal, metrics, sessions, exerciseLogs, nutriti
 
 
 function buildTrainingReminders({ goal, metrics, sessions, exerciseLogs, nutritionLogs, day }) {
-    const profiles = new Map((buildExerciseProfiles(exerciseLogs || []) as any[]).map((profile) => [profile.exerciseId, profile]));
+    const profiles = new Map<string, ExerciseProfileSummary>((buildExerciseProfiles(exerciseLogs || []) as ExerciseProfileSummary[]).map((profile) => [profile.exerciseId, profile]));
     const integrated = buildIntegratedSignals({ goal, metrics, sessions: filterCompletedSessions(sessions || []), exerciseLogs, nutritionLogs });
     const reminders = [];
 
     (day?.exercises || []).forEach((row) => {
-      const profile = profiles.get(row.exerciseId) as any;
+      const profile = profiles.get(row.exerciseId);
       if (!profile) return;
       const tags = profile.topTags.map(([tag]) => tag);
       if (tags.includes("pain_risk")) {

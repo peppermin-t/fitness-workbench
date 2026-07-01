@@ -1,4 +1,4 @@
-# Phase 6：SQLite 本地数据库迁移
+﻿# Phase 6：SQLite 本地数据库迁移
 
 本文档记录 Phase 6 的当前实现状态。Phase 6 的目标是让 Tauri 桌面端具备 SQLite 本地数据库持久化，同时继续保留 JSON 备份 / 恢复路径。
 
@@ -7,10 +7,10 @@
 - Tauri 桌面端新增 SQLite 命令：
   - `load_app_state`
   - `save_app_state`
-- 浏览器端新增 `src/app/storage/desktop-sqlite.js` / `.ts`：
+- 前端新增 `src/app/storage/desktop-sqlite.ts`：
   - 在 Tauri 环境中通过 `window.__TAURI__.core.invoke` 读写 SQLite。
   - 仅在 Tauri 桌面环境中启用。
-- `src/app/storage/app-state-store.js` / `.ts` 负责默认状态、localStorage 读写，以及 Tauri SQLite 的 hydrate / persist 协调。
+- `src/app/storage/app-state-store.ts` 负责默认状态、localStorage 读写，以及 Tauri SQLite 的 hydrate / persist 协调。
 - `app.js` 的状态保存路径变为：
   - 始终写入 localStorage。
   - 如果检测到 Tauri，则异步同步到 SQLite。
@@ -71,8 +71,8 @@ npm.cmd run desktop:build
 ## 已完成的清理
 
 - SQLite Rust 侧保存 / 读取逻辑已抽出为可单测的 connection helper，不再只能通过 Tauri `AppHandle` 手工验证。
-- `createAdviceFromSession` 已从 `planner.js` 并入 `src/core/rules/advice-engine.js`。
-- 新增 `src/core/rules/facade.js` / `.ts` 作为 `window.FitnessCore.Rules`，`app.js` 已改为使用该 core facade。
+- `createAdviceFromSession` 已从 `planner.js` 并入 `src/core/rules/advice-engine.ts`。
+- 新增 `src/core/rules/facade.ts` 作为 `window.FitnessCore.Rules`，`app.js` 已改为使用该 core facade。
 - `planner.js` 仅保留 `window.FitnessPlanner` 旧入口兼容别名。
 
 ## 后续清理条件

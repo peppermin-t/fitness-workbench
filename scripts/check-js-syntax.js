@@ -5,32 +5,33 @@ const fs = require("fs");
 const path = require("path");
 
 const root = path.resolve(__dirname, "..");
+const generatedRoot = path.join(root, "dist", "generated");
 const files = [
   "app.js",
   "planner.js",
   "data.js",
-  ...fs.readdirSync(path.join(root, "src", "app", "storage"))
+  ...fs.readdirSync(path.join(generatedRoot, "src", "app", "storage"))
     .filter((name) => name.endsWith(".js"))
     .map((name) => path.join("src", "app", "storage", name)),
-  ...fs.readdirSync(path.join(root, "src", "app", "import-export"))
+  ...fs.readdirSync(path.join(generatedRoot, "src", "app", "import-export"))
     .filter((name) => name.endsWith(".js"))
     .map((name) => path.join("src", "app", "import-export", name)),
-  ...fs.readdirSync(path.join(root, "src", "app", "io"))
+  ...fs.readdirSync(path.join(generatedRoot, "src", "app", "io"))
     .filter((name) => name.endsWith(".js"))
     .map((name) => path.join("src", "app", "io", name)),
-  ...fs.readdirSync(path.join(root, "src", "app", "charts"))
+  ...fs.readdirSync(path.join(generatedRoot, "src", "app", "charts"))
     .filter((name) => name.endsWith(".js"))
     .map((name) => path.join("src", "app", "charts", name)),
-  ...fs.readdirSync(path.join(root, "src", "app", "presenters"))
+  ...fs.readdirSync(path.join(generatedRoot, "src", "app", "presenters"))
     .filter((name) => name.endsWith(".js"))
     .map((name) => path.join("src", "app", "presenters", name)),
-  ...fs.readdirSync(path.join(root, "src", "app", "render"))
+  ...fs.readdirSync(path.join(generatedRoot, "src", "app", "render"))
     .filter((name) => name.endsWith(".js"))
     .map((name) => path.join("src", "app", "render", name)),
-  ...fs.readdirSync(path.join(root, "src", "app", "state"))
+  ...fs.readdirSync(path.join(generatedRoot, "src", "app", "state"))
     .filter((name) => name.endsWith(".js"))
     .map((name) => path.join("src", "app", "state", name)),
-  ...fs.readdirSync(path.join(root, "src", "core", "rules"))
+  ...fs.readdirSync(path.join(generatedRoot, "src", "core", "rules"))
     .filter((name) => name.endsWith(".js"))
     .map((name) => path.join("src", "core", "rules", name))
 ];
@@ -38,7 +39,8 @@ const files = [
 let failed = false;
 
 for (const file of files) {
-  const result = spawnSync(process.execPath, ["--check", path.join(root, file)], {
+  const sourcePath = file.startsWith("src") ? path.join(generatedRoot, file) : path.join(root, file);
+  const result = spawnSync(process.execPath, ["--check", sourcePath], {
     encoding: "utf8"
   });
 

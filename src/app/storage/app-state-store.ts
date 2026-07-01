@@ -1,6 +1,13 @@
 (function () {
   "use strict";
 
+  type JsonRecord = Record<string, unknown>;
+  type StateStoreCallbacks = {
+    onHydrated?: (state: unknown) => void;
+    onPersistError?: (error: unknown) => void;
+    onError?: (error: unknown) => void;
+  };
+
   function createDefaultState({ fitnessData, normalizer }) {
     return {
       schemaVersion: normalizer.CURRENT_SCHEMA_VERSION,
@@ -25,7 +32,7 @@
     const builtInExercises = context.fitnessData.exercises || [];
     const byId = new Map(builtInExercises.map((item) => [item.id, item]));
     (Array.isArray(data?.exercises) ? data.exercises : []).forEach((item) => {
-      byId.set(item.id, { ...((byId.get(item.id) as any) || {}), ...item });
+      byId.set(item.id, { ...((byId.get(item.id) as JsonRecord) || {}), ...item });
     });
     const next = { ...base, ...(data || {}), exercises: Array.from(byId.values()) };
     return normalizeState(next, context);
@@ -51,8 +58,7 @@
     return next;
   }
 
-  async function hydrateDesktopState(currentState, context, callbacks = {}) {
-    const callbackHandlers = callbacks as any;
+  async function hydrateDesktopState(currentState, context, callbacks: StateStoreCallbacks = {}) {
     const storage = context.desktopStorage;
     if (!storage?.isAvailable()) return;
     try {
@@ -60,23 +66,22 @@
       if (desktopState) {
         const next = prepareState(desktopState, context);
         localStorage.setItem(context.storageKey, JSON.stringify(next));
-        callbackHandlers.onHydrated?.(next);
+        callbacks.onHydrated?.(next);
       } else {
         persistDesktopState(currentState, context, {
-          onError: callbackHandlers.onPersistError || callbackHandlers.onError
+          onError: callbacks.onPersistError || callbacks.onError
         });
       }
     } catch (error) {
-      callbackHandlers.onError?.(error);
+      callbacks.onError?.(error);
     }
   }
 
-  function persistDesktopState(state, context, callbacks = {}) {
-    const callbackHandlers = callbacks as any;
+  function persistDesktopState(state, context, callbacks: StateStoreCallbacks = {}) {
     const storage = context.desktopStorage;
     if (!storage?.isAvailable()) return;
     storage.saveAppState(state).catch((error) => {
-      callbackHandlers.onError?.(error);
+      callbacks.onError?.(error);
     });
   }
 

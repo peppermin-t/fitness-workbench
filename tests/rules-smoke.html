@@ -99,7 +99,7 @@
     <main>
       <section class="summary">
         <h1>规则 Smoke 测试</h1>
-        <p>无依赖浏览器测试，加载 <code>data.js</code>、<code>src/core/rules/*</code>、<code>facade.js</code> 和 <code>planner.js</code>，不影响应用数据。</p>
+        <p>无依赖浏览器测试，加载 <code>data.js</code>、<code>dist/generated/src/core/rules/*</code>、<code>facade.js</code> 和 <code>planner.js</code>，不影响应用数据。直接打开前先运行 <code>npm.cmd run build:core</code>。</p>
         <div class="summary-grid">
           <span class="pill">总用例数：<span id="total">0</span></span>
           <span class="pill pass">通过：<span id="passed">0</span></span>
@@ -110,19 +110,19 @@
     </main>
 
     <script src="../data.js"></script>
-    <script src="../src/core/rules/goal-parser.js"></script>
-    <script src="../src/core/rules/metric-analyzer.js"></script>
-    <script src="../src/core/rules/training-stats.js"></script>
-    <script src="../src/core/rules/advice-engine.js"></script>
-    <script src="../src/core/rules/plan-generator.js"></script>
-    <script src="../src/core/rules/exercise-feedback-analyzer.js"></script>
-    <script src="../src/core/rules/nutrition-parser.js"></script>
-    <script src="../src/core/rules/integrated-signals.js"></script>
-    <script src="../src/core/rules/weekly-review.js"></script>
-    <script src="../src/core/rules/facade.js"></script>
+    <script src="../dist/generated/src/core/rules/goal-parser.js"></script>
+    <script src="../dist/generated/src/core/rules/metric-analyzer.js"></script>
+    <script src="../dist/generated/src/core/rules/training-stats.js"></script>
+    <script src="../dist/generated/src/core/rules/advice-engine.js"></script>
+    <script src="../dist/generated/src/core/rules/plan-generator.js"></script>
+    <script src="../dist/generated/src/core/rules/exercise-feedback-analyzer.js"></script>
+    <script src="../dist/generated/src/core/rules/nutrition-parser.js"></script>
+    <script src="../dist/generated/src/core/rules/integrated-signals.js"></script>
+    <script src="../dist/generated/src/core/rules/weekly-review.js"></script>
+    <script src="../dist/generated/src/core/rules/facade.js"></script>
     <script src="../planner.js"></script>
-    <script src="../src/app/storage/state-normalizer.js"></script>
-    <script src="../src/app/storage/desktop-sqlite.js"></script>
+    <script src="../dist/generated/src/app/storage/state-normalizer.js"></script>
+    <script src="../dist/generated/src/app/storage/desktop-sqlite.js"></script>
     <script>
       (() => {
         "use strict";

@@ -1,6 +1,11 @@
 (function () {
   "use strict";
 
+  type NormalizedSession = {
+    id: string;
+    exerciseLogIds: string[];
+  };
+
   const CURRENT_SCHEMA_VERSION = 2;
 
   function normalizeAppState(input, defaults) {
@@ -118,7 +123,7 @@
   }
 
   function relinkSessionExerciseLogs(sessions, exerciseLogs) {
-    const byId = new Map<any, any>(sessions.map((session) => [session.id, session as any]));
+    const byId = new Map<string, NormalizedSession>(sessions.map((session) => [session.id, session as NormalizedSession]));
     exerciseLogs.forEach((log) => {
       if (!log.sessionId || !byId.has(log.sessionId)) return;
       const session = byId.get(log.sessionId);

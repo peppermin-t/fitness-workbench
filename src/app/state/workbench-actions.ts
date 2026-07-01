@@ -1,6 +1,18 @@
 (function () {
   "use strict";
 
+  type ExerciseLogDraft = Omit<ExerciseLog, "sets"> & {
+    sets?: SetLog[];
+    analysis?: {
+      recommendations?: string[];
+      tags?: Array<{ tag: string }>;
+      priority?: string;
+      priorityLabel?: string;
+      evidence?: string[];
+      recommendationItems?: RecommendationItem[];
+    };
+  };
+
   function create({ rules, uid, nowLabel, todayIso }) {
     function setCurrentGym({ state, gymId }) {
       state.currentGymId = gymId;
@@ -120,7 +132,7 @@
 
     function saveExerciseLog({ state, dayIndex, day, exercise, plannedRow, input }) {
       const session = getOrCreateWorkoutSession(state, dayIndex, day, input.currentGym);
-      const log: any = {
+      const log: ExerciseLogDraft = {
         id: uid("exercise_log"),
         date: todayIso(),
         createdAt: nowLabel(),

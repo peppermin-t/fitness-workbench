@@ -31,7 +31,7 @@ npm.cmd run verify:desktop
 `verify:phase5` 会依次执行：
 
 1. `npm run check:core`：TypeScript core 类型检查。
-2. `npm run build:core`：生成 `.js` 兼容输出。
+2. `npm run build:core`：从 `src/**/*.ts` 生成 `dist/generated/src/**/*.js`。
 3. `npm run check:js`：检查当前浏览器会加载的 JS 文件语法。
 4. `npm run smoke:rules`：在 Node 中等价执行 `tests/rules-smoke.html` 的 12 个规则用例。
 
