@@ -2,13 +2,11 @@
 
 本文档描述产品长期愿景、个人定制定位和未来可能扩展方向。它不是当前执行规格，也不是 v0.2 的任务清单。
 
-当前执行边界请看：
+当前执行边界和维护信息请看：
 
-- [V0_2_SCOPE.md](V0_2_SCOPE.md)：当前阶段 v0.2 的功能边界。
-- [CURRENT_FEATURES.md](CURRENT_FEATURES.md)：当前代码实际已有功能。
-- [DATA_MODEL_DRAFT.md](DATA_MODEL_DRAFT.md)：当前和建议的数据模型。
-- [REFACTOR_PLAN.md](REFACTOR_PLAN.md)：后续重构路线。
-- [SMOKE_CHECKLIST.md](SMOKE_CHECKLIST.md)：重构前后必须跑通的人工验收清单。
+- [ARCHITECTURE.md](ARCHITECTURE.md)：当前功能、代码结构、数据模型和剩余技术债。
+- [TESTING.md](TESTING.md)：自动验证、规则 smoke、人工验收和样例数据。
+- [DECISIONS.md](DECISIONS.md)：长期有效的产品和架构决策。
 
 旧 `PRODUCT_SPEC.md` 已重命名为 `PRODUCT_VISION.md`，不再作为当前执行规格存在。
 
@@ -156,7 +154,7 @@
 
 这些方向不是当前 Phase 0 / v0.2 的直接执行目标。
 
-当前工程下一步以 [V0_2_SCOPE.md](V0_2_SCOPE.md) 和 [REFACTOR_PLAN.md](REFACTOR_PLAN.md) 为准：先完成 v0.2 稳定化、重构保护、核心模型固定、最小测试基线，再进入正式代码重构。
+当前工程已经完成结构性重构路线。后续以 [ARCHITECTURE.md](ARCHITECTURE.md) 和 [TESTING.md](TESTING.md) 为准：继续小步提升类型边界、UI 事件边界、SQLite smoke 和人工验收质量。
 
 ## 7. 当前阶段原则
 
