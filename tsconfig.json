@@ -1,18 +1,24 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
-    "module": "none",
-    "lib": ["ES2020", "DOM"],
-    "strict": false,
-    "noImplicitAny": false,
-    "checkJs": false,
+    "target": "ES2022",
+    "useDefineForClassFields": true,
+    "lib": ["DOM", "DOM.Iterable", "ES2022"],
     "allowJs": false,
-    "noEmitOnError": true,
     "skipLibCheck": true,
-    "rootDir": ".",
-    "outDir": "dist/generated"
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "noUncheckedIndexedAccess": true,
+    "forceConsistentCasingInFileNames": true,
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx"
   },
-  "include": [
-    "src/**/*.ts"
-  ]
+  "include": ["src/**/*", "scripts/run-tests.ts", "vite.config.ts"],
+  "exclude": ["src/legacy/**/*"]
 }

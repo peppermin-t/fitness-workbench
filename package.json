@@ -2,21 +2,30 @@
   "name": "fitness-workbench",
   "version": "0.8.1",
   "private": true,
-  "type": "commonjs",
+  "type": "module",
   "scripts": {
-    "build:core": "tsc -p tsconfig.json",
-    "check:core": "tsc -p tsconfig.json --noEmit",
-    "check:js": "npm run build:core && node scripts/check-js-syntax.js",
-    "smoke:rules": "npm run build:core && node scripts/run-rules-smoke.js",
-    "prepare:desktop": "npm run build:core && node scripts/prepare-tauri-frontend.js",
-    "verify:frontend": "npm run check:core && npm run build:core && npm run check:js && npm run smoke:rules",
-    "verify:desktop": "npm run verify:frontend && npm run prepare:desktop",
+    "check": "tsc -p tsconfig.json --noEmit",
+    "test": "tsx scripts/run-tests.ts",
+    "dev": "vite --host 127.0.0.1",
+    "build": "vite build",
+    "verify:frontend": "npm run check && npm run test && npm run build",
+    "verify:desktop": "npm run verify:frontend",
     "desktop:dev": "tauri dev",
     "desktop:build:app": "tauri build --no-bundle",
     "desktop:build": "tauri build"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.11.4",
+    "tsx": "^4.22.4",
     "typescript": "^5.5.0"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2.11.1",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.3",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "vite": "^8.1.2"
   }
 }

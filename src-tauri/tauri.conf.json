@@ -4,12 +4,13 @@
   "version": "0.8.1",
   "identifier": "com.local.fitnessworkbench",
   "build": {
-    "beforeDevCommand": "npm.cmd run prepare:desktop",
-    "beforeBuildCommand": "npm.cmd run prepare:desktop",
+    "beforeDevCommand": "npm.cmd run dev",
+    "beforeBuildCommand": "npm.cmd run build",
+    "devUrl": "http://127.0.0.1:5173",
     "frontendDist": "../dist/desktop"
   },
   "app": {
-    "withGlobalTauri": true,
+    "withGlobalTauri": false,
     "windows": [
       {
         "label": "main",
@@ -21,7 +22,7 @@
       }
     ],
     "security": {
-      "csp": null
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src ipc: http://ipc.localhost http://127.0.0.1:5173 ws://127.0.0.1:5173"
     }
   },
   "bundle": {

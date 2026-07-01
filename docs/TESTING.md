@@ -22,11 +22,31 @@ npm.cmd run desktop:build:app
 
 - `check:core`：TypeScript 类型检查，不生成产物。
 - `build:core`：将 TS 编译到 `dist/generated`。
+- `build:esm`：将 `.mts` ESM POC 编译到 `dist/esm`。
 - `check:js`：检查生成后的 JS 语法。
 - `smoke:rules`：在 Node VM 中运行规则 smoke。
+- `test:backup`：验证自动备份快照不递归、数量限制和 JSON 可恢复。
+- `test:commands`：验证 application command 的成功和 validation error 路径。
+- `test:esm`：验证 ESM POC 可由 Node 直接 import。
+- `test:goals`：验证目标解析枚举和核心字段。
+- `test:invariants`：验证 session、set、advice、revision 和 plan patch 的 domain invariants。
+- `test:portability`：验证 CSV/JSON portability，尤其是 CSV roundtrip。
+- `test:queries`：验证 TodayDashboard read model DTO。
+- `verify:frontend`：执行前端类型检查、JS 语法、规则 smoke、backup、commands、ESM、goals、invariants、portability 和 query 测试。
 - `verify:desktop`：执行前端检查并准备 `dist/desktop`。
 - `desktop:build:app`：构建 Tauri exe，不打安装包。
-- `cargo test`：验证 SQLite 后端状态快照、核心表镜像，以及样例 JSON 基线 round trip。
+- `cargo test`：验证 SQLite 后端状态快照、核心表镜像、schema migration，以及样例 JSON 基线 round trip。
+
+随着 ES Modules、application layer 和 SQLite 主存储推进，自动验证需要逐步扩展为：
+
+- `core module tests`：直接 import domain/rules，不通过 `window.FitnessCore`。
+- `command tests`：验证 application command 的 DTO validation、command result 和副作用。
+- `query tests`：验证 Today、Plan、ExerciseHistory、WeeklyReview、NutritionProfile 等 read model DTO。
+- `invariant tests`：验证 `WorkoutSession`、`ExerciseLog`、`SetLog`、`Advice`、`Revision` 和 plan patch 合法性。
+- `migration tests`：验证空库、旧库和旧 JSON 样例能迁移到最新 schema。
+- `repository tests`：验证 SQLite repository roundtrip 和 transaction rollback。
+- `import/export roundtrip tests`：验证 JSON 和 CSV 不丢数据。
+- `UI/e2e smoke`：验证今日训练 session lifecycle 的主路径。
 
 ## 规则 Smoke
 
@@ -65,6 +85,133 @@ rules-smoke: 12/12 passed, 0 failed
 
 注意：`parseGoal` 对“保持力量”相关表达仍有长期增强空间。当前 smoke 以保护现有行为为主，不把规则增强和结构重构混在一起。
 
+后续规则 smoke 需要逐步拆成可 import 的 Node 测试。旧 HTML/VM smoke 可以保留一段时间作为兼容层验证，但不能作为最终唯一规则测试入口。
+
+## PR 级验证策略
+
+每个小切片至少运行与其风险匹配的验证，不能无测试大规模改动。
+
+### CSV parser + tests
+
+必须覆盖：
+
+- 普通 CSV。
+- 单元格包含逗号。
+- 单元格包含双引号。
+- 单元格包含换行。
+- UTF-8 BOM。
+- 空行。
+- 导出后再导入的 roundtrip。
+
+验收命令：
+
+```text
+npm.cmd run verify:desktop
+```
+
+如果新增独立测试脚本，需要在本文档记录命令。
+
+### GoalPrimary 对齐
+
+必须覆盖：
+
+- `fat_loss`
+- `muscle_gain`
+- `strength`
+- `general_fitness` 或最终确定的通用目标枚举。
+- `maintenance` 或最终确定的维持目标枚举。
+- `strength_maintenance` secondary goal。
+
+验收：
+
+- 类型检查通过。
+- goal parser tests 通过。
+- 旧规则 smoke 通过。
+
+### Core rules ES module POC
+
+必须同时验证：
+
+- 新标准 import/export 测试通过。
+- 旧 `window.FitnessCore.Rules` facade 仍可运行。
+- 构建产物仍能被 Tauri 前端加载。
+
+验收命令：
+
+```text
+npm.cmd run verify:desktop
+```
+
+### Application command
+
+每个 command 至少覆盖：
+
+- valid input -> success result。
+- invalid input -> validation_error。
+- not found input -> not_found。
+- storage/repository failure -> storage_error 或明确错误结果。
+- 成功写入后 query/read model 能读到结果。
+
+`GeneratePlan` 额外验证：
+
+- 当前目标、当前场地、身体指标和动作库参与计划生成。
+- 返回的计划不直接依赖 UI state。
+
+`SaveExerciseLog` / `LogExerciseSet` 额外验证：
+
+- set 解析正确。
+- `volumeLoad`、`hardSets`、`simplePr` 计算正确。
+- 动作级 advice 带 evidence。
+- session 与 exercise log 关联正确。
+
+### 导入 / 重置前自动备份
+
+必须覆盖：
+
+- 导入 JSON 前创建当前状态备份。
+- 恢复初始数据前创建当前状态备份。
+- 备份 JSON 可重新导入。
+- 导入失败时当前状态不被破坏。
+
+### SQLite migration skeleton
+
+必须覆盖：
+
+- 空库初始化。
+- 已有快照库迁移。
+- 重复运行 migration 不重复应用。
+- migration 失败时有恢复路径，至少保留旧 JSON 快照。
+
+验收命令：
+
+```text
+cargo test --manifest-path src-tauri/Cargo.toml
+```
+
+## Session Lifecycle Smoke
+
+今日训练重构后，人工和自动 smoke 都要围绕 session lifecycle，而不是单独表单：
+
+```text
+start session
+-> log sets
+-> quick feedback
+-> finish session
+-> generate advice/revision
+-> refresh today query
+```
+
+最低验收：
+
+- 能从今日页开始训练。
+- 每个计划动作以卡片展示。
+- 能在 5-10 秒内记录一组。
+- 能复制上次重量 / 次数。
+- 能记录快捷异常标签。
+- 结束训练后生成 session summary。
+- 动作日志、set logs、advice、revision candidates 可追溯。
+- 不离开今日页能完成整次训练记录。
+
 ## 人工 Smoke
 
 重构或较大功能改动后，至少手工确认：
@@ -73,6 +220,7 @@ rules-smoke: 12/12 passed, 0 failed
 - 首页能选择当前健身房。
 - 能生成 / 刷新训练计划。
 - 今日训练能选择训练日并展示动作。
+- 今日训练重构后，能开始 session、记录 set、快捷反馈、结束 session。
 - 能保存训练整体反馈。
 - 能保存动作级反馈并生成建议。
 - 目标设定能解析并保存。
