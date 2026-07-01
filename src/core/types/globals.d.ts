@@ -28,71 +28,73 @@ interface ExerciseProfileSummary {
   priority?: string;
 }
 
+type UnknownFn = (...args: unknown[]) => unknown;
+
 interface GoalParserModule {
-  parseGoal: Function;
+  parseGoal: UnknownFn;
 }
 
 interface MetricAnalyzerModule {
-  sortedMetrics: Function;
-  metricTrend: Function;
+  sortedMetrics: UnknownFn;
+  metricTrend: UnknownFn;
 }
 
 interface TrainingStatsModule {
-  calculateVolumeLoad: Function;
-  calculateHardSets: Function;
-  detectSimplePr: Function;
+  calculateVolumeLoad: UnknownFn;
+  calculateHardSets: UnknownFn;
+  detectSimplePr: UnknownFn;
 }
 
 interface AdviceEngineModule {
-  recommendationItem: Function;
-  buildAdviceEntry: Function;
-  sortRecommendationItems: Function;
-  highestPriority: Function;
-  priorityScore: Function;
-  priorityLabel: Function;
-  uniqueStrings: Function;
-  revision: Function;
-  createAdviceFromSession: Function;
+  recommendationItem: UnknownFn;
+  buildAdviceEntry: UnknownFn;
+  sortRecommendationItems: UnknownFn;
+  highestPriority: UnknownFn;
+  priorityScore: UnknownFn;
+  priorityLabel: UnknownFn;
+  uniqueStrings: UnknownFn;
+  revision: UnknownFn;
+  createAdviceFromSession: UnknownFn;
 }
 
 interface PlanGeneratorModule {
-  generatePlan: Function;
-  buildPlanDay: Function;
-  planDayTypes: Function;
-  planConfig: Function;
-  defaultRowNote: Function;
-  pickAvailableExercise: Function;
-  buildPlanContext: Function;
-  isAvailable: Function;
-  availableSubstitutes: Function;
+  generatePlan: UnknownFn;
+  buildPlanDay: UnknownFn;
+  planDayTypes: UnknownFn;
+  planConfig: UnknownFn;
+  defaultRowNote: UnknownFn;
+  pickAvailableExercise: UnknownFn;
+  buildPlanContext: UnknownFn;
+  isAvailable: UnknownFn;
+  availableSubstitutes: UnknownFn;
 }
 
 interface ExerciseFeedbackAnalyzerModule {
-  analyzeExerciseFeedback: Function;
-  buildExerciseProfiles: Function;
-  computeExercisePriority: Function;
-  inferExerciseProfileAdvice: Function;
+  analyzeExerciseFeedback: UnknownFn;
+  buildExerciseProfiles: UnknownFn;
+  computeExercisePriority: UnknownFn;
+  inferExerciseProfileAdvice: UnknownFn;
 }
 
 interface NutritionParserModule {
-  parseNutritionLog: Function;
-  buildNutritionProfile: Function;
-  buildNutritionTrend: Function;
-  inferNutritionProfileAdvice?: Function;
-  buildNutritionReminders: Function;
-  nutritionRecommendations?: Function;
-  buildNutritionRecommendationItems?: Function;
+  parseNutritionLog: UnknownFn;
+  buildNutritionProfile: UnknownFn;
+  buildNutritionTrend: UnknownFn;
+  inferNutritionProfileAdvice?: UnknownFn;
+  buildNutritionReminders: UnknownFn;
+  nutritionRecommendations?: UnknownFn;
+  buildNutritionRecommendationItems?: UnknownFn;
 }
 
 interface IntegratedSignalsModule {
-  buildIntegratedSignals: Function;
-  buildTrainingReminders: Function;
-  buildLinkedTodayInsights: Function;
+  buildIntegratedSignals: UnknownFn;
+  buildTrainingReminders: UnknownFn;
+  buildLinkedTodayInsights: UnknownFn;
 }
 
 interface WeeklyReviewModule {
-  buildWeeklyReview: Function;
-  revision: Function;
+  buildWeeklyReview: UnknownFn;
+  revision: UnknownFn;
 }
 
 interface RulesModule extends
@@ -114,59 +116,64 @@ interface FitnessDataModule {
 
 interface StateNormalizerModule {
   CURRENT_SCHEMA_VERSION: number;
-  normalizeAppState: Function;
+  normalizeAppState: UnknownFn;
 }
 
 interface DesktopStorageModule {
-  isAvailable: Function;
-  loadAppState: Function;
-  saveAppState: Function;
+  isAvailable: UnknownFn;
+  loadAppState: UnknownFn;
+  saveAppState: UnknownFn;
 }
 
 interface AppStateStoreModule {
-  createDefaultState: Function;
-  prepareState: Function;
-  normalizeState: Function;
-  loadLocalState: Function;
-  saveLocalState: Function;
-  hydrateDesktopState: Function;
-  persistDesktopState: Function;
+  createDefaultState: UnknownFn;
+  prepareState: UnknownFn;
+  normalizeState: UnknownFn;
+  loadLocalState: UnknownFn;
+  saveLocalState: UnknownFn;
+  hydrateDesktopState: UnknownFn;
+  persistDesktopState: UnknownFn;
 }
 
 interface DataPortabilityModule {
-  buildPlanCsv: Function;
-  parsePlanCsv: Function;
-  buildBackupJson: Function;
-  parseBackupJson: Function;
+  buildPlanCsv: UnknownFn;
+  parsePlanCsv: UnknownFn;
+  buildBackupJson: UnknownFn;
+  parseBackupJson: UnknownFn;
 }
 
 interface LineChartModule {
-  draw: Function;
+  draw: UnknownFn;
 }
 
 interface BrowserFileIOModule {
-  downloadText: Function;
-  readInputFileText: Function;
-  clearInput: Function;
-  confirmResetData: Function;
+  downloadText: UnknownFn;
+  readInputFileText: UnknownFn;
+  clearInput: UnknownFn;
+  confirmResetData: UnknownFn;
 }
 
 interface DisplayFormattersFactoryModule {
-  create: Function;
+  create: UnknownFn;
 }
 
 interface ViewRenderersFactoryModule {
-  create: Function;
+  create: UnknownFn;
 }
 
 interface WorkbenchActionsFactoryModule {
-  create: Function;
+  create: UnknownFn;
+}
+
+interface DomUtilsModule {
+  create: UnknownFn;
 }
 
 interface FitnessAppNamespace {
   DataPortability?: DataPortabilityModule;
   LineChart?: LineChartModule;
   BrowserFileIO?: BrowserFileIOModule;
+  DomUtils?: DomUtilsModule;
   DisplayFormatters?: DisplayFormattersFactoryModule;
   ViewRenderers?: ViewRenderersFactoryModule;
   WorkbenchActions?: WorkbenchActionsFactoryModule;

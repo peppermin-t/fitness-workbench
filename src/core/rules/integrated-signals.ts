@@ -10,18 +10,31 @@
     topTags: Array<[string, number]>;
   };
 
-  const { recommendationItem, sortRecommendationItems, uniqueStrings } = window.FitnessCore.AdviceEngine;
-  const { sortedMetrics, metricTrend } = window.FitnessCore.MetricAnalyzer;
-  const { buildExerciseProfiles } = window.FitnessCore.ExerciseFeedbackAnalyzer;
-  const { buildNutritionProfile } = window.FitnessCore.NutritionParser;
+  const { recommendationItem, sortRecommendationItems, uniqueStrings } = window.FitnessCore.AdviceEngine as {
+    recommendationItem: (...args: unknown[]) => RecommendationItem;
+    sortRecommendationItems: (items: RecommendationItem[]) => RecommendationItem[];
+    uniqueStrings: (items: string[]) => string[];
+  };
+  const { sortedMetrics, metricTrend } = window.FitnessCore.MetricAnalyzer as {
+    sortedMetrics: (metrics: BodyMetricEntry[]) => BodyMetricEntry[];
+    metricTrend: (metrics: BodyMetricEntry[], key: string, days: number) => MetricTrendResult | null;
+  };
+  const { buildExerciseProfiles } = window.FitnessCore.ExerciseFeedbackAnalyzer as {
+    buildExerciseProfiles: (logs: ExerciseLog[]) => ExerciseProfileSummary[];
+  };
+  const { buildNutritionProfile } = window.FitnessCore.NutritionParser as {
+    buildNutritionProfile: (logs: NutritionLog[], goal?: Goal | null) => NutritionProfileSummary;
+  };
 
 function buildIntegratedSignals({ goal, metrics, sessions, exerciseLogs, nutritionLogs }) {
     const primary = goal?.parsed?.primaryGoal || "general_fitness";
     const completedSessions = filterCompletedSessions(sessions || []);
     const nutritionProfile = buildNutritionProfile(nutritionLogs || [], goal);
     const exerciseProfiles = buildExerciseProfiles(exerciseLogs || []);
-    const latestMetric = sortedMetrics(metrics || []).at(-1);
-    const latestSession = sortedSessions(completedSessions).at(-1);
+    const sortedMetricList = sortedMetrics(metrics || []);
+    const sortedSessionList = sortedSessions(completedSessions);
+    const latestMetric = sortedMetricList[sortedMetricList.length - 1];
+    const latestSession = sortedSessionList[sortedSessionList.length - 1];
     const weightTrend21 = metricTrend(metrics || [], "weight", 21);
     const sessionTrend = compareSessionWindows(completedSessions, 14);
     const items = [];
@@ -185,7 +198,8 @@ function compareSessionWindows(sessions, daysPerWindow) {
         hasDecline: false
       };
     }
-    const latest = new Date(sorted.at(-1).date);
+    const latestSortedSession = sorted[sorted.length - 1];
+    const latest = new Date(latestSortedSession.date);
     const recentCutoff = new Date(latest);
     recentCutoff.setDate(recentCutoff.getDate() - daysPerWindow);
     const previousCutoff = new Date(recentCutoff);

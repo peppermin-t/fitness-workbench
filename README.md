@@ -31,8 +31,16 @@ npm.cmd run desktop:build:app
 - [docs/TESTING.md](docs/TESTING.md)：自动验证、规则 smoke、人工验收和样例数据。
 - [docs/DECISIONS.md](docs/DECISIONS.md)：关键产品和架构决策。
 
+## 仓库维护说明
+
+- `package.json`：npm 命令和前端构建开发依赖声明，必须保留。
+- `package-lock.json`：锁定 TypeScript 和 Tauri CLI 等依赖版本，必须保留。
+- `tsconfig.json`：TypeScript 编译配置，必须保留。
+- `scripts/`：当前 3 个脚本分别服务于生成 JS 语法检查、规则 smoke、Tauri 前端资源准备，仍在验证链中使用。
+- `node_modules/`、`dist/`、`src-tauri/target/`：本地依赖或构建产物，已在 `.gitignore`，不应提交。需要释放磁盘空间时可以删除，之后重新运行安装或构建命令即可恢复。
+
 ## 当前状态
 
 结构性重构已经完成：核心规则、数据主文件、应用入口、存储、导入导出、图表、展示格式化、视图模板和主要状态动作都已进入 TypeScript 源码链路。运行时 JS 只存在于 `dist/generated` 和 `dist/desktop` 构建产物中。
 
-项目还不是“产品功能最终完成”。下一步更适合做小步质量提升：收紧 `Function` 型全局边界、继续拆薄 `src/app/main.ts` 的 UI 事件协调、补更细的 SQLite smoke 和必要的人工验收。
+当前更适合继续补产品功能；在新增功能时优先补对应规则 smoke 或人工验收点，避免重新形成隐性耦合。

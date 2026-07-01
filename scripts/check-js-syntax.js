@@ -6,43 +6,13 @@ const path = require("path");
 
 const root = path.resolve(__dirname, "..");
 const generatedRoot = path.join(root, "dist", "generated");
-const files = [
-  ...fs.readdirSync(path.join(generatedRoot, "src", "core", "data"))
-    .filter((name) => name.endsWith(".js"))
-    .map((name) => path.join("src", "core", "data", name)),
-  ...fs.readdirSync(path.join(generatedRoot, "src", "app"))
-    .filter((name) => name.endsWith(".js"))
-    .map((name) => path.join("src", "app", name)),
-  ...fs.readdirSync(path.join(generatedRoot, "src", "app", "storage"))
-    .filter((name) => name.endsWith(".js"))
-    .map((name) => path.join("src", "app", "storage", name)),
-  ...fs.readdirSync(path.join(generatedRoot, "src", "app", "import-export"))
-    .filter((name) => name.endsWith(".js"))
-    .map((name) => path.join("src", "app", "import-export", name)),
-  ...fs.readdirSync(path.join(generatedRoot, "src", "app", "io"))
-    .filter((name) => name.endsWith(".js"))
-    .map((name) => path.join("src", "app", "io", name)),
-  ...fs.readdirSync(path.join(generatedRoot, "src", "app", "charts"))
-    .filter((name) => name.endsWith(".js"))
-    .map((name) => path.join("src", "app", "charts", name)),
-  ...fs.readdirSync(path.join(generatedRoot, "src", "app", "presenters"))
-    .filter((name) => name.endsWith(".js"))
-    .map((name) => path.join("src", "app", "presenters", name)),
-  ...fs.readdirSync(path.join(generatedRoot, "src", "app", "render"))
-    .filter((name) => name.endsWith(".js"))
-    .map((name) => path.join("src", "app", "render", name)),
-  ...fs.readdirSync(path.join(generatedRoot, "src", "app", "state"))
-    .filter((name) => name.endsWith(".js"))
-    .map((name) => path.join("src", "app", "state", name)),
-  ...fs.readdirSync(path.join(generatedRoot, "src", "core", "rules"))
-    .filter((name) => name.endsWith(".js"))
-    .map((name) => path.join("src", "core", "rules", name))
-];
+const files = collectJsFiles(path.join(generatedRoot, "src"))
+  .map((file) => path.relative(generatedRoot, file));
 
 let failed = false;
 
 for (const file of files) {
-  const sourcePath = file.startsWith("src") ? path.join(generatedRoot, file) : path.join(root, file);
+  const sourcePath = path.join(generatedRoot, file);
   const result = spawnSync(process.execPath, ["--check", sourcePath], {
     encoding: "utf8"
   });
@@ -59,4 +29,17 @@ if (failed) {
   process.exitCode = 1;
 } else {
   console.log(`js-syntax: ${files.length} files passed`);
+}
+
+function collectJsFiles(directory) {
+  const files = [];
+  for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+    const fullPath = path.join(directory, entry.name);
+    if (entry.isDirectory()) {
+      files.push(...collectJsFiles(fullPath));
+    } else if (entry.isFile() && entry.name.endsWith(".js")) {
+      files.push(fullPath);
+    }
+  }
+  return files.sort();
 }

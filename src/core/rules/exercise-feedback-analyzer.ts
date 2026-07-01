@@ -7,7 +7,13 @@
     highestPriority,
     priorityLabel,
     uniqueStrings
-  } = window.FitnessCore.AdviceEngine;
+  } = window.FitnessCore.AdviceEngine as {
+    recommendationItem: (...args: unknown[]) => RecommendationItem;
+    sortRecommendationItems: (items: RecommendationItem[]) => RecommendationItem[];
+    highestPriority: (items: RecommendationItem[]) => string;
+    priorityLabel: (priority: string) => string;
+    uniqueStrings: (items: string[]) => string[];
+  };
 
 function analyzeExerciseFeedback(input, exercise) {
     const text = `${input.freeText || ""} ${input.painArea || ""}`.toLowerCase();

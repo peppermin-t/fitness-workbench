@@ -1,11 +1,23 @@
 (function () {
   "use strict";
 
-  const { uniqueStrings, revision } = window.FitnessCore.AdviceEngine;
-  const { sortedMetrics, metricTrend } = window.FitnessCore.MetricAnalyzer;
-  const { buildExerciseProfiles } = window.FitnessCore.ExerciseFeedbackAnalyzer;
-  const { buildNutritionProfile } = window.FitnessCore.NutritionParser;
-  const { buildIntegratedSignals } = window.FitnessCore.IntegratedSignals;
+  const { uniqueStrings, revision } = window.FitnessCore.AdviceEngine as {
+    uniqueStrings: (items: string[]) => string[];
+    revision: (...args: unknown[]) => Revision;
+  };
+  const { sortedMetrics, metricTrend } = window.FitnessCore.MetricAnalyzer as {
+    sortedMetrics: (metrics: BodyMetricEntry[]) => BodyMetricEntry[];
+    metricTrend: (metrics: BodyMetricEntry[], key: string, days: number) => MetricTrendResult | null;
+  };
+  const { buildExerciseProfiles } = window.FitnessCore.ExerciseFeedbackAnalyzer as {
+    buildExerciseProfiles: (logs: ExerciseLog[]) => ExerciseProfileSummary[];
+  };
+  const { buildNutritionProfile } = window.FitnessCore.NutritionParser as {
+    buildNutritionProfile: (logs: NutritionLog[], goal?: Goal | null) => NutritionProfileSummary;
+  };
+  const { buildIntegratedSignals } = window.FitnessCore.IntegratedSignals as {
+    buildIntegratedSignals: (input: Record<string, unknown>) => RecommendationItem[];
+  };
 
 function buildWeeklyReview({ goal, metrics, sessions, exerciseLogs, nutritionLogs, plan }) {
     const completedSessions = filterCompletedSessions(sessions || []);
@@ -15,7 +27,8 @@ function buildWeeklyReview({ goal, metrics, sessions, exerciseLogs, nutritionLog
     const nutritionProfile = buildNutritionProfile(recentNutritionLogs, goal);
     const exerciseProfiles = buildExerciseProfiles(recentExerciseLogs);
     const integratedSignals = buildIntegratedSignals({ goal, metrics, sessions: completedSessions, exerciseLogs, nutritionLogs });
-    const latestMetric = sortedMetrics(metrics || []).at(-1);
+    const sortedMetricList = sortedMetrics(metrics || []);
+    const latestMetric = sortedMetricList[sortedMetricList.length - 1];
     const weightTrend30 = metricTrend(metrics || [], "weight", 30);
     const completionAvg = averageOf(recentSessions, "completion");
     const rpeAvg = averageOf(recentSessions, "rpe");

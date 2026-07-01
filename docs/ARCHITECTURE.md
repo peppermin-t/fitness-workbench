@@ -21,7 +21,7 @@
 - 编译输出：`dist/generated/src/**/*.js`
 - 桌面前端：`dist/desktop`
 - 桌面壳：`src-tauri`
-- UI 源文件：`src/app/index.html`
+- UI 源文件：`src/app/index.html`、`src/app/styles.css`
 - UI 启动入口：`src/app/main.ts`
 - 规则统一入口：`window.FitnessCore.Rules`，由 `src/core/rules/facade.ts` 汇总。
 
@@ -55,6 +55,7 @@
 ```text
 src/app/main.ts                         UI 启动、事件绑定、渲染调度
 src/app/index.html                      桌面前端 HTML 源文件
+src/app/styles.css                      桌面前端样式源文件
 src/app/state/workbench-actions.ts      状态写入和业务动作
 src/app/storage/*                       状态规范化、localStorage、Tauri SQLite 桥接
 src/app/import-export/*                 JSON / CSV 构造和解析
@@ -110,9 +111,9 @@ SQLite 当前用于 Tauri 环境下的本地持久化：保存完整状态快照
 
 优先级较高：
 
-- `src/app/main.ts` 仍然偏大，承担 DOM 查询、事件绑定、表单读取、渲染调度、保存后刷新和 toast 协调。
-- `globals.d.ts` 中部分模块入口仍用 `Function` 表示，应逐步替换为精确函数签名。
-- SQLite 已有后端 round trip 测试，但还缺更贴近真实应用状态的前端到后端 smoke。
+- `src/app/main.ts` 仍然偏大，主要承担事件绑定、表单读取、渲染调度和保存后刷新；DOM 查询与 toast 控制已下沉到 `src/app/ui/dom-utils.ts`。
+- `globals.d.ts` 已移除宽泛的 `Function` 类型，改为 `UnknownFn` 边界；后续可继续把高频模块替换为精确函数签名，减少调用处类型桥接。
+- SQLite 已有后端 round trip 测试，并新增基于 `docs/sample-data/manual-smoke-baseline.json` 的真实状态镜像 smoke；后续如继续增强，可补 Tauri command 层的端到端测试。
 - 人工 smoke checklist 现在合并到 `docs/TESTING.md`，仍需要实际人工执行。
 
 优先级较低：

@@ -9,8 +9,8 @@
     "check:js": "npm run build:core && node scripts/check-js-syntax.js",
     "smoke:rules": "npm run build:core && node scripts/run-rules-smoke.js",
     "prepare:desktop": "npm run build:core && node scripts/prepare-tauri-frontend.js",
-    "verify:phase5": "npm run check:core && npm run build:core && npm run check:js && npm run smoke:rules",
-    "verify:desktop": "npm run verify:phase5 && npm run prepare:desktop",
+    "verify:frontend": "npm run check:core && npm run build:core && npm run check:js && npm run smoke:rules",
+    "verify:desktop": "npm run verify:frontend && npm run prepare:desktop",
     "desktop:dev": "tauri dev",
     "desktop:build:app": "tauri build --no-bundle",
     "desktop:build": "tauri build"

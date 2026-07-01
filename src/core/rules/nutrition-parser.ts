@@ -30,7 +30,14 @@
     highestPriority,
     priorityLabel,
     uniqueStrings
-  } = window.FitnessCore.AdviceEngine;
+  } = window.FitnessCore.AdviceEngine as {
+    recommendationItem: (...args: unknown[]) => RecommendationItem;
+    buildAdviceEntry: (...args: unknown[]) => Advice;
+    sortRecommendationItems: (items: RecommendationItem[]) => RecommendationItem[];
+    highestPriority: (items: RecommendationItem[]) => string;
+    priorityLabel: (priority: string) => string;
+    uniqueStrings: (items: string[]) => string[];
+  };
 
 const FOOD_LIBRARY = [
     food("egg_white", "鸡蛋蛋白", ["鸡蛋蛋白", "蛋白"], "个", { calories: 17, protein: 3.6, carbs: 0.2, fat: 0, fiber: 0 }, ["high_protein"]),
@@ -471,7 +478,7 @@ function nutritionTrendSummary(entries) {
 
 function buildNutritionReminders({ goal, metrics, sessions, exerciseLogs, nutritionLogs }) {
     const profile = buildNutritionProfile(nutritionLogs || [], goal);
-    const integrated = window.FitnessCore.IntegratedSignals.buildIntegratedSignals({ goal, metrics, sessions, exerciseLogs, nutritionLogs });
+    const integrated = window.FitnessCore.IntegratedSignals.buildIntegratedSignals({ goal, metrics, sessions, exerciseLogs, nutritionLogs }) as RecommendationItem[];
     const reminders = [];
 
     if (profile.lowProteinDays >= 2) {

@@ -26,6 +26,7 @@ npm.cmd run desktop:build:app
 - `smoke:rules`：在 Node VM 中运行规则 smoke。
 - `verify:desktop`：执行前端检查并准备 `dist/desktop`。
 - `desktop:build:app`：构建 Tauri exe，不打安装包。
+- `cargo test`：验证 SQLite 后端状态快照、核心表镜像，以及样例 JSON 基线 round trip。
 
 ## 规则 Smoke
 
@@ -109,6 +110,8 @@ docs/sample-data/manual-smoke-baseline.json
 2. 打开“导入导出”页。
 3. 导入上述 JSON。
 4. 按人工 smoke 清单检查页面是否正常渲染。
+
+SQLite 后端测试也会加载这份样例 JSON，验证完整状态快照可以写入、读回，并镜像到 `goals`、`gyms`、`training_plans`、`workout_sessions`、`exercise_logs`、`set_logs`、`body_metrics`、`nutrition_logs`、`advice` 和 `revisions` 等核心表。
 
 ## 验收标准
 

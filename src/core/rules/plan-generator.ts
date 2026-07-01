@@ -5,8 +5,11 @@
     available?: boolean;
   };
 
-  const parseGoal = window.FitnessCore.GoalParser.parseGoal;
-  const { sortedMetrics, metricTrend } = window.FitnessCore.MetricAnalyzer;
+  const parseGoal = window.FitnessCore.GoalParser.parseGoal as (text: string) => GoalParsed;
+  const { sortedMetrics, metricTrend } = window.FitnessCore.MetricAnalyzer as {
+    sortedMetrics: (metrics: BodyMetricEntry[]) => BodyMetricEntry[];
+    metricTrend: (metrics: BodyMetricEntry[], key: string, days: number) => MetricTrendResult | null;
+  };
 
 function generatePlan({ gym, goal, metrics, exercises, nowLabel, uid }) {
     const parsed = goal?.parsed || parseGoal("");
@@ -136,7 +139,8 @@ function pickAvailableExercise(candidates, gym, exercises) {
 
 
 function buildPlanContext(gym, goal, parsed, metrics) {
-    const latest = sortedMetrics(metrics).at(-1);
+    const sortedMetricList = sortedMetrics(metrics);
+    const latest = sortedMetricList[sortedMetricList.length - 1];
     const trend = metricTrend(metrics, "weight", 30);
     const notes = [];
     if (parsed.frequentTravel) notes.push("出差优先：每次训练控制在可执行范围");

@@ -326,8 +326,103 @@ mod tests {
         assert_eq!(row_count(&conn, "revisions"), 1);
     }
 
+    #[test]
+    fn sample_baseline_state_round_trips_and_mirrors_core_tables() {
+        let state_json = include_str!("../../docs/sample-data/manual-smoke-baseline.json");
+        let state: Value = serde_json::from_str(state_json).expect("parse sample baseline");
+        let mut conn = Connection::open_in_memory().expect("open in-memory sqlite");
+
+        save_state_to_connection(&mut conn, state_json).expect("save sample baseline");
+
+        let loaded_json = load_state_from_connection(&conn)
+            .expect("load sample baseline")
+            .expect("stored sample baseline");
+        let loaded: Value = serde_json::from_str(&loaded_json).expect("parse loaded sample baseline");
+        assert_eq!(loaded, state);
+
+        assert_table_count(&conn, "goals", array_len(&state, "goals"));
+        assert_table_count(&conn, "gyms", array_len(&state, "gyms"));
+        assert_table_count(&conn, "exercises", array_len(&state, "exercises"));
+        assert_table_count(&conn, "workout_sessions", array_len(&state, "sessions"));
+        assert_table_count(&conn, "exercise_logs", array_len(&state, "exerciseLogs"));
+        assert_table_count(&conn, "body_metrics", array_len(&state, "metrics"));
+        assert_table_count(&conn, "nutrition_logs", array_len(&state, "nutritionLogs"));
+        assert_table_count(&conn, "advice", array_len(&state, "advice"));
+        assert_table_count(&conn, "revisions", array_len(&state, "revisions"));
+        assert_table_count(&conn, "training_plans", if state.get("plan").is_some() { 1 } else { 0 });
+        assert_table_count(&conn, "workout_days", plan_day_count(&state));
+        assert_table_count(&conn, "planned_exercises", planned_exercise_count(&state));
+        assert_table_count(&conn, "set_logs", set_log_count(&state));
+
+        assert!(array_len(&state, "goals") >= 1);
+        assert!(array_len(&state, "gyms") >= 2);
+        assert!(plan_day_count(&state) >= 1);
+        assert!(array_len(&state, "metrics") >= 2);
+        assert!(array_len(&state, "sessions") >= 1);
+        assert!(array_len(&state, "exerciseLogs") >= 2);
+        assert!(array_len(&state, "nutritionLogs") >= 1);
+        assert!(array_len(&state, "advice") >= 1);
+        assert!(array_len(&state, "revisions") >= 1);
+    }
+
     fn row_count(conn: &Connection, table: &str) -> i64 {
         conn.query_row(&format!("SELECT COUNT(*) FROM {table}"), [], |row| row.get(0))
             .expect("count table")
+    }
+
+    fn assert_table_count(conn: &Connection, table: &str, expected: i64) {
+        assert_eq!(row_count(conn, table), expected, "{table} row count");
+    }
+
+    fn array_len(state: &Value, key: &str) -> i64 {
+        state
+            .get(key)
+            .and_then(Value::as_array)
+            .map(|items| items.len() as i64)
+            .unwrap_or(0)
+    }
+
+    fn plan_day_count(state: &Value) -> i64 {
+        state
+            .get("plan")
+            .and_then(|plan| plan.get("days"))
+            .and_then(Value::as_array)
+            .map(|items| items.len() as i64)
+            .unwrap_or(0)
+    }
+
+    fn planned_exercise_count(state: &Value) -> i64 {
+        state
+            .get("plan")
+            .and_then(|plan| plan.get("days"))
+            .and_then(Value::as_array)
+            .map(|days| {
+                days.iter()
+                    .map(|day| {
+                        day.get("exercises")
+                            .and_then(Value::as_array)
+                            .map(|items| items.len() as i64)
+                            .unwrap_or(0)
+                    })
+                    .sum()
+            })
+            .unwrap_or(0)
+    }
+
+    fn set_log_count(state: &Value) -> i64 {
+        state
+            .get("exerciseLogs")
+            .and_then(Value::as_array)
+            .map(|logs| {
+                logs.iter()
+                    .map(|log| {
+                        log.get("sets")
+                            .and_then(Value::as_array)
+                            .map(|items| items.len() as i64)
+                            .unwrap_or(0)
+                    })
+                    .sum()
+            })
+            .unwrap_or(0)
     }
 }

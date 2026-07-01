@@ -1,26 +1,164 @@
 (() => {
   "use strict";
 
+  type UiElement = HTMLElement & {
+    value: string;
+    checked: boolean;
+    reset: () => void;
+    dataset: DOMStringMap;
+  };
+
+  type DomTools = {
+    $: (selector: string) => UiElement;
+    $$: (selector: string) => UiElement[];
+    createToastController: (selector: string, hideDelayMs?: number) => (message: string) => void;
+  };
+
+  type DisplayFormattersRuntime = {
+    esc: (value: unknown) => string;
+    tag: (label: unknown, tone?: string) => string;
+    fmt: (value: unknown, unit?: string) => string;
+    exerciseEnglishName: (id: string) => string;
+  };
+
+  type RenderResult = {
+    hasData?: boolean;
+    hasPlan?: boolean;
+    html?: string;
+    contextHtml?: string;
+    tableHtml?: string;
+    summaryHtml?: string;
+    listHtml?: string;
+    exerciseHtml?: string;
+    nutritionHtml?: string;
+    value?: string;
+  };
+
+  type WeeklyReviewDraft = Record<string, unknown> & {
+    candidates?: Array<Record<string, unknown>>;
+  };
+
+  type RulesRuntime = {
+    parseGoal: (text: string) => GoalParsed;
+    metricTrend: (metrics: BodyMetricEntry[], key: string, days: number) => MetricTrendResult | null;
+    sortedMetrics: (metrics: BodyMetricEntry[]) => BodyMetricEntry[];
+    buildIntegratedSignals: (input: Record<string, unknown>) => RecommendationItem[];
+    buildTrainingReminders: (input: Record<string, unknown>) => RecommendationItem[];
+    isAvailable: (exercise: Exercise, gym: Gym | null) => boolean;
+    availableSubstitutes: (exercise: Exercise, gym: Gym | null, exercises: Exercise[]) => Exercise[];
+    buildNutritionProfile: (logs: NutritionLog[], goal: Goal | null) => NutritionProfileSummary;
+    buildNutritionTrend: (logs: NutritionLog[]) => Record<string, number>[] | null;
+    buildNutritionReminders: (input: Record<string, unknown>) => RecommendationItem[];
+    buildExerciseProfiles: (logs: ExerciseLog[]) => ExerciseProfileSummary[];
+    buildWeeklyReview: (input: Record<string, unknown>) => WeeklyReviewDraft;
+  };
+
+  type ViewRenderersRuntime = {
+    statusGymText: (gym: Gym | null) => string;
+    statusGoalText: (goal: Goal | null) => string;
+    gymSelectOptions: (gyms: Gym[], currentGymId: string | null) => string;
+    currentGymSummary: (gym: Gym | null) => string;
+    todayAdvice: (input: Record<string, unknown>) => string;
+    trainingReminders: (input: Record<string, unknown>) => string;
+    todayPlanOptions: (plan: TrainingPlan | null) => string;
+    todayWorkoutEmpty: () => string;
+    goalsList: (goals: Goal[], currentGoalId: string | null) => string;
+    metricsList: (metrics: BodyMetricEntry[]) => RenderResult;
+    planContext: (plan: TrainingPlan | null) => RenderResult;
+    workoutDay: (day: WorkoutDay, dayIndex: number, renderPlanRow: (row: PlannedExercise, dayIndex: number, rowIndex: number) => string) => string;
+    dataSummary: (state: AppState) => string;
+    equipmentChecklist: (equipment: Array<{ id: string; label: string }>) => string;
+    equipmentLibrary: (equipment: Array<{ id: string; label: string }>) => string;
+    exerciseLogSelectOptions: (day: WorkoutDay, getExercise: (id: string) => Exercise | undefined, exerciseEnglishName: (id: string) => string) => string;
+    planRow: (input: Record<string, unknown>) => string;
+    exerciseList: (input: Record<string, unknown>) => string;
+    gymList: (gyms: Gym[], currentGymId: string | null) => string;
+    exerciseLogList: (logs: ExerciseLog[]) => string;
+    exerciseHistoryFilterOptions: (input: Record<string, unknown>) => RenderResult;
+    exerciseHistory: (input: Record<string, unknown>) => { summaryHtml: string; listHtml: string };
+    coachAdvice: (advice: Advice[]) => string;
+    revisionsList: (revisions: Revision[]) => string;
+    weeklyReviewSummary: (review: WeeklyReviewDraft) => string;
+    weeklyReviewCandidates: (input: Record<string, unknown>) => string;
+    nutritionList: (input: Record<string, unknown>) => { summaryHtml: string; listHtml: string };
+    profiles: (input: Record<string, unknown>) => { exerciseHtml: string; nutritionHtml: string };
+    nutritionReminders: (items: RecommendationItem[]) => string;
+    trainingStatsLine: (log: ExerciseLog) => string;
+  };
+
+  type WorkbenchActionsRuntime = {
+    setCurrentGym: (input: Record<string, unknown>) => void;
+    setCurrentGoal: (input: Record<string, unknown>) => void;
+    saveGoal: (input: Record<string, unknown>) => Goal;
+    deleteGoal: (input: Record<string, unknown>) => void;
+    saveGym: (input: Record<string, unknown>) => Gym;
+    deleteGym: (input: Record<string, unknown>) => boolean;
+    saveMetric: (input: Record<string, unknown>) => BodyMetricEntry;
+    deleteMetric: (input: Record<string, unknown>) => void;
+    generatePlan: (input: Record<string, unknown>) => void;
+    saveSessionFeedback: (input: Record<string, unknown>) => void;
+    saveExerciseLog: (input: Record<string, unknown>) => void;
+    deleteExerciseLog: (input: Record<string, unknown>) => void;
+    deleteNutritionLog: (input: Record<string, unknown>) => void;
+    replaceExercise: (input: Record<string, unknown>) => void;
+    importPlanCsv: (input: Record<string, unknown>) => void;
+    saveNutritionLog: (input: Record<string, unknown>) => void;
+    deleteAdvice: (input: Record<string, unknown>) => void;
+    applyReviewCandidate: (input: Record<string, unknown>) => { status: string };
+    applyRevision: (input: Record<string, unknown>) => boolean;
+    findMatchingRevision: (state: AppState, candidate: Record<string, unknown>) => Revision | null;
+    findOrCreateExercise: (input: Record<string, unknown>) => Exercise;
+  };
+
+  type AppStateStoreRuntime = {
+    createDefaultState: (context: Record<string, unknown>) => AppState;
+    prepareState: (data: unknown, context: Record<string, unknown>) => AppState;
+    normalizeState: (data: unknown, context: Record<string, unknown>) => AppState;
+    loadLocalState: (context: Record<string, unknown>) => AppState;
+    saveLocalState: (state: AppState, context: Record<string, unknown>) => AppState;
+    hydrateDesktopState: (state: AppState, context: Record<string, unknown>, callbacks: Record<string, unknown>) => Promise<void>;
+    persistDesktopState: (state: AppState, context: Record<string, unknown>, callbacks: Record<string, unknown>) => void;
+  };
+
+  type DataPortabilityRuntime = {
+    buildPlanCsv: (plan: TrainingPlan, resolveName: (exerciseId: string) => string | undefined) => string;
+    parsePlanCsv: (text: string, findOrCreateExercise: (name: string) => Exercise) => WorkoutDay[];
+    buildBackupJson: (state: AppState) => string;
+    parseBackupJson: (text: string) => unknown;
+  };
+
+  type BrowserFileIORuntime = {
+    downloadText: (filename: string, text: string, mimeType: string) => void;
+    readInputFileText: (event: Event) => Promise<string | null>;
+    clearInput: (event: Event) => void;
+    confirmResetData: () => boolean;
+  };
+
+  type LineChartRuntime = {
+    draw: (canvas: Element | null, options: Record<string, unknown>) => void;
+  };
+
   const STORAGE_KEY = "fitness-coach-workbench-v1";
   const D = window.FitnessData;
-  const P = window.FitnessCore.Rules;
+  const P = window.FitnessCore.Rules as RulesRuntime;
   const M = window.FitnessCore.StateNormalizer;
   const DesktopStorage = window.FitnessCore.DesktopStorage;
-  const AppStateStore = window.FitnessCore.AppStateStore;
-  const DataPortability = window.FitnessApp.DataPortability;
-  const LineChart = window.FitnessApp.LineChart;
-  const BrowserFileIO = window.FitnessApp.BrowserFileIO;
-  const DisplayFormatters = window.FitnessApp.DisplayFormatters.create({ equipment: D.equipment });
-  const ViewRenderers = window.FitnessApp.ViewRenderers.create({ formatters: DisplayFormatters, rules: P });
-  const WorkbenchActions = window.FitnessApp.WorkbenchActions.create({ rules: P, uid, nowLabel, todayIso });
+  const AppStateStore = window.FitnessCore.AppStateStore as AppStateStoreRuntime;
+  const DataPortability = window.FitnessApp.DataPortability as DataPortabilityRuntime;
+  const LineChart = window.FitnessApp.LineChart as LineChartRuntime;
+  const BrowserFileIO = window.FitnessApp.BrowserFileIO as BrowserFileIORuntime;
+  const DomUtils = window.FitnessApp.DomUtils.create() as DomTools;
+  const DisplayFormatters = window.FitnessApp.DisplayFormatters.create({ equipment: D.equipment }) as DisplayFormattersRuntime;
+  const ViewRenderers = window.FitnessApp.ViewRenderers.create({ formatters: DisplayFormatters, rules: P }) as ViewRenderersRuntime;
+  const WorkbenchActions = window.FitnessApp.WorkbenchActions.create({ rules: P, uid, nowLabel, todayIso }) as WorkbenchActionsRuntime;
   const {
     esc,
     tag,
     fmt,
     exerciseEnglishName
   } = DisplayFormatters;
-  const $ = (s) => document.querySelector(s);
-  const $$ = (s) => Array.from(document.querySelectorAll(s));
+  const { $, $$ } = DomUtils;
+  const toast = DomUtils.createToastController("#toast");
   let parsedGoalDraft = null;
   let weeklyReviewDraft = null;
   const storeContext = {
@@ -96,7 +234,7 @@
   function bindEvents() {
     $$(".nav-button").forEach((b) => b.addEventListener("click", () => switchView(b.dataset.view)));
     $("#current-gym-select").addEventListener("change", (e) => {
-      WorkbenchActions.setCurrentGym({ state, gymId: e.target.value });
+      WorkbenchActions.setCurrentGym({ state, gymId: (e.target as UiElement).value });
       saveState();
       renderAll();
       toast("已切换当前健身房，动作替代范围已更新。");
@@ -379,11 +517,11 @@
       }
     });
     $("#session-form").reset();
-    $("#log-completion").value = 100;
-    $("#log-rpe").value = 7;
-    $("#log-pain-score").value = 0;
-    $("#log-sleep").value = 3;
-    $("#log-fatigue").value = 3;
+    $("#log-completion").value = "100";
+    $("#log-rpe").value = "7";
+    $("#log-pain-score").value = "0";
+    $("#log-sleep").value = "3";
+    $("#log-fatigue").value = "3";
     saveState();
     renderAll();
     switchView("coach");
@@ -421,8 +559,8 @@
       }
     });
     $("#exercise-log-form").reset();
-    $("#exercise-log-rpe").value = 7;
-    $("#exercise-log-pain-score").value = 0;
+    $("#exercise-log-rpe").value = "7";
+    $("#exercise-log-pain-score").value = "0";
     saveState();
     renderAll();
     toast("动作级反馈已保存，并生成动作建议。");
@@ -799,13 +937,11 @@
 
   function currentGym() { return state.gyms.find((x) => x.id === state.currentGymId) || state.gyms[0] || null; }
   function currentGoal() { return state.goals.find((x) => x.id === state.currentGoalId) || state.goals[0] || null; }
-  function latestMetric() { return P.sortedMetrics(state.metrics).at(-1) || null; }
+  function latestMetric() { const metrics = P.sortedMetrics(state.metrics); return metrics[metrics.length - 1] || null; }
   function getExercise(id) { return state.exercises.find((x) => x.id === id); }
   function num(v) { return v === "" || v == null ? null : Number(v); }
   function clamp(v, min, max) { return Number.isFinite(v) ? Math.min(max, Math.max(min, v)) : min; }
   function todayIso() { return new Date().toISOString().slice(0, 10); }
   function nowLabel() { const d = new Date(); return `${d.toLocaleDateString("zh-CN")} ${d.toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" })}`; }
   function uid(prefix) { return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`; }
-  let toastTimer = null;
-  function toast(msg) { const el = $("#toast"); el.textContent = msg; el.classList.add("show"); clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove("show"), 2600); }
 })();
