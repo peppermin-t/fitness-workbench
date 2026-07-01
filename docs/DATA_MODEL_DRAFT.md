@@ -1,6 +1,6 @@
 ﻿# 数据模型草案
 
-本文档根据当前 `app.js`、`src/core/rules/facade.ts`、`src/core/data/fitness-data.ts` 中的状态结构整理。Phase 4 后，核心模型的第一版 TypeScript 声明位于 `src/core/models/index.d.ts`，本文档仍作为字段语义和后续调整依据。Phase 6 后，Tauri 桌面环境会把完整 `AppState` 快照写入 SQLite，并镜像主要业务表；具体实现见 `docs/PHASE6_SQLITE.md`。
+本文档根据当前 `src/app/main.ts`、`src/core/rules/facade.ts`、`src/core/data/fitness-data.ts` 中的状态结构整理。Phase 4 后，核心模型的第一版 TypeScript 声明位于 `src/core/models/index.d.ts`，本文档仍作为字段语义和后续调整依据。Phase 6 后，Tauri 桌面环境会把完整 `AppState` 快照写入 SQLite，并镜像主要业务表；具体实现见 `docs/PHASE6_SQLITE.md`。
 
 ## 0. AppState
 
@@ -82,9 +82,9 @@
 | --- | --- | --- | --- |
 | `id` | 器械 ID | 已有 | 保留 |
 | `label` | 器械中文名 | 已有 | 保留 |
-| `englishLabel` | 英文名 | 部分由 `app.js` 映射函数提供 | 建议沉入模型或独立字典 |
-| `family` | 器械家族 / 类型 | 由 `app.js` 推断 | 可选，后续用于筛选和图标 |
-| `iconType` | 图标类型 | 由 `app.js` 推断 | 可选 |
+| `englishLabel` | 英文名 | 部分由 `src/app/main.ts` 映射函数提供 | 建议沉入模型或独立字典 |
+| `family` | 器械家族 / 类型 | 由 `src/app/main.ts` 推断 | 可选，后续用于筛选和图标 |
+| `iconType` | 图标类型 | 由 `src/app/main.ts` 推断 | 可选 |
 
 ### 关系
 
@@ -100,7 +100,7 @@
 | --- | --- | --- | --- |
 | `id` | 动作 ID | 已有 | 保留 |
 | `name` | 中文动作名 | 已有 | 保留 |
-| `englishName` | 英文动作名 | 当前由 `app.js` 映射函数提供 | 建议沉入模型或独立字典 |
+| `englishName` | 英文动作名 | 当前由 `src/app/main.ts` 映射函数提供 | 建议沉入模型或独立字典 |
 | `pattern` | 动作模式 | 已有 | 保留并固定枚举方向 |
 | `muscles` | 目标肌群列表 | 已有 | 保留 |
 | `equipment` | 所需器械 ID 列表 | 已有 | 保留 |
@@ -108,7 +108,7 @@
 | `cue` | 技术提示 | 已有 | 保留 |
 | `risk` | 风险提示 | 已有 | 保留 |
 | `links` | 示例链接 | 已有 | 保留 |
-| `media` | 图片 / 视频资源 | 当前由 `app.js` 推断 | 后续可选 |
+| `media` | 图片 / 视频资源 | 当前由 `src/app/main.ts` 推断 | 后续可选 |
 | `isCustom` | 是否用户自定义 | CSV 导入隐式产生但无字段 | 建议新增 |
 
 ### 关系

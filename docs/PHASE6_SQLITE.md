@@ -11,7 +11,7 @@
   - 在 Tauri 环境中通过 `window.__TAURI__.core.invoke` 读写 SQLite。
   - 仅在 Tauri 桌面环境中启用。
 - `src/app/storage/app-state-store.ts` 负责默认状态、localStorage 读写，以及 Tauri SQLite 的 hydrate / persist 协调。
-- `app.js` 的状态保存路径变为：
+- `src/app/main.ts` 的状态保存路径变为：
   - 始终写入 localStorage。
   - 如果检测到 Tauri，则异步同步到 SQLite。
 - 应用启动时：
@@ -72,7 +72,7 @@ npm.cmd run desktop:build
 
 - SQLite Rust 侧保存 / 读取逻辑已抽出为可单测的 connection helper，不再只能通过 Tauri `AppHandle` 手工验证。
 - `createAdviceFromSession` 已并入 `src/core/rules/advice-engine.ts`。
-- 新增 `src/core/rules/facade.ts` 作为 `window.FitnessCore.Rules`，`app.js` 已改为使用该 core facade。
+- 新增 `src/core/rules/facade.ts` 作为 `window.FitnessCore.Rules`，`src/app/main.ts` 已改为使用该 core facade。
 - `src/core/rules/facade.ts` 汇总 `window.FitnessCore.Rules` 统一规则入口。
 
 ## 后续清理条件

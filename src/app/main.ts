@@ -244,6 +244,16 @@
     $("#goals-list").innerHTML = ViewRenderers.goalsList(state.goals, state.currentGoalId);
   }
 
+  function renderParsedGoal() {
+    const el = $("#parsed-goal-output");
+    if (!el) return;
+    if (!parsedGoalDraft) {
+      el.innerHTML = "";
+      return;
+    }
+    el.innerHTML = `<pre>${esc(JSON.stringify(parsedGoalDraft, null, 2))}</pre>`;
+  }
+
   function renderMetrics() {
     const el = $("#metric-list");
     const result = ViewRenderers.metricsList(state.metrics);
@@ -267,7 +277,7 @@
     table.innerHTML = state.plan.days.map((d, i) => renderWorkoutDay(d, i, false)).join("");
   }
 
-  function renderWorkoutDay(day, dayIndex) {
+  function renderWorkoutDay(day, dayIndex, compact = false) {
     return ViewRenderers.workoutDay(day, dayIndex, renderPlanRow);
   }
 
@@ -540,7 +550,7 @@
     const totalVolumeLoad = logs.reduce((sum, log) => sum + Number(log.volumeLoad || 0), 0);
     const totalHardSets = logs.reduce((sum, log) => sum + Number(log.hardSets || 0), 0);
     const prCount = logs.filter((log) => log.simplePr?.isPr).length;
-    const tagCounts = {};
+    const tagCounts: Record<string, number> = {};
     logs.forEach((log) => {
       (log.analysis?.tags || []).forEach((item) => {
         tagCounts[item.tag] = (tagCounts[item.tag] || 0) + 1;

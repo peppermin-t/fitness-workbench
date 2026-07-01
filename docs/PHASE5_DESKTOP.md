@@ -7,7 +7,7 @@
 - 新增 `src-tauri/`，作为 Tauri v2 桌面壳。
 - 新增 `scripts/prepare-tauri-frontend.js`，把桌面前端源文件和运行所需脚本复制到 `dist/desktop`。
 - `src-tauri/tauri.conf.json` 的 `frontendDist` 指向 `../dist/desktop`，避免直接把仓库根目录或 `node_modules` 作为桌面前端资源。
-- 桌面壳加载的是由 `src/app/index.html` 生成的 `dist/desktop/index.html`，以及 `dist/desktop/src/core/data/fitness-data.js`、`dist/desktop/src/core/rules/*.js`、`dist/desktop/src/core/rules/facade.js`、`dist/desktop/src/app/**/*.js` 和 `app.js`。
+- 桌面壳加载的是由 `src/app/index.html` 生成的 `dist/desktop/index.html`，以及 `dist/desktop/src/core/data/fitness-data.js`、`dist/desktop/src/core/rules/*.js`、`dist/desktop/src/core/rules/facade.js`、`dist/desktop/src/app/**/*.js`，其中 UI 启动入口是 `dist/desktop/src/app/main.js`。
 - 根目录 `index.html` 双击入口已移除；当前运行入口统一为 Tauri 桌面端。
 
 ## 命令
@@ -36,7 +36,7 @@ npm.cmd run desktop:build
 
 以下内容不是冗余，Phase 5 仍必须保留：
 
-- `src/core/rules/facade.ts`：继续作为 `window.FitnessCore.Rules` 统一规则入口；`app.js` 和 smoke 测试都直接使用该入口。
+- `src/core/rules/facade.ts`：继续作为 `window.FitnessCore.Rules` 统一规则入口；`src/app/main.ts` 和 smoke 测试都直接使用该入口。
 - `dist/desktop/src/**/*.js`：Tauri 当前实际加载的 JS 输出，由 `dist/generated/src/**/*.js` 复制而来，不再提交到源码目录。
 - `src/app/index.html`：桌面前端源文件，不作为交付入口。
 - JSON 导入导出：作为当前主备份和迁移格式。
@@ -44,7 +44,7 @@ npm.cmd run desktop:build
 ## 明确不做
 
 - SQLite 已在 Phase 6 单独接入，不回填到 Phase 5 范围。
-- 不重写 `app.js`。
+- 不重写 `src/app/main.ts`。
 - 不引入 React / Vue。
 - 不改变 localStorage key。
 - 不删除 JSON / CSV 导入导出路径。

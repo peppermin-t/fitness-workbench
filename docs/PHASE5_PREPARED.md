@@ -65,4 +65,4 @@ npm.cmd run verify:desktop
 ## 已知技术债
 
 - `// @ts-nocheck` 过渡措施已移除；后续技术债转为继续补充更精确的模型和规则类型。
-- `app.js` 仍是大型 UI / 状态协调文件，Phase 5 不应借桌面封装顺手重写它。
+- `src/app/main.ts` 仍是大型 UI / 状态协调文件，Phase 5 不应借桌面封装顺手重写它。

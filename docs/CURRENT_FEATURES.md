@@ -1,6 +1,6 @@
 ﻿# 当前功能清单
 
-本文档按当前代码实际实现梳理功能边界，主要依据 `README.md`、`docs/PRODUCT_VISION.md`、`src/app/index.html`、`src/core/data/fitness-data.ts`、`src/core/rules/*`、`src/app/storage/*`、`src/app/import-export/*`、`src/app/io/*`、`src/app/charts/*`、`src/app/presenters/*`、`src/app/render/*`、`src/app/state/*`、`src/core/models/index.d.ts`、`app.js` 和 `styles.css`。当前应用以 Tauri 桌面端为运行入口：`src/**/*.ts` 是源码，`npm.cmd run build:core` 会生成 `dist/generated/src/**/*.js`，`scripts/prepare-tauri-frontend.js` 会把 `src/app/index.html` 复制为 `dist/desktop/index.html`，并把生成后的 JS 复制到 `dist/desktop/src/**/*.js` 供 Tauri 加载。Tauri 环境下会通过 `src/app/storage/desktop-sqlite.ts` 同步到 SQLite，并保留 JSON 备份 / 恢复。`src/core/rules/facade.ts` 汇总 core 规则为 `window.FitnessCore.Rules`，供 UI 和 smoke 测试使用；旧规则兼容入口已移除。
+本文档按当前代码实际实现梳理功能边界，主要依据 `README.md`、`docs/PRODUCT_VISION.md`、`src/app/index.html`、`src/core/data/fitness-data.ts`、`src/core/rules/*`、`src/app/storage/*`、`src/app/import-export/*`、`src/app/io/*`、`src/app/charts/*`、`src/app/presenters/*`、`src/app/render/*`、`src/app/state/*`、`src/core/models/index.d.ts`、`src/app/main.ts` 和 `styles.css`。当前应用以 Tauri 桌面端为运行入口：`src/**/*.ts` 是源码，`npm.cmd run build:core` 会生成 `dist/generated/src/**/*.js`，`scripts/prepare-tauri-frontend.js` 会把 `src/app/index.html` 复制为 `dist/desktop/index.html`，并把生成后的 JS 复制到 `dist/desktop/src/**/*.js` 供 Tauri 加载。Tauri 环境下会通过 `src/app/storage/desktop-sqlite.ts` 同步到 SQLite，并保留 JSON 备份 / 恢复。`src/core/rules/facade.ts` 汇总 core 规则为 `window.FitnessCore.Rules`，供 UI 和 smoke 测试使用；旧规则兼容入口已移除。
 
 ## 1. 今日训练
 
@@ -18,12 +18,12 @@
 ### 主要代码位置
 
 - `src/app/index.html`：`view-today` 区域，包括当前场地、今日建议、今日训练、动作级反馈、训练反馈表单。
-- `app.js`：`renderTodayAdvice`、`renderTrainingReminders`、`renderTodayPlanSelect`、`renderTodayWorkout`、`saveExerciseLog`、`saveSessionFeedback` 的表单读取和页面反馈。
+- `src/app/main.ts`：`renderTodayAdvice`、`renderTrainingReminders`、`renderTodayPlanSelect`、`renderTodayWorkout`、`saveExerciseLog`、`saveSessionFeedback` 的表单读取和页面反馈。
 - `src/app/state/workbench-actions.ts`：训练整体反馈和动作级反馈的状态写入、session 关联、advice / revision 写入。
 - `src/core/rules/exercise-feedback-analyzer.ts`：动作级反馈分析。
 - `src/core/rules/integrated-signals.ts`：`buildLinkedTodayInsights`、`buildTrainingReminders`、`buildIntegratedSignals`。
 - `src/app/render/view-renderers.ts`：今日建议、训练前提醒、今日训练空状态和训练日选择渲染。
-- `src/core/rules/facade.ts`：汇总 core 规则为 `window.FitnessCore.Rules`，供 `app.js` 和 smoke 测试使用。
+- `src/core/rules/facade.ts`：汇总 core 规则为 `window.FitnessCore.Rules`，供 `src/app/main.ts` 和 smoke 测试使用。
 
 ### 依赖的数据状态
 
@@ -69,7 +69,7 @@
 ### 主要代码位置
 
 - `src/app/index.html`：`view-goals`、目标输入、解析按钮、保存按钮、目标列表容器。
-- `app.js`：`saveGoal` 的表单读取和页面反馈、`renderParsedGoal`、`renderGoalsList`、`currentGoal`。
+- `src/app/main.ts`：`saveGoal` 的表单读取和页面反馈、`renderParsedGoal`、`renderGoalsList`、`currentGoal`。
 - `src/app/state/workbench-actions.ts`：目标保存、当前目标切换和目标删除。
 - `src/core/rules/goal-parser.ts`：目标解析逻辑。
 - `src/core/rules/facade.ts`：聚合导出 `window.FitnessCore.Rules.parseGoal`，并在计划、营养和联动规则中读取目标结构。
@@ -108,7 +108,7 @@
 
 - `src/core/data/fitness-data.ts`：`equipment`、`defaultGyms`。
 - `src/app/index.html`：`view-gyms`、健身房表单、器械 checklist、器械图例。
-- `app.js`：`renderGymSelect`、`renderCurrentGymSummary`、`renderEquipmentChecklist`、`renderEquipmentLibrary`、`renderGymList`、`saveGym` / `deleteGym` 的表单读取和页面反馈、`currentGym`。
+- `src/app/main.ts`：`renderGymSelect`、`renderCurrentGymSummary`、`renderEquipmentChecklist`、`renderEquipmentLibrary`、`renderGymList`、`saveGym` / `deleteGym` 的表单读取和页面反馈、`currentGym`。
 - `src/app/state/workbench-actions.ts`：场地保存、当前场地切换和场地删除保护。
 - `src/core/rules/plan-generator.ts`：`isAvailable`、`availableSubstitutes`、`pickAvailableExercise`。
 - `src/core/rules/facade.ts`：聚合导出 `window.FitnessCore.Rules.isAvailable`、`window.FitnessCore.Rules.availableSubstitutes`。
@@ -146,7 +146,7 @@
 
 - `src/core/data/fitness-data.ts`：`exercises` 静态主数据。
 - `src/app/index.html`：`view-exercises`。
-- `app.js`：`renderExerciseList`、`renderPlanRow`、`findOrCreateExercise` 的兼容包装。
+- `src/app/main.ts`：`renderExerciseList`、`renderPlanRow`、`findOrCreateExercise` 的兼容包装。
 - `src/app/state/workbench-actions.ts`：CSV 导入时创建极简自定义动作。
 - `src/app/presenters/display-formatters.ts`：中英双语动作名、器械展示文案、器械分类文案、标签、证据列表和推荐项展示格式化。
 - `src/core/rules/plan-generator.ts`：动作可用性和替代动作逻辑。
@@ -189,7 +189,7 @@
 ### 主要代码位置
 
 - `src/app/index.html`：`view-plan`、生成计划、导出 CSV、导入 CSV。
-- `app.js`：`generatePlan`、`renderPlan`、`renderWorkoutDay`、`renderPlanRow`、`replaceExercise`、`exportPlanCsv`、`importPlanCsv` 的 UI 事件和页面反馈。
+- `src/app/main.ts`：`generatePlan`、`renderPlan`、`renderWorkoutDay`、`renderPlanRow`、`replaceExercise`、`exportPlanCsv`、`importPlanCsv` 的 UI 事件和页面反馈。
 - `src/app/state/workbench-actions.ts`：计划生成、CSV 导入后写入当前计划、手动替换动作和 revision 记录。
 - `src/app/import-export/data-portability.ts`：训练计划 CSV 构造和解析 helper。
 - `src/core/rules/plan-generator.ts`：训练计划生成、训练日模板、动作可用性和替代动作逻辑。
@@ -235,7 +235,7 @@
 ### 主要代码位置
 
 - `src/app/index.html`：`session-form`。
-- `app.js`：`saveSessionFeedback` 的表单读取和页面反馈、`renderCoach`、`renderWeeklyReview`。
+- `src/app/main.ts`：`saveSessionFeedback` 的表单读取和页面反馈、`renderCoach`、`renderWeeklyReview`。
 - `src/app/state/workbench-actions.ts`：训练整体反馈保存、`WorkoutSession` 更新、`feedback` 兼容写入、建议和 revision 写入。
 - `src/core/rules/advice-engine.ts`：`createAdviceFromSession`、`revision`、建议结构和优先级 helper。
 - `src/core/rules/weekly-review.ts`：`buildWeeklyReview`。
@@ -277,7 +277,7 @@
 ### 主要代码位置
 
 - `src/app/index.html`：`exercise-log-form`、动作历史筛选区域。
-- `app.js`：`saveExerciseLog` 的表单读取和页面反馈、`renderExerciseLogSelect`、`renderExerciseLogList`、`renderExerciseHistoryFilter`、`renderExerciseHistory`、`buildExerciseHistorySummary`。
+- `src/app/main.ts`：`saveExerciseLog` 的表单读取和页面反馈、`renderExerciseLogSelect`、`renderExerciseLogList`、`renderExerciseHistoryFilter`、`renderExerciseHistory`、`buildExerciseHistorySummary`。
 - `src/app/state/workbench-actions.ts`：动作日志写入、`SetLog` 解析、训练容量 / 有效组 / 简单 PR 统计、动作建议写入。
 - `src/core/rules/exercise-feedback-analyzer.ts`：动作反馈分析、动作长期画像、动作反馈建议。
 - `src/core/rules/training-stats.ts`：训练容量、有效组数和简单 PR 判断。
@@ -319,7 +319,7 @@
 ### 主要代码位置
 
 - `src/app/index.html`：`view-metrics`、`metric-form`、`metric-chart`、`metric-list`。
-- `app.js`：`saveMetric` / `deleteMetric` 的表单读取和页面反馈、`renderMetrics`、`drawMetricChart`、`latestMetric`。
+- `src/app/main.ts`：`saveMetric` / `deleteMetric` 的表单读取和页面反馈、`renderMetrics`、`drawMetricChart`、`latestMetric`。
 - `src/app/state/workbench-actions.ts`：身体指标保存、排序和删除。
 - `src/app/charts/line-chart.ts`：通用 canvas 折线图绘制 helper。
 - `src/core/rules/metric-analyzer.ts`：`sortedMetrics`、`metricTrend`。
@@ -360,7 +360,7 @@
 ### 主要代码位置
 
 - `src/app/index.html`：`view-nutrition`、`nutrition-form`、`nutrition-chart`。
-- `app.js`：`saveNutritionLog` 的表单读取和页面反馈、`renderNutritionList`、`drawNutritionChart`、`renderNutritionReminders`。
+- `src/app/main.ts`：`saveNutritionLog` 的表单读取和页面反馈、`renderNutritionList`、`drawNutritionChart`、`renderNutritionReminders`。
 - `src/app/state/workbench-actions.ts`：饮食记录写入和饮食 advice 写入。
 - `src/app/charts/line-chart.ts`：饮食趋势图使用的通用 canvas 折线图绘制 helper。
 - `src/core/rules/nutrition-parser.ts`：`FOOD_LIBRARY`、`parseNutritionLog`、`splitMeals`、`extractFoodItems`、`nutritionTargets`、`buildNutritionRecommendationItems`、`buildNutritionProfile`、`buildNutritionTrend`、`buildNutritionReminders`。
@@ -399,7 +399,7 @@
 ### 主要代码位置
 
 - `src/app/index.html`：`view-coach`。
-- `app.js`：`renderCoach`、`renderWeeklyReview`、`applyReviewCandidate` / `applyRevision` 的页面反馈、`renderProfiles`、`renderExerciseHistory`。
+- `src/app/main.ts`：`renderCoach`、`renderWeeklyReview`、`applyReviewCandidate` / `applyRevision` 的页面反馈、`renderProfiles`、`renderExerciseHistory`。
 - `src/app/state/workbench-actions.ts`：周复盘候选转 revision、revision 应用到当前计划。
 - `src/core/rules/advice-engine.ts`：建议结构、推荐项、优先级和去重 helper。
 - `src/core/rules/exercise-feedback-analyzer.ts`：动作长期画像。
@@ -427,7 +427,7 @@
 
 ### 当前缺口
 
-- 建议来源仍分散在 core 规则和 `src/app/state/workbench-actions.ts`，但已不再直接堆在 `app.js` 中。
+- 建议来源仍分散在 core 规则和 `src/app/state/workbench-actions.ts`，但已不再直接堆在 `src/app/main.ts` 中。
 - `advice` 没有统一的状态流转，例如已读、忽略、已执行、过期。
 - 建议去重和生命周期管理较弱。
 
@@ -444,7 +444,7 @@
 ### 主要代码位置
 
 - `src/app/index.html`：智能教练页中的周复盘区域。
-- `app.js`：`renderWeeklyReview`、`applyReviewCandidate` 的页面反馈、`findMatchingRevision` 兼容包装。
+- `src/app/main.ts`：`renderWeeklyReview`、`applyReviewCandidate` 的页面反馈、`findMatchingRevision` 兼容包装。
 - `src/app/state/workbench-actions.ts`：`findMatchingRevision`、周复盘候选转 pending revision、revision 应用。
 - `src/core/rules/weekly-review.ts`：`buildWeeklyReview`、`revision`、`dedupeCandidates`、`findConditioningDayIndex`。
 - `src/core/rules/facade.ts`：聚合导出 `window.FitnessCore.Rules.buildWeeklyReview`。
@@ -481,7 +481,7 @@
 
 ### 主要代码位置
 
-- `app.js`：`renderProfiles`、`renderTrainingReminders`、`renderNutritionReminders`。
+- `src/app/main.ts`：`renderProfiles`、`renderTrainingReminders`、`renderNutritionReminders`。
 - `src/core/rules/exercise-feedback-analyzer.ts`：`buildExerciseProfiles`。
 - `src/core/rules/nutrition-parser.ts`：`buildNutritionProfile`、`buildNutritionReminders`。
 - `src/core/rules/integrated-signals.ts`：`buildIntegratedSignals`、`buildTrainingReminders`。
@@ -520,7 +520,7 @@
 ### 主要代码位置
 
 - `src/app/index.html`：`view-data` 和计划页 CSV 导入导出。
-- `app.js`：`exportJson`、`importJson`、`resetData`、`exportPlanCsv`、`importPlanCsv`、`renderDataSummary` 的 UI 事件和状态写入。
+- `src/app/main.ts`：`exportJson`、`importJson`、`resetData`、`exportPlanCsv`、`importPlanCsv`、`renderDataSummary` 的 UI 事件和状态写入。
 - `src/app/import-export/data-portability.ts`：JSON 备份序列化 / 解析、CSV 构造 / 解析 helper。
 - `src/app/io/browser-file-io.ts`：浏览器文件读取、文本下载和恢复初始数据确认 helper。
 
@@ -558,7 +558,7 @@
 
 - `src/app/index.html`
 - `styles.css`
-- `app.js`
+- `src/app/main.ts`
 - `src/app/storage/app-state-store.ts`
 - `src/app/import-export/data-portability.ts`
 - `src/app/io/browser-file-io.ts`
@@ -570,5 +570,5 @@
 ### 当前缺口
 
 - `body` 设置 `min-width: 1100px`，当前定位更偏桌面端，不适合手机端。
-- `app.js` 仍承担 DOM 查询、事件绑定、表单读取、渲染调度和保存后的页面刷新协调，尚未形成完整 UI 层边界。
-- 默认状态、存储协调、CSV / JSON 构造解析 helper、浏览器文件 I/O、通用 canvas 折线图 helper、展示格式化 helper、主要视图模板 helper，以及目标 / 场地 / 指标 / 计划 / 训练 / 饮食 / revision 等主要状态动作已从 `app.js` 拆出；旧同名渲染 / 保存函数覆盖问题已清理。当前剩余清理重点是类型收紧和更清晰的 UI 事件边界，而不是继续堆大块业务模板。
+- `src/app/main.ts` 仍承担 DOM 查询、事件绑定、表单读取、渲染调度和保存后的页面刷新协调，尚未形成完整 UI 层边界。
+- 默认状态、存储协调、CSV / JSON 构造解析 helper、浏览器文件 I/O、通用 canvas 折线图 helper、展示格式化 helper、主要视图模板 helper，以及目标 / 场地 / 指标 / 计划 / 训练 / 饮食 / revision 等主要状态动作已从 `src/app/main.ts` 拆出；旧同名渲染 / 保存函数覆盖问题已清理。当前剩余清理重点是类型收紧和更清晰的 UI 事件边界，而不是继续堆大块业务模板。

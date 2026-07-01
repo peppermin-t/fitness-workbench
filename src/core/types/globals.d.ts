@@ -133,6 +133,45 @@ interface AppStateStoreModule {
   persistDesktopState: Function;
 }
 
+interface DataPortabilityModule {
+  buildPlanCsv: Function;
+  parsePlanCsv: Function;
+  buildBackupJson: Function;
+  parseBackupJson: Function;
+}
+
+interface LineChartModule {
+  draw: Function;
+}
+
+interface BrowserFileIOModule {
+  downloadText: Function;
+  readInputFileText: Function;
+  clearInput: Function;
+  confirmResetData: Function;
+}
+
+interface DisplayFormattersFactoryModule {
+  create: Function;
+}
+
+interface ViewRenderersFactoryModule {
+  create: Function;
+}
+
+interface WorkbenchActionsFactoryModule {
+  create: Function;
+}
+
+interface FitnessAppNamespace {
+  DataPortability?: DataPortabilityModule;
+  LineChart?: LineChartModule;
+  BrowserFileIO?: BrowserFileIOModule;
+  DisplayFormatters?: DisplayFormattersFactoryModule;
+  ViewRenderers?: ViewRenderersFactoryModule;
+  WorkbenchActions?: WorkbenchActionsFactoryModule;
+}
+
 interface FitnessCoreNamespace {
   GoalParser?: GoalParserModule;
   MetricAnalyzer?: MetricAnalyzerModule;
@@ -151,6 +190,6 @@ interface FitnessCoreNamespace {
 
 interface Window {
   FitnessCore: FitnessCoreNamespace;
-  FitnessApp: Record<string, unknown>;
+  FitnessApp: FitnessAppNamespace;
   FitnessData: FitnessDataModule;
 }

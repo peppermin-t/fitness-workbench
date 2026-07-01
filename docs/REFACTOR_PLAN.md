@@ -21,7 +21,7 @@ Phase 7：AI 结构化解析与多端扩展
 
 - Phase 0：文档、人工 smoke checklist、规则 smoke、样例 JSON 基线和 git 基线已具备。
 - Phase 1：JS 模块边界已收敛到 `src/core/rules` 与 `src/app/storage`，当前仍使用浏览器全局对象作为零打包运行边界。第一轮应用侧清理已把默认状态、localStorage 读写和 Tauri SQLite hydration helper 收到 `src/app/storage/app-state-store.ts`。
-- Phase 2：核心规则拆分已收口。`src/core/rules/facade.ts` 汇总各规则模块为 `window.FitnessCore.Rules`；`app.js` 当前直接使用该入口，旧规则兼容入口已移除。无依赖规则 smoke 已覆盖 12 个核心用例。
+- Phase 2：核心规则拆分已收口。`src/core/rules/facade.ts` 汇总各规则模块为 `window.FitnessCore.Rules`；`src/app/main.ts` 当前直接使用该入口，旧规则兼容入口已移除。无依赖规则 smoke 已覆盖 12 个核心用例。
 - Phase 3：已完成第一版：`SetLog` 可选记录、`WorkoutSession` 状态与动作日志关联、基础训练容量统计、`schemaVersion: 2`、JSON 导入稳定性和当前状态规范化已经具备。
 - Phase 4：已完成最小迁移：新增 TypeScript 配置、模型声明、全局声明，核心规则和 app helper 已以 `.ts` 作为源码，构建时输出到 `dist/generated/src/**/*.js`。
 - Phase 5：最小 Tauri 壳已接入，桌面前端资源由 `npm.cmd run prepare:desktop` 生成。
@@ -149,7 +149,7 @@ src/
 - 保存目标、健身房、指标、训练反馈、动作日志、饮食记录。
 - 调用 core 规则后合并结果。
 
-当前 `app.js` 中的 `defaultState`、`loadState`、`saveState` 已迁移到 `src/app/storage/app-state-store`；目标、健身房、指标、计划、训练反馈、动作日志、饮食日志和 revision 应用已迁移到 `src/app/state/workbench-actions`；低耦合和复杂视图模板已迁移到 `src/app/render/view-renderers`；浏览器文件读取、下载和恢复确认已迁移到 `src/app/io/browser-file-io`。后续重点是收紧 TypeScript 类型，并继续梳理 UI 事件边界。
+当前 `src/app/main.ts` 中的 `defaultState`、`loadState`、`saveState` 已迁移到 `src/app/storage/app-state-store`；目标、健身房、指标、计划、训练反馈、动作日志、饮食日志和 revision 应用已迁移到 `src/app/state/workbench-actions`；低耦合和复杂视图模板已迁移到 `src/app/render/view-renderers`；浏览器文件读取、下载和恢复确认已迁移到 `src/app/io/browser-file-io`。后续重点是收紧 TypeScript 类型，并继续梳理 UI 事件边界。
 
 ### `src/app/storage`
 
@@ -161,7 +161,7 @@ src/
 - 数据迁移。
 - 导入校验。
 
-当前 `app.js` 中的 `loadState`、`saveState` 已迁移到 `src/app/storage/app-state-store`；JSON 解析 / 序列化已迁移到 `src/app/import-export/data-portability`；浏览器文件读取、下载和恢复确认已迁移到 `src/app/io/browser-file-io`。`app.js` 仍保留导入成功后的状态覆盖、保存、渲染和 toast 协调。
+当前 `src/app/main.ts` 中的 `loadState`、`saveState` 已迁移到 `src/app/storage/app-state-store`；JSON 解析 / 序列化已迁移到 `src/app/import-export/data-portability`；浏览器文件读取、下载和恢复确认已迁移到 `src/app/io/browser-file-io`。`src/app/main.ts` 仍保留导入成功后的状态覆盖、保存、渲染和 toast 协调。
 
 ### 保持 UI 行为不变
 
@@ -549,7 +549,7 @@ Phase 4 是长期技术路线的一部分。当前执行方式是最小迁移：
    - `integrated-signals`
    - `weekly-review`
    - `advice-engine`
-4. 保留 JS 输出入口，避免一次性改坏运行方式。已完成：`src/app/index.html` 仍加载构建后的 `.js`，`app.js` 已从 `window.FitnessCore.Rules` 切到 `window.FitnessCore.Rules`。
+4. 保留 JS 输出入口，避免一次性改坏运行方式。已完成：`src/app/index.html` 仍加载构建后的 `.js`，`src/app/main.ts` 已从 `window.FitnessCore.Rules` 切到 `window.FitnessCore.Rules`。
 5. `// @ts-nocheck` 过渡措施已移除；后续继续补充更精确的输入输出类型。
 6. 等 core 稳定后再考虑 UI 层迁移。
 

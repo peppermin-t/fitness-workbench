@@ -57,7 +57,7 @@
 
 - 动作库主要是展示和搜索。
 - 静态动作数据在 `src/core/data/fitness-data.ts`。
-- CSV 导入找不到动作时，`app.js` 会通过兼容包装调用 `src/app/state/workbench-actions.ts` 创建极简动作。
+- CSV 导入找不到动作时，`src/app/main.ts` 会通过兼容包装调用 `src/app/state/workbench-actions.ts` 创建极简动作。
 - 没有正式编辑动作的 UI。
 
 ### 边界问题
@@ -95,14 +95,14 @@
 
 - 统一 `Advice` 模型。
 - 统一 `RecommendationItem` 结构。
-- `app.js` 不直接拼业务建议，只调用 advice engine。
+- `src/app/main.ts` 不直接拼业务建议，只调用 advice engine。
 - 今日页、饮食页、智能教练页只负责按场景过滤和展示。
 
-## 5. `app.js` 是否承担过多职责
+## 5. `src/app/main.ts` 是否承担过多职责
 
 ### 当前职责
 
-`app.js` 当前同时承担：
+`src/app/main.ts` 当前同时承担：
 
 - DOM 查询和事件绑定。
 - 路由 / view 切换。
@@ -122,8 +122,8 @@
 ### 明确问题
 
 - 文件仍然过大，当前承担复杂 UI 渲染、事件处理、状态协调和展示格式化调用。
-- Phase 3 / Phase 5 之间已经清理过旧同名函数覆盖问题；当前脚本检查未发现 `app.js` 中仍存在同名函数重复定义。
-- `app.js` 仍然既是 UI 层又是应用服务层；状态存储 helper、导入导出 helper、浏览器文件 I/O helper、通用图表 helper、展示格式化 helper、视图模板 helper 和主要业务状态动作已拆出。当前剩余问题主要是 DOM 事件、表单读取、保存后刷新和 toast 协调仍集中在一个文件内。
+- Phase 3 / Phase 5 之间已经清理过旧同名函数覆盖问题；当前脚本检查未发现 `src/app/main.ts` 中仍存在同名函数重复定义。
+- `src/app/main.ts` 仍然既是 UI 层又是应用服务层；状态存储 helper、导入导出 helper、浏览器文件 I/O helper、通用图表 helper、展示格式化 helper、视图模板 helper 和主要业务状态动作已拆出。当前剩余问题主要是 DOM 事件、表单读取、保存后刷新和 toast 协调仍集中在一个文件内。
 - `src/core/rules/facade.ts` 是当前正式规则聚合入口；`src/core/rules/*.ts` 是 Tauri 前端当前实际加载输出的源码，不应作为“无用冗余”删除。
 
 ### 建议拆分方向
@@ -160,7 +160,7 @@
 
 ### 风险
 
-- `src/core/rules/facade.ts` 是 `app.js` 和 smoke 测试的规则入口，当前不能删除。
+- `src/core/rules/facade.ts` 是 `src/app/main.ts` 和 smoke 测试的规则入口，当前不能删除。
 - `createAdviceFromSession` 已并入 `src/core/rules/advice-engine.ts`。
 - `// @ts-nocheck` 过渡措施已移除；类型债从“遮蔽检查”转为继续补充更精确的模型和规则类型。
 
@@ -196,12 +196,12 @@
 
 ### 重复渲染
 
-Phase 5 清理后，`app.js` 当前未发现同名函数重复定义。此前遗留的旧 `renderExerciseLogSelect` 和旧 `saveNutritionLog` 已删除，保留的是当前实际行为版本。
+Phase 5 清理后，`src/app/main.ts` 当前未发现同名函数重复定义。此前遗留的旧 `renderExerciseLogSelect` 和旧 `saveNutritionLog` 已删除，保留的是当前实际行为版本。
 
 后续仍应继续控制新增重复：
 
 - 新增 UI 入口前先检查是否已有渲染函数。
-- 不在 `app.js` 中继续堆叠同名覆盖式实现。
+- 不在 `src/app/main.ts` 中继续堆叠同名覆盖式实现。
 - 每次清理后运行 `npm.cmd run verify:desktop`。
 
 ### 重复规则
@@ -210,7 +210,7 @@ Phase 5 清理后，`app.js` 当前未发现同名函数重复定义。此前遗
 - 饮食画像、联动信号和周复盘都会基于 `nutritionLogs` 产生相似结论。
 - 训练整体反馈和周复盘都会产生 `Revision`。
 
-已通过 `src/core/rules/advice-engine.ts` 初步统一 advice helper 和 `revision` 结构，动作 / 饮食 advice 的写入已从 `app.js` 移到 `src/app/state/workbench-actions.ts`。后续还需要继续统一 advice 生命周期、去重和展示状态。
+已通过 `src/core/rules/advice-engine.ts` 初步统一 advice helper 和 `revision` 结构，动作 / 饮食 advice 的写入已从 `src/app/main.ts` 移到 `src/app/state/workbench-actions.ts`。后续还需要继续统一 advice 生命周期、去重和展示状态。
 
 ### 字段命名不一致
 
@@ -232,7 +232,7 @@ Phase 5 清理后，`app.js` 当前未发现同名函数重复定义。此前遗
 
 1. 饮食模块：容易从训练辅助变成完整营养 App。
 2. 智能教练：容易承载所有分析、计划修改、建议展示和历史记录。
-3. `app.js`：容易继续堆 UI、状态、存储、图表和业务协调。
+3. `src/app/main.ts`：容易继续堆 UI、状态、存储、图表和业务协调。
 
 ## 10. 当前最需要收口的三个边界
 
