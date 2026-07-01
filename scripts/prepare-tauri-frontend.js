@@ -9,13 +9,12 @@ const generatedDir = path.join(root, "dist", "generated");
 
 const files = [
   "styles.css",
-  "data.js",
-  "planner.js",
   "app.js",
   "VERSION"
 ];
 
 const directories = [
+  path.join("src", "core", "data"),
   path.join("src", "core", "rules"),
   path.join("src", "app", "storage"),
   path.join("src", "app", "import-export"),

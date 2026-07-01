@@ -71,13 +71,13 @@ npm.cmd run desktop:build
 ## 已完成的清理
 
 - SQLite Rust 侧保存 / 读取逻辑已抽出为可单测的 connection helper，不再只能通过 Tauri `AppHandle` 手工验证。
-- `createAdviceFromSession` 已从 `planner.js` 并入 `src/core/rules/advice-engine.ts`。
+- `createAdviceFromSession` 已并入 `src/core/rules/advice-engine.ts`。
 - 新增 `src/core/rules/facade.ts` 作为 `window.FitnessCore.Rules`，`app.js` 已改为使用该 core facade。
-- `planner.js` 仅保留 `window.FitnessPlanner` 旧入口兼容别名。
+- `src/core/rules/facade.ts` 汇总 `window.FitnessCore.Rules` 统一规则入口。
 
 ## 后续清理条件
 
-以下条件全部满足后，才能继续移除兼容层：
+以下条件全部满足后，才能继续清理旧入口和冗余代码：
 
 - `desktop:dev`、`desktop:build:app` 和 `desktop:build` 均可运行。
 - SQLite 读写自动 smoke 与人工 smoke checklist 都通过。

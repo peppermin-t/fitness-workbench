@@ -1,4 +1,4 @@
-# 人工 Smoke Checklist
+﻿# 人工 Smoke Checklist
 
 本文档用于正式重构前后对照，确认核心功能没有回退。当前项目以 Tauri 桌面端为运行入口，桌面前端由 `npm.cmd run prepare:desktop` 生成。
 

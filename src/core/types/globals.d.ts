@@ -29,107 +29,128 @@ interface ExerciseProfileSummary {
 }
 
 interface GoalParserModule {
-  parseGoal(text: string): GoalParsed;
+  parseGoal: Function;
 }
 
 interface MetricAnalyzerModule {
-  sortedMetrics(metrics: BodyMetricEntry[]): BodyMetricEntry[];
-  metricTrend(metrics: BodyMetricEntry[], key: string, days: number): MetricTrendResult | null;
+  sortedMetrics: Function;
+  metricTrend: Function;
 }
 
 interface TrainingStatsModule {
-  calculateVolumeLoad(sets: SetLog[]): number;
-  calculateHardSets(sets: SetLog[]): number;
-  detectSimplePr(log: ExerciseLog, previousLogs: ExerciseLog[]): SimplePrResult;
+  calculateVolumeLoad: Function;
+  calculateHardSets: Function;
+  detectSimplePr: Function;
 }
 
 interface AdviceEngineModule {
-  recommendationItem(type: string, priority: string, title: string, detail: string, evidence?: string[], tags?: string[]): RecommendationItem;
-  buildAdviceEntry(uid: (prefix: string) => string, nowLabel: () => string, title: string, items: RecommendationItem[], tags?: string[], evidence?: string[]): Advice;
-  sortRecommendationItems(items: RecommendationItem[]): RecommendationItem[];
-  highestPriority(items: RecommendationItem[]): string;
-  priorityScore(priority: string): number;
-  priorityLabel(priority: string): string;
-  uniqueStrings(items: string[]): string[];
-  createAdviceFromSession?(input: Record<string, unknown>): { advice: Advice[]; revisions: Revision[] };
+  recommendationItem: Function;
+  buildAdviceEntry: Function;
+  sortRecommendationItems: Function;
+  highestPriority: Function;
+  priorityScore: Function;
+  priorityLabel: Function;
+  uniqueStrings: Function;
+  revision: Function;
+  createAdviceFromSession: Function;
 }
 
 interface PlanGeneratorModule {
-  generatePlan(input: Record<string, unknown>): TrainingPlan;
-  isAvailable(exercise: Exercise, gym: Gym): boolean;
-  availableSubstitutes(exercise: Exercise, gym: Gym, exercises: Exercise[]): Exercise[];
-  [key: string]: unknown;
+  generatePlan: Function;
+  buildPlanDay: Function;
+  planDayTypes: Function;
+  planConfig: Function;
+  defaultRowNote: Function;
+  pickAvailableExercise: Function;
+  buildPlanContext: Function;
+  isAvailable: Function;
+  availableSubstitutes: Function;
 }
 
 interface ExerciseFeedbackAnalyzerModule {
-  analyzeExerciseFeedback(input: Record<string, unknown>, exercise: Exercise): Record<string, unknown>;
-  buildExerciseProfiles(logs: ExerciseLog[], exercises?: Exercise[]): ExerciseProfileSummary[];
-  computeExercisePriority?(profile: ExerciseProfileSummary): string;
-  inferExerciseProfileAdvice?(profile: ExerciseProfileSummary): string[];
+  analyzeExerciseFeedback: Function;
+  buildExerciseProfiles: Function;
+  computeExercisePriority: Function;
+  inferExerciseProfileAdvice: Function;
 }
 
 interface NutritionParserModule {
-  parseNutritionLog(rawText: string, goal?: Goal | null, latestMetric?: BodyMetricEntry | null): Record<string, unknown>;
-  buildNutritionProfile(logs: NutritionLog[], goal?: Goal | null): NutritionProfileSummary;
-  buildNutritionTrend(logs: NutritionLog[]): Record<string, number> | null;
-  buildNutritionReminders?(input: Record<string, unknown>): RecommendationItem[];
-  [key: string]: unknown;
+  parseNutritionLog: Function;
+  buildNutritionProfile: Function;
+  buildNutritionTrend: Function;
+  inferNutritionProfileAdvice?: Function;
+  buildNutritionReminders: Function;
+  nutritionRecommendations?: Function;
+  buildNutritionRecommendationItems?: Function;
 }
 
 interface IntegratedSignalsModule {
-  buildIntegratedSignals(input: Record<string, unknown>): RecommendationItem[];
-  buildTrainingReminders(input: Record<string, unknown>): RecommendationItem[];
-  buildLinkedTodayInsights(input: Record<string, unknown>): string[];
-  [key: string]: unknown;
+  buildIntegratedSignals: Function;
+  buildTrainingReminders: Function;
+  buildLinkedTodayInsights: Function;
 }
 
 interface WeeklyReviewModule {
-  buildWeeklyReview(input: Record<string, unknown>): Record<string, unknown>;
-  [key: string]: unknown;
+  buildWeeklyReview: Function;
+  revision: Function;
+}
+
+interface RulesModule extends
+  GoalParserModule,
+  MetricAnalyzerModule,
+  TrainingStatsModule,
+  AdviceEngineModule,
+  PlanGeneratorModule,
+  ExerciseFeedbackAnalyzerModule,
+  NutritionParserModule,
+  IntegratedSignalsModule,
+  WeeklyReviewModule {}
+
+interface FitnessDataModule {
+  equipment: Equipment[];
+  exercises: Exercise[];
+  defaultGyms: Gym[];
 }
 
 interface StateNormalizerModule {
   CURRENT_SCHEMA_VERSION: number;
-  normalizeAppState(input: unknown, defaults: AppState): AppState;
+  normalizeAppState: Function;
 }
 
 interface DesktopStorageModule {
-  isAvailable(): boolean;
-  loadAppState(): Promise<unknown>;
-  saveAppState(state: unknown): Promise<boolean>;
+  isAvailable: Function;
+  loadAppState: Function;
+  saveAppState: Function;
 }
 
 interface AppStateStoreModule {
-  createDefaultState(input: Record<string, unknown>): AppState;
-  prepareState(data: unknown, context: Record<string, unknown>): AppState;
-  normalizeState(state: unknown, context: Record<string, unknown>): AppState;
-  loadLocalState(context: Record<string, unknown>): AppState;
-  saveLocalState(state: unknown, context: Record<string, unknown>): AppState;
-  hydrateDesktopState(currentState: unknown, context: Record<string, unknown>, callbacks?: Record<string, unknown>): Promise<void>;
-  persistDesktopState(state: unknown, context: Record<string, unknown>, callbacks?: Record<string, unknown>): void;
+  createDefaultState: Function;
+  prepareState: Function;
+  normalizeState: Function;
+  loadLocalState: Function;
+  saveLocalState: Function;
+  hydrateDesktopState: Function;
+  persistDesktopState: Function;
 }
 
-type LooseGlobalModule = Record<string, unknown> & { [key: string]: any };
-
 interface FitnessCoreNamespace {
-  GoalParser?: LooseGlobalModule;
-  MetricAnalyzer?: LooseGlobalModule;
-  TrainingStats?: LooseGlobalModule;
-  AdviceEngine?: LooseGlobalModule;
-  PlanGenerator?: LooseGlobalModule;
-  ExerciseFeedbackAnalyzer?: LooseGlobalModule;
-  NutritionParser?: LooseGlobalModule;
-  IntegratedSignals?: LooseGlobalModule;
-  WeeklyReview?: LooseGlobalModule;
-  Rules?: LooseGlobalModule;
-  StateNormalizer?: LooseGlobalModule;
-  DesktopStorage?: LooseGlobalModule;
-  AppStateStore?: LooseGlobalModule;
+  GoalParser?: GoalParserModule;
+  MetricAnalyzer?: MetricAnalyzerModule;
+  TrainingStats?: TrainingStatsModule;
+  AdviceEngine?: AdviceEngineModule;
+  PlanGenerator?: PlanGeneratorModule;
+  ExerciseFeedbackAnalyzer?: ExerciseFeedbackAnalyzerModule;
+  NutritionParser?: NutritionParserModule;
+  IntegratedSignals?: IntegratedSignalsModule;
+  WeeklyReview?: WeeklyReviewModule;
+  Rules?: RulesModule;
+  StateNormalizer?: StateNormalizerModule;
+  DesktopStorage?: DesktopStorageModule;
+  AppStateStore?: AppStateStoreModule;
 }
 
 interface Window {
   FitnessCore: FitnessCoreNamespace;
   FitnessApp: Record<string, unknown>;
-  FitnessData: Record<string, unknown>;
-  FitnessPlanner: LooseGlobalModule;
+  FitnessData: FitnessDataModule;
 }

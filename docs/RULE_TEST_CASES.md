@@ -1,8 +1,8 @@
 ﻿# 核心规则测试用例
 
-本文档用于拆分 `planner.js` 前后固定核心规则的输入输出样例。本轮只定义用例，不引入测试框架，不改变桌面端运行方式。
+本文档用于固定核心规则的输入输出样例，防止后续重构造成行为回退。本轮只定义用例，不引入测试框架，不改变桌面端运行方式。
 
-当前已有无依赖浏览器 smoke 测试：[../tests/rules-smoke.html](../tests/rules-smoke.html)。函数入口继续通过 `window.FitnessPlanner` 验证；`parseGoal` 的实际实现已拆到 `src/core/rules/goal-parser.ts`，`generatePlan` / 动作可用性逻辑已拆到 `src/core/rules/plan-generator.ts`，`sortedMetrics` / `metricTrend` 已拆到 `src/core/rules/metric-analyzer.ts`，建议 helper 已拆到 `src/core/rules/advice-engine.ts`，动作反馈分析和动作画像已拆到 `src/core/rules/exercise-feedback-analyzer.ts`，饮食解析和饮食画像已拆到 `src/core/rules/nutrition-parser.ts`，联动建议已拆到 `src/core/rules/integrated-signals.ts`，周复盘已拆到 `src/core/rules/weekly-review.ts`，但兼容 API 仍通过 `window.FitnessPlanner` 暴露。
+当前已有无依赖浏览器 smoke 测试：[../tests/rules-smoke.html](../tests/rules-smoke.html)。函数入口通过 `window.FitnessCore.Rules` 验证；`parseGoal` 的实际实现已拆到 `src/core/rules/goal-parser.ts`，`generatePlan` / 动作可用性逻辑已拆到 `src/core/rules/plan-generator.ts`，`sortedMetrics` / `metricTrend` 已拆到 `src/core/rules/metric-analyzer.ts`，建议 helper 已拆到 `src/core/rules/advice-engine.ts`，动作反馈分析和动作画像已拆到 `src/core/rules/exercise-feedback-analyzer.ts`，饮食解析和饮食画像已拆到 `src/core/rules/nutrition-parser.ts`，联动建议已拆到 `src/core/rules/integrated-signals.ts`，周复盘已拆到 `src/core/rules/weekly-review.ts`，并由 `window.FitnessCore.Rules` 聚合暴露。
 
 ## 1. 目标解析：减脂、保持力量、出差
 

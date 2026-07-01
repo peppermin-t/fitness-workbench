@@ -1,4 +1,4 @@
-# Phase 5 前准备状态
+﻿# Phase 5 前准备状态
 
 本文档用于确认仓库是否已经具备进入 Phase 5：Tauri 桌面端封装的准备状态。它不是 Tauri 实施方案，也不要求当前立即创建 Tauri 工程。
 
@@ -10,7 +10,7 @@
 
 - Phase 0 行为保护已具备：文档体系、人工 smoke checklist、规则 smoke、样例 JSON、git 基线齐全。
 - Phase 1 模块边界已收敛：核心规则位于 `src/core/rules`，状态规范化位于 `src/app/storage`。
-- Phase 2 核心规则拆分已完成：`planner.js` 主要承担兼容导出。
+- Phase 2 核心规则拆分已完成：`src/core/rules/facade.ts` 主要承担聚合导出。
 - Phase 3 数据底座已完成第一版：`WorkoutSession`、`ExerciseLog.sessionId`、可选 `SetLog`、基础训练容量统计、`schemaVersion: 2` 和导入规范化已具备。
 - Phase 4 TypeScript core 最小迁移已完成：核心规则和状态规范化已有 `.ts` 源文件，模型声明位于 `src/core/models/index.d.ts`。
 - `src/app/index.html` 作为桌面前端源文件存在，由 `prepare:desktop` 复制到 `dist/desktop/index.html`。

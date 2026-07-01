@@ -20,8 +20,8 @@ Phase 7：AI 结构化解析与多端扩展
 ## 当前阶段状态
 
 - Phase 0：文档、人工 smoke checklist、规则 smoke、样例 JSON 基线和 git 基线已具备。
-- Phase 1：JS 模块边界已收敛到 `src/core/rules` 与 `src/app/storage`，浏览器全局兼容层仍保留。第一轮应用侧清理已把默认状态、localStorage 读写和 Tauri SQLite hydration helper 收到 `src/app/storage/app-state-store.ts`。
-- Phase 2：核心规则拆分已收口。`planner.js` 已收窄为 `window.FitnessPlanner -> window.FitnessCore.Rules` 的兼容别名；`app.js` 当前直接使用 `window.FitnessCore.Rules`。无依赖规则 smoke 已覆盖 12 个核心用例。
+- Phase 1：JS 模块边界已收敛到 `src/core/rules` 与 `src/app/storage`，当前仍使用浏览器全局对象作为零打包运行边界。第一轮应用侧清理已把默认状态、localStorage 读写和 Tauri SQLite hydration helper 收到 `src/app/storage/app-state-store.ts`。
+- Phase 2：核心规则拆分已收口。`src/core/rules/facade.ts` 汇总各规则模块为 `window.FitnessCore.Rules`；`app.js` 当前直接使用该入口，旧规则兼容入口已移除。无依赖规则 smoke 已覆盖 12 个核心用例。
 - Phase 3：已完成第一版：`SetLog` 可选记录、`WorkoutSession` 状态与动作日志关联、基础训练容量统计、`schemaVersion: 2`、JSON 导入稳定性和当前状态规范化已经具备。
 - Phase 4：已完成最小迁移：新增 TypeScript 配置、模型声明、全局声明，核心规则和 app helper 已以 `.ts` 作为源码，构建时输出到 `dist/generated/src/**/*.js`。
 - Phase 5：最小 Tauri 壳已接入，桌面前端资源由 `npm.cmd run prepare:desktop` 生成。
@@ -39,8 +39,8 @@ Phase 7：AI 结构化解析与多端扩展
 - 收紧已迁移 core 模块的 TypeScript 类型。
 - 持续维护 `WorkoutSession`、`SetLog`、`schemaVersion` 迁移和 JSON 导入导出稳定性。
 - 保持规则 smoke 测试和人工 smoke checklist 可运行。
-- 在继续移除兼容层前保留 JSON 备份 / 恢复路径，并确认 SQLite 存储稳定。
-- 本轮已经把智能教练、饮食列表、动作历史、今日建议、周复盘等复杂渲染模板收敛到 `src/app/render/view-renderers`，并把浏览器文件读取 / 下载 / 确认弹窗收敛到 `src/app/io/browser-file-io`。下一步重点转为类型收紧、兼容层评估和 UI 事件边界梳理。
+- 在继续清理旧入口和冗余代码前保留 JSON 备份 / 恢复路径，并确认 SQLite 存储稳定。
+- 本轮已经把智能教练、饮食列表、动作历史、今日建议、周复盘等复杂渲染模板收敛到 `src/app/render/view-renderers`，并把浏览器文件读取 / 下载 / 确认弹窗收敛到 `src/app/io/browser-file-io`。下一步重点转为类型收紧和 UI 事件边界梳理。
 
 ## Phase 0：现状冻结与行为保护
 
@@ -60,7 +60,7 @@ Phase 7：AI 结构化解析与多端扩展
 2. 增加 smoke test 或人工验收清单
    - 当前先以 [SMOKE_CHECKLIST.md](SMOKE_CHECKLIST.md) 作为人工验收文档。
    - 当前先以 [RULE_TEST_CASES.md](RULE_TEST_CASES.md) 固定核心规则输入输出样例。
-   - 后续可增加轻量 JS 测试，直接调用 `window.FitnessPlanner` 暴露的纯函数。
+   - 后续可增加轻量 JS 测试，直接调用 `window.FitnessCore.Rules` 暴露的纯函数。
    - 第一批测试应覆盖目标解析、计划生成、动作反馈分析、饮食解析、周复盘。
 
 3. 确保导入导出可用
@@ -149,7 +149,7 @@ src/
 - 保存目标、健身房、指标、训练反馈、动作日志、饮食记录。
 - 调用 core 规则后合并结果。
 
-当前 `app.js` 中的 `defaultState`、`loadState`、`saveState` 已迁移到 `src/app/storage/app-state-store`；目标、健身房、指标、计划、训练反馈、动作日志、饮食日志和 revision 应用已迁移到 `src/app/state/workbench-actions`；低耦合和复杂视图模板已迁移到 `src/app/render/view-renderers`；浏览器文件读取、下载和恢复确认已迁移到 `src/app/io/browser-file-io`。后续重点是收紧 TypeScript 类型、评估 `planner.js` 兼容层保留范围，并继续梳理 UI 事件边界。
+当前 `app.js` 中的 `defaultState`、`loadState`、`saveState` 已迁移到 `src/app/storage/app-state-store`；目标、健身房、指标、计划、训练反馈、动作日志、饮食日志和 revision 应用已迁移到 `src/app/state/workbench-actions`；低耦合和复杂视图模板已迁移到 `src/app/render/view-renderers`；浏览器文件读取、下载和恢复确认已迁移到 `src/app/io/browser-file-io`。后续重点是收紧 TypeScript 类型，并继续梳理 UI 事件边界。
 
 ### `src/app/storage`
 
@@ -179,7 +179,7 @@ Phase 1 不应改页面结构和交互。即使内部开始拆模块，也要保
 
 ### 目标
 
-从 `planner.js` 拆出纯业务模块，降低单文件复杂度。拆分时先移动函数，不改业务语义。
+从旧集中规则入口拆出纯业务模块，降低单文件复杂度。拆分时先移动函数，不改业务语义。
 
 ### 建议拆分模块
 
@@ -187,7 +187,7 @@ Phase 1 不应改页面结构和交互。即使内部开始拆模块，也要保
 
 状态：已完成。
 
-说明：`parseGoal` 已从 `planner.js` 拆到 `src/core/rules/goal-parser.ts`，并通过 `window.FitnessPlanner.parseGoal` 保持兼容。`src/app/index.html` 和 `tests/rules-smoke.html` 都在 `planner.js` 前加载该文件。
+说明：`parseGoal` 已拆到 `src/core/rules/goal-parser.ts`，并通过 `window.FitnessCore.Rules.parseGoal` 聚合暴露。`src/app/index.html` 和 `tests/rules-smoke.html` 都在 `src/core/rules/facade.ts` 前加载该文件。
 
 来源函数：
 
@@ -210,7 +210,7 @@ Phase 1 不应改页面结构和交互。即使内部开始拆模块，也要保
 
 状态：已完成。
 
-说明：`generatePlan`、`buildPlanDay`、`planDayTypes`、`planConfig`、`defaultRowNote`、`pickAvailableExercise`、`buildPlanContext`、`isAvailable`、`availableSubstitutes` 已拆到 `src/core/rules/plan-generator.ts`，并通过 `window.FitnessPlanner` 保持兼容导出。`src/app/index.html` 和 `tests/rules-smoke.html` 都在 `planner.js` 前加载该文件。
+说明：`generatePlan`、`buildPlanDay`、`planDayTypes`、`planConfig`、`defaultRowNote`、`pickAvailableExercise`、`buildPlanContext`、`isAvailable`、`availableSubstitutes` 已拆到 `src/core/rules/plan-generator.ts`，并通过 `window.FitnessCore.Rules` 保持聚合导出。`src/app/index.html` 和 `tests/rules-smoke.html` 都在 `src/core/rules/facade.ts` 前加载该文件。
 
 来源函数：
 
@@ -239,7 +239,7 @@ Phase 1 不应改页面结构和交互。即使内部开始拆模块，也要保
 
 状态：已完成。
 
-说明：`analyzeExerciseFeedback`、`buildExerciseProfiles`、`computeExercisePriority`、`inferExerciseProfileAdvice` 已拆到 `src/core/rules/exercise-feedback-analyzer.ts`；其中既有外部入口 `analyzeExerciseFeedback`、`buildExerciseProfiles` 继续通过 `window.FitnessPlanner` 保持兼容导出。该模块依赖 `window.FitnessCore.AdviceEngine`，不反向依赖 `window.FitnessPlanner`。
+说明：`analyzeExerciseFeedback`、`buildExerciseProfiles`、`computeExercisePriority`、`inferExerciseProfileAdvice` 已拆到 `src/core/rules/exercise-feedback-analyzer.ts`；其中既有外部入口 `analyzeExerciseFeedback`、`buildExerciseProfiles` 继续通过 `window.FitnessCore.Rules` 保持聚合导出。该模块依赖 `window.FitnessCore.AdviceEngine`，不反向依赖 `window.FitnessCore.Rules`。
 
 来源函数：
 
@@ -266,7 +266,7 @@ Phase 1 不应改页面结构和交互。即使内部开始拆模块，也要保
 
 状态：已完成。
 
-说明：`FOOD_LIBRARY`、`parseNutritionLog`、饮食餐次拆分、食物识别、营养估算、饮食建议、饮食画像、饮食趋势和饮食前提醒已拆到 `src/core/rules/nutrition-parser.ts`，并通过 `window.FitnessPlanner` 保持兼容导出。
+说明：`FOOD_LIBRARY`、`parseNutritionLog`、饮食餐次拆分、食物识别、营养估算、饮食建议、饮食画像、饮食趋势和饮食前提醒已拆到 `src/core/rules/nutrition-parser.ts`，并通过 `window.FitnessCore.Rules` 保持聚合导出。
 
 来源函数：
 
@@ -299,7 +299,7 @@ Phase 1 不应改页面结构和交互。即使内部开始拆模块，也要保
 
 状态：已完成。
 
-说明：`sortedMetrics`、`metricTrend` 已拆到 `src/core/rules/metric-analyzer.ts`，并通过 `window.FitnessPlanner` 保持兼容导出。`plan-generator` 通过 `window.FitnessCore.MetricAnalyzer` 读取指标排序和趋势计算。
+说明：`sortedMetrics`、`metricTrend` 已拆到 `src/core/rules/metric-analyzer.ts`，并通过 `window.FitnessCore.Rules` 保持聚合导出。`plan-generator` 通过 `window.FitnessCore.MetricAnalyzer` 读取指标排序和趋势计算。
 
 来源函数：
 
@@ -321,7 +321,7 @@ Phase 1 不应改页面结构和交互。即使内部开始拆模块，也要保
 
 状态：已完成。
 
-说明：`buildIntegratedSignals`、`buildTrainingReminders`、`buildLinkedTodayInsights` 和联动提醒去重等 helper 已拆到 `src/core/rules/integrated-signals.ts`，并通过 `window.FitnessPlanner` 保持兼容导出。
+说明：`buildIntegratedSignals`、`buildTrainingReminders`、`buildLinkedTodayInsights` 和联动提醒去重等 helper 已拆到 `src/core/rules/integrated-signals.ts`，并通过 `window.FitnessCore.Rules` 保持聚合导出。
 
 来源函数：
 
@@ -344,7 +344,7 @@ Phase 1 不应改页面结构和交互。即使内部开始拆模块，也要保
 
 状态：已完成。
 
-说明：`buildWeeklyReview`、`revision`、周复盘候选去重和候选定位 helper 已拆到 `src/core/rules/weekly-review.ts`，并通过 `window.FitnessPlanner.buildWeeklyReview` 保持兼容导出。计划调整候选仍需要用户确认后才会应用。
+说明：`buildWeeklyReview`、`revision`、周复盘候选去重和候选定位 helper 已拆到 `src/core/rules/weekly-review.ts`，并通过 `window.FitnessCore.Rules.buildWeeklyReview` 保持聚合导出。计划调整候选仍需要用户确认后才会应用。
 
 来源函数：
 
@@ -367,9 +367,9 @@ Phase 1 不应改页面结构和交互。即使内部开始拆模块，也要保
 
 #### 8. `advice-engine`
 
-状态：已完成 helper 拆分与第一轮清理；`createAdviceFromSession` 已并入 `src/core/rules/advice-engine.ts`，`planner.js` 不再保留业务规则实现。
+状态：已完成 helper 拆分与第一轮清理；`createAdviceFromSession` 已并入 `src/core/rules/advice-engine.ts`，`src/core/rules/facade.ts` 不再保留业务规则实现。
 
-说明：`recommendationItem`、`buildAdviceEntry`、`sortRecommendationItems`、`highestPriority`、`priorityScore`、`priorityLabel`、`uniqueStrings`、`revision`、`createAdviceFromSession` 已拆到 `src/core/rules/advice-engine.ts`。`src/core/rules/facade.ts` 汇总为 `window.FitnessCore.Rules`，`planner.js` 只保留 `window.FitnessPlanner` 兼容别名。
+说明：`recommendationItem`、`buildAdviceEntry`、`sortRecommendationItems`、`highestPriority`、`priorityScore`、`priorityLabel`、`uniqueStrings`、`revision`、`createAdviceFromSession` 已拆到 `src/core/rules/advice-engine.ts`。`src/core/rules/facade.ts` 汇总为 `window.FitnessCore.Rules`，`src/core/rules/facade.ts` 只保留 `window.FitnessCore.Rules` 聚合入口。
 
 来源函数：
 
@@ -397,8 +397,8 @@ Phase 1 不应改页面结构和交互。即使内部开始拆模块，也要保
 
 ### Phase 2 验收标准
 
-- `planner.js` 已变薄为兼容别名，不再保留业务规则实现。
-- 拆出的函数通过 `window.FitnessCore.*` 暴露，并由 `window.FitnessCore.Rules` 提供统一 core facade；`window.FitnessPlanner.*` 继续保持旧入口兼容。
+- `src/core/rules/facade.ts` 已变薄为聚合入口，不再保留业务规则实现。
+- 拆出的函数通过 `window.FitnessCore.*` 暴露，并由 `window.FitnessCore.Rules` 提供统一 core facade；`window.FitnessCore.Rules.*` 继续保持统一规则入口。
 - 无依赖规则 smoke 已覆盖 12 个核心用例，包括目标解析、计划生成、动作反馈、饮食解析、指标趋势、训练容量统计、周复盘、联动建议、训练前提醒和饮食前提醒。
 - `src/app/index.html` 仍按脚本顺序加载生成后的 `.js`，但不再作为根目录双击入口。
 
@@ -461,7 +461,7 @@ v0.2 可以先在智能教练或动作历史里少量展示，不做复杂报表
 当前实现：
 
 - 新增 `src/core/rules/training-stats.ts`。
-- 通过 `window.FitnessPlanner.calculateVolumeLoad`、`window.FitnessPlanner.calculateHardSets`、`window.FitnessPlanner.detectSimplePr` 保持兼容导出。
+- 通过 `window.FitnessCore.Rules.calculateVolumeLoad`、`window.FitnessCore.Rules.calculateHardSets`、`window.FitnessCore.Rules.detectSimplePr` 保持聚合导出。
 - 动作日志保存时写入 `volumeLoad`、`hardSets`、`simplePr`。
 - 动作反馈列表和动作历史摘要展示容量、有效组和 PR 计数。
 
@@ -522,7 +522,7 @@ Phase 4 是长期技术路线的一部分。当前执行方式是最小迁移：
 - `schemaVersion` 迁移机制已经存在。
 - 规则 smoke 测试可运行。
 - JSON 样例数据可导入。
-- `window.FitnessPlanner` 兼容层行为已经冻结。
+- `window.FitnessCore.Rules` 聚合入口行为已经冻结。
 
 ### 建议步骤
 
@@ -549,7 +549,7 @@ Phase 4 是长期技术路线的一部分。当前执行方式是最小迁移：
    - `integrated-signals`
    - `weekly-review`
    - `advice-engine`
-4. 保留 JS 输出入口，避免一次性改坏运行方式。已完成：`src/app/index.html` 仍加载构建后的 `.js`，`app.js` 已从 `window.FitnessPlanner` 切到 `window.FitnessCore.Rules`。
+4. 保留 JS 输出入口，避免一次性改坏运行方式。已完成：`src/app/index.html` 仍加载构建后的 `.js`，`app.js` 已从 `window.FitnessCore.Rules` 切到 `window.FitnessCore.Rules`。
 5. `// @ts-nocheck` 过渡措施已移除；后续继续补充更精确的输入输出类型。
 6. 等 core 稳定后再考虑 UI 层迁移。
 
@@ -575,7 +575,7 @@ Phase 4 是长期技术路线的一部分。当前执行方式是最小迁移：
 ### 当前限制
 
 - `// @ts-nocheck` 已移除；当前仍保留宽松 TS 配置，后续应逐步收紧模型类型。
-- `window.FitnessPlanner` 兼容 API 仍保留给旧入口和 smoke 兼容；当前 UI 入口已改为 `window.FitnessCore.Rules`。
+- `window.FitnessCore.Rules` 统一规则 API 仍保留给UI 和 smoke 测试；当前 UI 入口已改为 `window.FitnessCore.Rules`。
 - Phase 4 完成不代表可以立即进入 SQLite；数据库迁移仍必须等 Tauri 壳、模型和迁移保护进一步稳定。
 
 ### 非目标
@@ -731,4 +731,4 @@ Phase 7 放在 TypeScript core、Tauri 和 SQLite 稳定之后。AI、手机端�
 
 ## 正式重构的建议第一步
 
-第一步不要先改 UI，也不要先上框架。Phase 2 的核心规则拆分已经收口：`goal-parser`、`plan-generator`、`metric-analyzer`、`advice-engine`、`exercise-feedback-analyzer`、`nutrition-parser`、`integrated-signals`、`weekly-review` 都已拆出，并通过 `window.FitnessCore.Rules` 汇总；`window.FitnessPlanner` 仅作为旧入口兼容别名。Phase 3 数据底座、Phase 4 TypeScript core、Phase 5 Tauri 壳和 Phase 6 SQLite 存储桥接已经落地。应用侧默认状态、状态动作、导入导出 helper、浏览器文件 I/O、图表、展示格式化和主要视图模板也已拆出。下一步应继续收紧 core / app helper 类型、补充 SQLite 读写 smoke，并评估 `planner.js` 兼容层保留边界。
+第一步不要先改 UI，也不要先上框架。Phase 2 的核心规则拆分已经收口：`goal-parser`、`plan-generator`、`metric-analyzer`、`advice-engine`、`exercise-feedback-analyzer`、`nutrition-parser`、`integrated-signals`、`weekly-review` 都已拆出，并通过 `window.FitnessCore.Rules` 汇总。Phase 3 数据底座、Phase 4 TypeScript core、Phase 5 Tauri 壳和 Phase 6 SQLite 存储桥接已经落地。应用侧默认状态、状态动作、导入导出 helper、浏览器文件 I/O、图表、展示格式化和主要视图模板也已拆出。下一步应继续收紧 core / app helper 类型、补充 SQLite 读写 smoke，并继续梳理 UI 事件边界。

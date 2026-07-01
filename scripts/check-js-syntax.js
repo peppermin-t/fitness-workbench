@@ -8,8 +8,9 @@ const root = path.resolve(__dirname, "..");
 const generatedRoot = path.join(root, "dist", "generated");
 const files = [
   "app.js",
-  "planner.js",
-  "data.js",
+  ...fs.readdirSync(path.join(generatedRoot, "src", "core", "data"))
+    .filter((name) => name.endsWith(".js"))
+    .map((name) => path.join("src", "core", "data", name)),
   ...fs.readdirSync(path.join(generatedRoot, "src", "app", "storage"))
     .filter((name) => name.endsWith(".js"))
     .map((name) => path.join("src", "app", "storage", name)),

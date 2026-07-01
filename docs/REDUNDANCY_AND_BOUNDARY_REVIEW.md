@@ -38,7 +38,7 @@
 
 ### 膨胀风险
 
-- `planner.js` 中已经内置 `FOOD_LIBRARY`、营养估算、目标范围、趋势、画像和建议规则。
+- `src/core/rules/nutrition-parser.ts` 中已经内置 `FOOD_LIBRARY`、营养估算、目标范围、趋势、画像和建议规则。
 - 如果继续增加更多食物、品牌、单位、营养素，很容易演变成完整营养数据库。
 - 一旦加入精确热量、扫码、微量营养素，会偏离“低录入成本训练工作台”的目标。
 
@@ -56,7 +56,7 @@
 ### 当前状态
 
 - 动作库主要是展示和搜索。
-- 静态动作数据在 `data.js`。
+- 静态动作数据在 `src/core/data/fitness-data.ts`。
 - CSV 导入找不到动作时，`app.js` 会通过兼容包装调用 `src/app/state/workbench-actions.ts` 创建极简动作。
 - 没有正式编辑动作的 UI。
 
@@ -78,7 +78,7 @@
 ### 当前分散点
 
 - 计划生成会写入一条 `advice`。
-- 训练整体反馈会通过 `window.FitnessCore.Rules.createAdviceFromSession` 写入 `advice` 和 `revisions`；`window.FitnessPlanner.createAdviceFromSession` 仅作为旧入口兼容。
+- 训练整体反馈会通过 `window.FitnessCore.Rules.createAdviceFromSession` 写入 `advice` 和 `revisions`；`window.FitnessCore.Rules.createAdviceFromSession` 仅作为统一规则入口。
 - 动作级反馈通过 `src/app/state/workbench-actions.ts` 构造并写入 `advice`。
 - 饮食记录通过 `src/app/state/workbench-actions.ts` 构造并写入 `advice`。
 - 今日页通过 `planner.buildLinkedTodayInsights` 和 `buildTrainingReminders` 展示即时建议。
@@ -124,7 +124,7 @@
 - 文件仍然过大，当前承担复杂 UI 渲染、事件处理、状态协调和展示格式化调用。
 - Phase 3 / Phase 5 之间已经清理过旧同名函数覆盖问题；当前脚本检查未发现 `app.js` 中仍存在同名函数重复定义。
 - `app.js` 仍然既是 UI 层又是应用服务层；状态存储 helper、导入导出 helper、浏览器文件 I/O helper、通用图表 helper、展示格式化 helper、视图模板 helper 和主要业务状态动作已拆出。当前剩余问题主要是 DOM 事件、表单读取、保存后刷新和 toast 协调仍集中在一个文件内。
-- `planner.js` 当前已收窄为旧入口兼容别名；`src/core/rules/*.ts` 是 Tauri 前端当前实际加载的输出，不应作为“无用冗余”删除。
+- `src/core/rules/facade.ts` 是当前正式规则聚合入口；`src/core/rules/*.ts` 是 Tauri 前端当前实际加载输出的源码，不应作为“无用冗余”删除。
 
 ### 建议拆分方向
 
@@ -136,16 +136,16 @@
 - `app/import-export`：CSV 和 JSON。已开始：`data-portability` 承担计划 CSV 构造 / 解析、JSON 备份序列化 / 解析和下载 helper。
 - `app/presenters`：标签、展示文案、英文名和器械文案映射。
 
-## 6. `planner.js` 是否已经过大
+## 6. 核心规则入口是否仍然过大
 
 ### 当前职责
 
-`planner.js` 当前主要承担：
+`src/core/rules/facade.ts` 当前主要承担：
 
-- `window.FitnessPlanner` 旧入口兼容别名。
-- 指向 `window.FitnessCore.Rules`，不再保留业务规则实现。
+- 汇总各 `src/core/rules/*.ts` 模块为 `window.FitnessCore.Rules`。
+- 不再保留业务规则实现。
 
-规则聚合已经前移到 `src/core/rules/facade.ts`。
+旧规则兼容入口已移除，规则聚合入口保留在 `src/core/rules/facade.ts`。
 
 ### 应拆分的函数组
 
@@ -160,11 +160,11 @@
 
 ### 风险
 
-- `planner.js` 不再是 `app.js` 的规则入口，但仍是 smoke 测试和旧调用方的兼容 API，不能在确认所有外部入口迁移前删除。
+- `src/core/rules/facade.ts` 是 `app.js` 和 smoke 测试的规则入口，当前不能删除。
 - `createAdviceFromSession` 已并入 `src/core/rules/advice-engine.ts`。
 - `// @ts-nocheck` 过渡措施已移除；类型债从“遮蔽检查”转为继续补充更精确的模型和规则类型。
 
-## 7. `data.js` 是否混合静态主数据和业务语义
+## 7. `src/core/data/fitness-data.ts` 是否混合静态主数据和业务语义
 
 ### 当前内容
 
@@ -238,4 +238,4 @@ Phase 5 清理后，`app.js` 当前未发现同名函数重复定义。此前遗
 
 1. `WorkoutSession`、`ExerciseLog`、`SetLog` 的层级关系。
 2. `Advice`、`Revision`、`WeeklyReview` 的建议和计划修改边界。
-3. `data.js` 静态主数据和 `planner.js` 业务规则之间的边界。
+3. `src/core/data/fitness-data.ts` 静态主数据和 `src/core/rules/facade.ts` 业务规则之间的边界。

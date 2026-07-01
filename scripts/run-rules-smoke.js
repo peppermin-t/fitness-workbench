@@ -44,7 +44,7 @@ sandbox.window = sandbox;
 
 const context = vm.createContext(sandbox);
 const runtimeScripts = [
-  "data.js",
+  ["generated", "src/core/data/fitness-data.js"],
   ["generated", "src/core/rules/goal-parser.js"],
   ["generated", "src/core/rules/metric-analyzer.js"],
   ["generated", "src/core/rules/training-stats.js"],
@@ -55,7 +55,6 @@ const runtimeScripts = [
   ["generated", "src/core/rules/integrated-signals.js"],
   ["generated", "src/core/rules/weekly-review.js"],
   ["generated", "src/core/rules/facade.js"],
-  "planner.js",
   ["generated", "src/app/storage/state-normalizer.js"],
   ["generated", "src/app/storage/desktop-sqlite.js"]
 ];

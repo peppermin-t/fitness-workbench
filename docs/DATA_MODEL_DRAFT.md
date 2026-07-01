@@ -1,6 +1,6 @@
-# 数据模型草案
+﻿# 数据模型草案
 
-本文档根据当前 `app.js`、`planner.js`、`data.js` 中的状态结构整理。Phase 4 后，核心模型的第一版 TypeScript 声明位于 `src/core/models/index.d.ts`，本文档仍作为字段语义和后续调整依据。Phase 6 后，Tauri 桌面环境会把完整 `AppState` 快照写入 SQLite，并镜像主要业务表；具体实现见 `docs/PHASE6_SQLITE.md`。
+本文档根据当前 `app.js`、`src/core/rules/facade.ts`、`src/core/data/fitness-data.ts` 中的状态结构整理。Phase 4 后，核心模型的第一版 TypeScript 声明位于 `src/core/models/index.d.ts`，本文档仍作为字段语义和后续调整依据。Phase 6 后，Tauri 桌面环境会把完整 `AppState` 快照写入 SQLite，并镜像主要业务表；具体实现见 `docs/PHASE6_SQLITE.md`。
 
 ## 0. AppState
 
